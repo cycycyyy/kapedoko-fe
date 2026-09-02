@@ -1,75 +1,56 @@
-# Nuxt Minimal Starter
+# KapeDoko FE
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+Nuxt 4 frontend with Ionic app shell, shadcn-vue style components, and Capacitor mobile support.
 
 ## Setup
 
-Make sure to install dependencies:
-
 ```bash
-# npm
-npm install
-
-# pnpm
-pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
+corepack enable
+corepack pnpm install --ignore-scripts
 ```
 
-## Development Server
-
-Start the development server on `http://localhost:3000`:
+## Development
 
 ```bash
-# npm
-npm run dev
-
-# pnpm
-pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
+corepack pnpm dev
 ```
 
-## Production
-
-Build the application for production:
+## Build and preview
 
 ```bash
-# npm
-npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
+corepack pnpm build
+corepack pnpm preview
 ```
 
-Locally preview production build:
+## Ionic + shadcn-vue notes
+
+- Ionic is the primary app container (`IonApp` + `IonRouterOutlet`) and each page uses Ionic page primitives.
+- shadcn-vue foundation is configured through `shadcn-nuxt` with UI components in `/home/runner/work/kapedoko-fe/kapedoko-fe/app/components/ui`.
+- Tailwind config lives in `/home/runner/work/kapedoko-fe/kapedoko-fe/tailwind.config.ts`.
+- CSS layering is explicit: Tailwind tokens/utilities first, then Ionic CSS (`app/assets/css/ionic.css`).
+
+## Capacitor workflows
+
+Generate a static web build for Capacitor:
 
 ```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
+corepack pnpm build:mobile
 ```
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+Sync web assets and plugins:
+
+```bash
+corepack pnpm cap:sync
+```
+
+Open native projects:
+
+```bash
+corepack pnpm cap:android
+corepack pnpm cap:ios
+```
+
+## Platform prerequisites
+
+- Android: Android Studio + Android SDK.
+- iOS: macOS with Xcode and CocoaPods.
