@@ -17,6 +17,7 @@
     "@capacitor/core": "^8.5.1",
     "@ionic/vue": "^8.8.19",
     "@ionic/vue-router": "^8.8.19",
+    "@nuxt/image": "2.1.0",
     "@nuxtjs/ionic": "^1.0.2",
     "@nuxtjs/supabase": "^2.0.10",
     "class-variance-authority": "^0.7.1",

@@ -2,7 +2,13 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  modules: ['@nuxtjs/ionic', '@nuxtjs/tailwindcss', 'shadcn-nuxt', '@nuxtjs/supabase'],
+  modules: [
+    '@nuxtjs/ionic',
+    '@nuxtjs/tailwindcss',
+    'shadcn-nuxt',
+    '@nuxtjs/supabase',
+    '@nuxt/image'
+  ],
   css: ['~/assets/css/ionic.css', '~/assets/css/tailwind.css'],
   ionic: {
     css: {
