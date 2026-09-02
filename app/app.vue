@@ -1,6 +1,6 @@
 <template>
-  <div>
+  <IonApp>
     <NuxtRouteAnnouncer />
-    <NuxtWelcome />
-  </div>
+    <IonRouterOutlet />
+  </IonApp>
 </template>
