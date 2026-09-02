@@ -15,9 +15,12 @@
   },
   "dependencies": {
     "@capacitor/core": "^8.5.1",
+    "@ionic/vue": "^8.8.19",
+    "@ionic/vue-router": "^8.8.19",
     "@nuxtjs/ionic": "^1.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "ionicons": "^8.1.0",
     "lucide-vue-next": "^1.0.0",
     "nuxt": "^4.5.2",
     "tailwind-merge": "^3.6.0",
