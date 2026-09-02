@@ -26,6 +26,18 @@ export default {
         muted: {
           DEFAULT: 'hsl(var(--muted))',
           foreground: 'hsl(var(--muted-foreground))'
+        },
+        success: {
+          DEFAULT: 'hsl(var(--success))',
+          foreground: 'hsl(var(--success-foreground))'
+        },
+        destructive: {
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))'
+        },
+        gray: {
+          DEFAULT: 'hsl(var(--gray))',
+          foreground: 'hsl(var(--gray-foreground))'
         }
       },
       borderRadius: {
