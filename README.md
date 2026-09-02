@@ -5,21 +5,22 @@ Nuxt 4 frontend with Ionic app shell, shadcn-vue style components, and Capacitor
 ## Setup
 
 ```bash
-corepack enable
-corepack pnpm install --ignore-scripts
+bun install
 ```
+
+Create a `.env` file from `.env.example` and set the Supabase project URL and publishable key.
 
 ## Development
 
 ```bash
-corepack pnpm dev
+bun dev
 ```
 
 ## Build and preview
 
 ```bash
-corepack pnpm build
-corepack pnpm preview
+bun run build
+bun run preview
 ```
 
 ## Ionic + shadcn-vue notes
@@ -34,20 +35,20 @@ corepack pnpm preview
 Generate a static web build for Capacitor:
 
 ```bash
-corepack pnpm build:mobile
+bun run build:mobile
 ```
 
 Sync web assets and plugins:
 
 ```bash
-corepack pnpm cap:sync
+bun run cap:sync
 ```
 
 Open native projects:
 
 ```bash
-corepack pnpm cap:android
-corepack pnpm cap:ios
+bun run cap:android
+bun run cap:ios
 ```
 
 ## Platform prerequisites
