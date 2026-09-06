@@ -41,8 +41,8 @@ const emit = defineEmits<{
   flex-direction: column;
   height: 100%;
   min-height: 100%;
-  background: #372d25;
-  color: #ffffff;
+  background: var(--kd-primary);
+  color: var(--kd-white);
   padding: max(2.75rem, env(safe-area-inset-top)) 0 max(1.5rem, env(safe-area-inset-bottom));
 }
 
@@ -86,7 +86,7 @@ const emit = defineEmits<{
   font-size: 24px;
   font-weight: 700;
   line-height: 1.2;
-  color: #ffffff;
+  color: var(--kd-white);
 }
 
 .onboarding-step__cta {
@@ -95,8 +95,8 @@ const emit = defineEmits<{
   height: 45px;
   border: 0;
   border-radius: 8px;
-  background: #ffffff;
-  color: #372d25;
+  background: var(--kd-white);
+  color: var(--kd-primary);
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
@@ -112,7 +112,7 @@ const emit = defineEmits<{
 }
 
 .onboarding-step__cta:focus-visible {
-  outline: 2px solid #ffffff;
+  outline: 2px solid var(--kd-white);
   outline-offset: 3px;
 }
 

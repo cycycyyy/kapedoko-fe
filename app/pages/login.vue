@@ -3,7 +3,7 @@
     <div class="w-full max-w-md p-6 rounded-lg shadow-md bg-secondary">
       <h1 class="text-2xl font-bold text-center mb-6 text-foreground">Login</h1>
       
-      <div v-if="error" class="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
+      <div v-if="error" class="mb-4 p-3 rounded-md bg-destructive/20 text-destructive">
         {{ error }}
       </div>
 

@@ -332,20 +332,20 @@ const submitSearch = () => {
 
 <style scoped>
 .home-content {
-  --background: #ffffff;
+  --background: var(--kd-white);
 }
 
 .home {
   min-height: 100%;
-  background: #ffffff;
+  background: var(--kd-white);
   padding-bottom: calc(7.25rem + env(safe-area-inset-bottom));
 }
 
 .home-hero {
   position: relative;
   overflow: hidden;
-  background: #372d25;
-  color: #ffffff;
+  background: var(--kd-primary);
+  color: var(--kd-white);
   padding: max(2.75rem, env(safe-area-inset-top)) 20px 0;
 }
 
@@ -399,12 +399,12 @@ const submitSearch = () => {
   padding: 0;
   border: 0;
   background: transparent;
-  color: #ffffff;
+  color: var(--kd-white);
   cursor: pointer;
 }
 
 .home-hero__bell:focus-visible {
-  outline: 2px solid #ffffff;
+  outline: 2px solid var(--kd-white);
   outline-offset: 2px;
   border-radius: 8px;
 }
@@ -426,22 +426,22 @@ const submitSearch = () => {
   height: 50px;
   padding: 0 16px;
   border-radius: 8px;
-  background: #ffffff;
-  color: rgb(30 30 30 / 0.5);
+  background: var(--kd-white);
+  color: var(--kd-ink-50);
 }
 
 .home-search__field input {
   width: 100%;
   border: 0;
   background: transparent;
-  color: #1e1e1e;
+  color: var(--kd-ink);
   font-size: 12px;
   font-family: inherit;
-  caret-color: #372d25;
+  caret-color: var(--kd-primary);
 }
 
 .home-search__field input::placeholder {
-  color: rgb(30 30 30 / 0.5);
+  color: var(--kd-ink-50);
 }
 
 .home-search__field input:focus {
@@ -449,7 +449,7 @@ const submitSearch = () => {
 }
 
 .home-search__field:focus-within {
-  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #372d25;
+  box-shadow: 0 0 0 2px var(--kd-white), 0 0 0 4px var(--kd-primary);
 }
 
 .home-search__submit {
@@ -458,8 +458,8 @@ const submitSearch = () => {
   height: 50px;
   border: 0;
   border-radius: 8px;
-  background: #ffffff;
-  color: #372d25;
+  background: var(--kd-white);
+  color: var(--kd-primary);
   cursor: pointer;
 }
 
@@ -468,7 +468,7 @@ const submitSearch = () => {
 }
 
 .home-search__submit:focus-visible {
-  outline: 2px solid #ffffff;
+  outline: 2px solid var(--kd-white);
   outline-offset: 2px;
 }
 
@@ -497,8 +497,8 @@ const submitSearch = () => {
   display: flex;
   overflow: hidden;
   border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 0 8px rgb(0 0 0 / 0.1);
+  background: var(--kd-white);
+  box-shadow: 0 0 8px var(--kd-shadow);
   scroll-snap-align: start;
   scroll-snap-stop: always;
 }
@@ -510,7 +510,7 @@ const submitSearch = () => {
   width: 179px;
   margin: 0;
   padding: 0 22px;
-  color: #372d25;
+  color: var(--kd-primary);
   font-size: 16px;
   line-height: 1.375;
 }
@@ -542,16 +542,16 @@ const submitSearch = () => {
   padding: 0;
   border: 0;
   border-radius: 999px;
-  background: #d9d9d9;
+  background: var(--kd-placeholder);
   cursor: pointer;
 }
 
 .home-dots__dot.is-active {
-  background: #372d25;
+  background: var(--kd-primary);
 }
 
 .home-dots__dot:focus-visible {
-  outline: 2px solid #372d25;
+  outline: 2px solid var(--kd-primary);
   outline-offset: 3px;
 }
 
@@ -574,8 +574,8 @@ const submitSearch = () => {
   padding: 0;
   border: 0;
   border-radius: 4px;
-  background: rgb(30 30 30 / 0.1);
-  color: #372d25;
+  background: var(--kd-ink-10);
+  color: var(--kd-primary);
   font-size: 12px;
   font-weight: 400;
   font-family: inherit;
@@ -584,13 +584,13 @@ const submitSearch = () => {
 }
 
 .home-filters__chip.is-active {
-  background: #372d25;
-  color: #ffffff;
+  background: var(--kd-primary);
+  color: var(--kd-white);
   font-weight: 700;
 }
 
 .home-filters__chip:focus-visible {
-  outline: 2px solid #372d25;
+  outline: 2px solid var(--kd-primary);
   outline-offset: 2px;
 }
 
@@ -604,7 +604,7 @@ const submitSearch = () => {
 .home-empty {
   margin: 1.5rem 0 0;
   text-align: center;
-  color: #1e1e1e;
+  color: var(--kd-ink);
   font-size: 14px;
 }
 
@@ -613,8 +613,8 @@ const submitSearch = () => {
   min-height: 100px;
   overflow: hidden;
   border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 0 8px rgb(0 0 0 / 0.1);
+  background: var(--kd-white);
+  box-shadow: 0 0 8px var(--kd-shadow);
 }
 
 .cafe-card__photo {
@@ -640,7 +640,7 @@ const submitSearch = () => {
 .cafe-card__stars {
   display: flex;
   gap: 2px;
-  color: #000000;
+  color: var(--kd-black);
 }
 
 .cafe-card__status {
@@ -651,16 +651,16 @@ const submitSearch = () => {
 }
 
 .cafe-card__status.is-open {
-  color: #7b9e87;
+  color: var(--kd-success);
 }
 
 .cafe-card__status.is-closed {
-  color: #cb8e8e;
+  color: var(--kd-destructive);
 }
 
 .cafe-card h2 {
   margin: 3px 0 0;
-  color: #372d25;
+  color: var(--kd-primary);
   font-size: 16px;
   font-weight: 700;
   line-height: 1.375;
@@ -669,7 +669,7 @@ const submitSearch = () => {
 .cafe-card__address {
   margin: 0;
   overflow: hidden;
-  color: #1e1e1e;
+  color: var(--kd-ink);
   font-size: 12px;
   line-height: 1.35;
   white-space: nowrap;
@@ -682,11 +682,11 @@ const submitSearch = () => {
   align-items: center;
   gap: 3px;
   margin: 8px 0 0;
-  color: #1e1e1e;
+  color: var(--kd-ink);
 }
 
 .cafe-card__none {
-  color: rgb(30 30 30 / 0.25);
+  color: var(--kd-ink-25);
   font-size: 10px;
   font-style: italic;
 }
@@ -702,7 +702,7 @@ const submitSearch = () => {
   align-items: center;
   height: calc(100px + env(safe-area-inset-bottom));
   padding: 0 12px env(safe-area-inset-bottom);
-  background: rgb(255 255 255 / 0.8);
+  background: var(--kd-white-80);
   backdrop-filter: blur(4px);
 }
 
@@ -712,12 +712,12 @@ const submitSearch = () => {
   height: 48px;
   border: 0;
   background: transparent;
-  color: rgb(55 45 37 / 0.25);
+  color: var(--kd-primary-25);
   cursor: pointer;
 }
 
 .home-tabbar__item.is-active {
-  color: #ffffff;
+  color: var(--kd-white);
 }
 
 .home-tabbar__icon {
@@ -727,7 +727,7 @@ const submitSearch = () => {
   width: 30px;
   height: 30px;
   border-radius: 5px;
-  background: #372d25;
+  background: var(--kd-primary);
 }
 
 .home-tabbar__icon::after {
@@ -738,11 +738,11 @@ const submitSearch = () => {
   width: 30px;
   height: 5px;
   border-radius: 5px;
-  background: #372d25;
+  background: var(--kd-primary);
 }
 
 .home-tabbar__item:focus-visible {
-  outline: 2px solid #372d25;
+  outline: 2px solid var(--kd-primary);
   outline-offset: 3px;
   border-radius: 8px;
 }
@@ -766,7 +766,7 @@ const submitSearch = () => {
 }
 
 ::selection {
-  background: #ece6db;
-  color: #372d25;
+  background: var(--kd-secondary);
+  color: var(--kd-primary);
 }
 </style>

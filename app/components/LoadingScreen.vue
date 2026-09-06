@@ -32,7 +32,7 @@ import logo from '~/assets/css/logos/kapedoko-logo-typography.svg'
   width: 100%;
   min-height: 100dvh;
   height: 100dvh;
-  background-color: #ffffff; /* White background as per design */
+  background-color: var(--kd-white); /* White background as per design */
 }
 
 .loading-content {
@@ -54,7 +54,7 @@ import logo from '~/assets/css/logos/kapedoko-logo-typography.svg'
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background-color: #372d25; /* Dark brown color */
+  background-color: var(--kd-primary); /* Dark brown color */
   animation: pulse 1.5s infinite ease-in-out;
 }
 

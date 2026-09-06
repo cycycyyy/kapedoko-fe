@@ -1,0 +1,71 @@
+/* KapeDoko color tokens from Figma Brand Guide (file: KapeDoko). */
+
+:root {
+  /* Primitives — Brand Guide swatches */
+  --kd-primary: #372d25;
+  --kd-gray: #cccccc;
+  --kd-secondary: #ece6db;
+  --kd-success: #7b9e87;
+  --kd-destructive: #cb8e8e;
+  --kd-ink: #1e1e1e; /* Default Text Color */
+  --kd-white: #ffffff;
+  --kd-black: #000000;
+
+  /* Recurring UI fill in screens; not a Brand Guide swatch */
+  --kd-placeholder: #d9d9d9;
+
+  /* Screen opacities used on ink / primary / white */
+  --kd-ink-50: color-mix(in srgb, var(--kd-ink) 50%, transparent);
+  --kd-ink-25: color-mix(in srgb, var(--kd-ink) 25%, transparent);
+  --kd-ink-10: color-mix(in srgb, var(--kd-ink) 10%, transparent);
+  --kd-primary-25: color-mix(in srgb, var(--kd-primary) 25%, transparent);
+  --kd-primary-5: color-mix(in srgb, var(--kd-primary) 5%, transparent);
+  --kd-white-80: color-mix(in srgb, var(--kd-white) 80%, transparent);
+  --kd-white-5: color-mix(in srgb, var(--kd-white) 5%, transparent);
+  --kd-shadow: color-mix(in srgb, var(--kd-black) 10%, transparent);
+
+  /* shadcn / Tailwind HSL triplets (space-separated, no hsl()) */
+  --background: 0 0% 100%; /* #FFFFFF */
+  --foreground: 0 0% 12%; /* #1E1E1E */
+
+  --primary: 27 20% 18%; /* #372D25 */
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 39 31% 89%; /* #ECE6DB */
+  --secondary-foreground: 0 0% 12%;
+
+  --muted: 0 0% 80%; /* #CCCCCC */
+  --muted-foreground: 0 0% 45%;
+  --border: 0 0% 80%;
+  --ring: 27 20% 18%;
+  --placeholder: 0 0% 85%; /* #D9D9D9 */
+
+  --success: 141 15% 55%; /* #7B9E87 */
+  --success-foreground: 0 0% 100%;
+
+  --destructive: 0 37% 68%; /* #CB8E8E */
+  --destructive-foreground: 0 0% 100%;
+
+  --gray: 0 0% 80%; /* #CCCCCC */
+  --gray-foreground: 0 0% 12%;
+
+  --input-background: 42 43% 98%;
+  --input-foreground: 27 20% 18%;
+  --input-border: 32 18% 72%;
+  --input-placeholder: 30 10% 46%;
+
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: 0 0% 12%;
+  --foreground: 0 0% 100%;
+  --primary: 27 20% 18%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 39 31% 89%;
+  --secondary-foreground: 0 0% 12%;
+  --muted: 0 0% 45%;
+  --muted-foreground: 0 0% 75%;
+  --border: 0 0% 24%;
+  --ring: 0 0% 39%;
+}

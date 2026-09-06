@@ -55,8 +55,8 @@ const emit = defineEmits<{
   flex-direction: column;
   height: 100%;
   min-height: 100%;
-  background: #ffffff;
-  color: #000000;
+  background: var(--kd-white);
+  color: var(--kd-black);
   padding: max(2.75rem, env(safe-area-inset-top)) 0 max(1.5rem, env(safe-area-inset-bottom));
 }
 
@@ -93,7 +93,7 @@ const emit = defineEmits<{
   font-size: 16px;
   font-weight: 700;
   line-height: 1.375;
-  color: #000000;
+  color: var(--kd-black);
 }
 
 .onboarding-step__dots {
@@ -109,18 +109,18 @@ const emit = defineEmits<{
   padding: 0;
   border: 0;
   border-radius: 999px;
-  background: rgb(30 30 30 / 0.25);
+  background: var(--kd-ink-25);
   cursor: pointer;
   transition: background-color 180ms ease, transform 180ms ease;
 }
 
 .onboarding-step__dot.is-active {
-  background: #372d25;
+  background: var(--kd-primary);
   transform: scale(1.08);
 }
 
 .onboarding-step__dot:focus-visible {
-  outline: 2px solid #372d25;
+  outline: 2px solid var(--kd-primary);
   outline-offset: 3px;
 }
 
@@ -130,8 +130,8 @@ const emit = defineEmits<{
   height: 45px;
   border: 0;
   border-radius: 8px;
-  background: #372d25;
-  color: #ffffff;
+  background: var(--kd-primary);
+  color: var(--kd-white);
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
@@ -147,7 +147,7 @@ const emit = defineEmits<{
 }
 
 .onboarding-step__cta:focus-visible {
-  outline: 2px solid #372d25;
+  outline: 2px solid var(--kd-primary);
   outline-offset: 3px;
 }
 

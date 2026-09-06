@@ -88,7 +88,7 @@ const finish = async () => {
 
 <style scoped>
 .onboarding-content {
-  --background: #ffffff;
+  --background: var(--kd-white);
   --overflow: hidden;
 }
 
@@ -104,7 +104,7 @@ const finish = async () => {
 .onboarding {
   height: 100%;
   min-height: 100%;
-  background: #ffffff;
+  background: var(--kd-white);
 }
 
 .onboarding__track {
@@ -122,7 +122,7 @@ const finish = async () => {
 }
 
 .onboarding__track:focus-visible {
-  box-shadow: inset 0 0 0 2px #372d25;
+  box-shadow: inset 0 0 0 2px var(--kd-primary);
 }
 
 .onboarding__track::-webkit-scrollbar {
