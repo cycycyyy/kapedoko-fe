@@ -30,7 +30,8 @@ import logo from '~/assets/css/logos/kapedoko-logo-typography.svg'
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 100%;
+  min-height: 100dvh;
+  height: 100dvh;
   background-color: #ffffff; /* White background as per design */
 }
 
