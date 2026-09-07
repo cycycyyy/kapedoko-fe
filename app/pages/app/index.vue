@@ -42,6 +42,7 @@
                 name="q"
                 placeholder="Search a coffee shop"
                 autocomplete="off"
+                enterkeyhint="search"
               />
             </label>
 
@@ -49,29 +50,40 @@
               <Search :size="24" :stroke-width="2" />
             </button>
           </form>
-
-          <div
-            ref="featuredTrack"
-            class="home-featured"
-            tabindex="0"
-            role="region"
-            aria-roledescription="carousel"
-            :aria-label="`Featured cafes, slide ${featuredIndex + 1} of ${featured.length}`"
-            @scroll.passive="onFeaturedScroll"
-          >
-            <article
-              v-for="slide in featured"
-              :key="slide.id"
-              class="home-featured__card"
-            >
-              <p class="home-featured__copy">
-                <span>Visit</span>
-                <strong>{{ slide.name }}</strong>
-              </p>
-              <img :src="slide.image" :alt="slide.name" />
-            </article>
-          </div>
         </header>
+
+        <div
+          ref="featuredTrack"
+          class="home-featured"
+          tabindex="0"
+          role="region"
+          aria-roledescription="carousel"
+          :aria-label="`Featured cafes, slide ${featuredIndex + 1} of ${featured.length}`"
+          @scroll.passive="onFeaturedScroll"
+        >
+          <article
+            v-for="slide in featured"
+            :key="slide.id"
+            class="home-featured__card"
+          >
+            <p class="home-featured__copy">
+              <span>Visit</span>
+              <strong>{{ slide.name }}</strong>
+            </p>
+            <div
+              class="home-featured__media"
+              :class="{ 'is-broken': brokenImages.has(slide.id) }"
+            >
+              <img
+                :src="slide.image"
+                :alt="slide.name"
+                width="171"
+                height="100"
+                @error="markBroken(slide.id)"
+              />
+            </div>
+          </article>
+        </div>
 
         <div class="home-dots" role="tablist" aria-label="Featured cafes">
           <button
@@ -96,56 +108,70 @@
             class="home-filters__chip"
             :class="{ 'is-active': activeFilter === filter.id }"
             :aria-selected="activeFilter === filter.id"
-            @click="activeFilter = filter.id"
+            @click="setFilter(filter.id)"
           >
             {{ filter.label }}
           </button>
         </div>
 
-        <section class="home-list" aria-label="Cafes">
-          <p v-if="visibleCafes.length === 0" class="home-empty">
-            No coffee shops match that search.
-          </p>
+        <Transition name="cafe-list" mode="out-in">
+          <section :key="listKey" class="home-list" aria-label="Cafes">
+            <p v-if="visibleCafes.length === 0" class="home-empty">
+              No coffee shops match that search.
+            </p>
 
-          <article
-            v-for="cafe in visibleCafes"
-            :key="cafe.id"
-            class="cafe-card"
-          >
-            <img class="cafe-card__photo" :src="cafe.image" :alt="cafe.name" />
-
-            <div class="cafe-card__body">
-              <div class="cafe-card__meta">
-                <div class="cafe-card__stars" aria-label="Rating 5 out of 5">
-                  <Star
-                    v-for="n in 5"
-                    :key="n"
-                    :size="12"
-                    :stroke-width="2"
-                  />
-                </div>
-                <p
-                  class="cafe-card__status"
-                  :class="cafe.open ? 'is-open' : 'is-closed'"
-                >
-                  {{ cafe.status }}
-                </p>
+            <article
+              v-for="cafe in visibleCafes"
+              :key="cafe.id"
+              class="cafe-card"
+            >
+              <div
+                class="cafe-card__photo"
+                :class="{ 'is-broken': brokenImages.has(cafe.id) }"
+              >
+                <img
+                  :src="cafe.image"
+                  :alt="cafe.name"
+                  width="90"
+                  height="100"
+                  @error="markBroken(cafe.id)"
+                />
               </div>
 
-              <h2>{{ cafe.name }}</h2>
-              <p class="cafe-card__address">{{ cafe.address }}</p>
+              <div class="cafe-card__body">
+                <div class="cafe-card__meta">
+                  <div class="cafe-card__stars" aria-label="Rating 5 out of 5">
+                    <Star
+                      v-for="n in 5"
+                      :key="n"
+                      :size="12"
+                      :stroke-width="1.75"
+                      fill="currentColor"
+                    />
+                  </div>
+                  <p
+                    class="cafe-card__status"
+                    :class="cafe.open ? 'is-open' : 'is-closed'"
+                  >
+                    {{ cafe.status }}
+                  </p>
+                </div>
 
-              <p v-if="cafe.amenities === 'none'" class="cafe-card__none">
-                <Ban :size="14" :stroke-width="2" aria-hidden="true" />
-                No WiFi or Power Outlets
-              </p>
-              <p v-else class="cafe-card__amenities">
-                <Wifi v-if="cafe.amenities.includes('wifi')" :size="14" :stroke-width="2" aria-label="WiFi" />
-                <Plug v-if="cafe.amenities.includes('plug')" :size="14" :stroke-width="2" aria-label="Power outlets" />
-              </p>
-            </div>
-          </article>
-        </section>
+                <h2>{{ cafe.name }}</h2>
+                <p class="cafe-card__address">{{ cafe.address }}</p>
+
+                <p v-if="cafe.amenities === 'none'" class="cafe-card__none">
+                  <Ban :size="14" :stroke-width="2" aria-hidden="true" />
+                  No WiFi or Power Outlets
+                </p>
+                <p v-else class="cafe-card__amenities">
+                  <Wifi v-if="cafe.amenities.includes('wifi')" :size="14" :stroke-width="2" aria-label="WiFi" />
+                  <Plug v-if="cafe.amenities.includes('plug')" :size="14" :stroke-width="2" aria-label="Power outlets" />
+                </p>
+              </div>
+            </article>
+          </section>
+        </Transition>
       </div>
     </IonContent>
 
@@ -209,17 +235,17 @@ const featured = [
   {
     id: 'f1',
     name: 'Yardstick Coffee',
-    image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=640&h=400&fit=crop',
+    image: '/assets/cafes/yardstick.jpg',
   },
   {
     id: 'f2',
     name: 'The Coffee Academics',
-    image: 'https://images.unsplash.com/photo-1442512595331-e89e73853f31?w=640&h=400&fit=crop',
+    image: '/assets/cafes/academics.jpg',
   },
   {
     id: 'f3',
     name: 'Wildflour Cafe + Bakery',
-    image: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=640&h=400&fit=crop',
+    image: '/assets/cafes/wildflour.jpg',
   },
 ]
 
@@ -228,7 +254,7 @@ const cafes: Cafe[] = [
     id: 'c1',
     name: 'Toby’s Estate',
     address: 'BGC High Street, Taguig City',
-    image: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=360&h=400&fit=crop',
+    image: '/assets/cafes/tobys.jpg',
     open: true,
     status: 'Open',
     amenities: ['wifi', 'plug'],
@@ -238,7 +264,7 @@ const cafes: Cafe[] = [
     id: 'c2',
     name: 'Commune Cafe + Bar',
     address: 'Poblacion, Makati City',
-    image: 'https://images.unsplash.com/photo-1521017432531-fbd92d768814?w=360&h=400&fit=crop',
+    image: '/assets/cafes/commune.jpg',
     open: true,
     status: 'Open',
     amenities: ['plug'],
@@ -248,7 +274,7 @@ const cafes: Cafe[] = [
     id: 'c3',
     name: 'Single Origin',
     address: 'Salcedo Village, Makati City',
-    image: 'https://images.unsplash.com/photo-1453614512568-7af2bf07b0e3?w=360&h=400&fit=crop',
+    image: '/assets/cafes/single-origin.jpg',
     open: false,
     status: 'Closed, opens at 9:00am',
     amenities: ['wifi', 'plug'],
@@ -258,7 +284,7 @@ const cafes: Cafe[] = [
     id: 'c4',
     name: 'KapeTayo',
     address: 'Katipunan Ave, Quezon City',
-    image: 'https://images.unsplash.com/photo-1511081692771-860bee350475?w=360&h=400&fit=crop',
+    image: '/assets/cafes/kapetayo.jpg',
     open: true,
     status: 'Open',
     amenities: 'none',
@@ -271,6 +297,9 @@ const submittedQuery = ref('')
 const activeFilter = ref<FilterId>('near')
 const featuredIndex = ref(0)
 const featuredTrack = ref<HTMLElement | null>(null)
+const brokenImages = ref<Set<string>>(new Set())
+
+const listKey = computed(() => `${activeFilter.value}|${submittedQuery.value}`)
 
 const visibleCafes = computed(() => {
   const term = submittedQuery.value.trim().toLowerCase()
@@ -298,7 +327,9 @@ const featuredStep = () => {
   const track = featuredTrack.value
   const card = track?.querySelector<HTMLElement>('.home-featured__card')
   if (!track || !card) return 0
-  return card.offsetWidth + 20
+  const styles = getComputedStyle(track)
+  const gap = Number.parseFloat(styles.columnGap || styles.gap) || 20
+  return card.offsetWidth + gap
 }
 
 const goToFeatured = (index: number) => {
@@ -328,17 +359,33 @@ const onFeaturedScroll = () => {
 const submitSearch = () => {
   submittedQuery.value = query.value
 }
+
+const setFilter = (id: FilterId) => {
+  activeFilter.value = id
+}
+
+const markBroken = (id: string) => {
+  const next = new Set(brokenImages.value)
+  next.add(id)
+  brokenImages.value = next
+}
 </script>
 
 <style scoped>
 .home-content {
   --background: var(--kd-white);
+  --padding-start: 0;
+  --padding-end: 0;
+  --padding-top: 0;
+  --padding-bottom: 0;
 }
 
 .home {
   min-height: 100%;
   background: var(--kd-white);
   padding-bottom: calc(7.25rem + env(safe-area-inset-bottom));
+  container-type: inline-size;
+  container-name: home;
 }
 
 .home-hero {
@@ -346,7 +393,7 @@ const submitSearch = () => {
   overflow: hidden;
   background: var(--kd-primary);
   color: var(--kd-white);
-  padding: max(2.75rem, env(safe-area-inset-top)) 20px 0;
+  padding: max(2.75rem, calc(env(safe-area-inset-top) + 16px)) 20px 71px;
 }
 
 .home-hero__watermark {
@@ -393,14 +440,16 @@ const submitSearch = () => {
 .home-hero__bell {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
-  margin-right: -6px;
+  width: 44px;
+  height: 44px;
+  margin-right: -10px;
   padding: 0;
   border: 0;
   background: transparent;
   color: var(--kd-white);
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .home-hero__bell:focus-visible {
@@ -413,7 +462,9 @@ const submitSearch = () => {
   position: relative;
   z-index: 1;
   display: flex;
-  gap: 10px;
+  align-items: stretch;
+  flex-wrap: nowrap;
+  gap: 9px;
   margin-top: 21px;
 }
 
@@ -440,6 +491,11 @@ const submitSearch = () => {
   caret-color: var(--kd-primary);
 }
 
+.home-search__field input::-webkit-search-decoration,
+.home-search__field input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+
 .home-search__field input::placeholder {
   color: var(--kd-ink-50);
 }
@@ -453,18 +509,25 @@ const submitSearch = () => {
 }
 
 .home-search__submit {
+  display: grid;
+  place-items: center;
   flex: 0 0 63px;
   width: 63px;
   height: 50px;
+  padding: 0;
   border: 0;
   border-radius: 8px;
   background: var(--kd-white);
   color: var(--kd-primary);
+  line-height: 0;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 140ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.home-search__submit:hover {
-  opacity: 0.92;
+.home-search__submit :deep(svg) {
+  display: block;
 }
 
 .home-search__submit:focus-visible {
@@ -476,12 +539,15 @@ const submitSearch = () => {
   position: relative;
   z-index: 1;
   display: flex;
+  gap: 20px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
+  scroll-padding-inline: 20px;
   scrollbar-width: none;
-  margin: 14px -20px 0;
-  padding: 0 20px 18px;
+  margin: -57px 0 0;
+  padding: 0 20px;
   outline: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 .home-featured::-webkit-scrollbar {
@@ -489,11 +555,9 @@ const submitSearch = () => {
 }
 
 .home-featured__card {
-  flex: 0 0 calc(100vw - 40px);
-  width: calc(100vw - 40px);
-  max-width: 350px;
+  flex: 0 0 calc(100cqi - 40px);
+  width: calc(100cqi - 40px);
   height: 100px;
-  margin-right: 20px;
   display: flex;
   overflow: hidden;
   border-radius: 8px;
@@ -503,11 +567,17 @@ const submitSearch = () => {
   scroll-snap-stop: always;
 }
 
+.home-featured__card:focus-visible {
+  outline: 2px solid var(--kd-white);
+  outline-offset: -4px;
+}
+
 .home-featured__copy {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  width: 179px;
+  flex: 1;
+  min-width: 0;
   margin: 0;
   padding: 0 22px;
   color: var(--kd-primary);
@@ -520,20 +590,37 @@ const submitSearch = () => {
 }
 
 .home-featured__copy strong {
+  display: -webkit-box;
+  overflow: hidden;
   font-weight: 700;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
-.home-featured__card img {
-  width: 171px;
+.home-featured__media {
+  flex: 0 0 49%;
+  width: 49%;
+  max-width: 171px;
+  height: 100%;
+  background: var(--kd-secondary);
+}
+
+.home-featured__media img {
+  display: block;
+  width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.home-featured__media.is-broken img {
+  display: none;
 }
 
 .home-dots {
   display: flex;
   justify-content: center;
   gap: 4px;
-  padding: 12px 0 8px;
+  padding: 11px 0 12px;
 }
 
 .home-dots__dot {
@@ -544,10 +631,13 @@ const submitSearch = () => {
   border-radius: 999px;
   background: var(--kd-placeholder);
   cursor: pointer;
+  transition: background-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .home-dots__dot.is-active {
   background: var(--kd-primary);
+  transform: scale(1.12);
 }
 
 .home-dots__dot:focus-visible {
@@ -560,7 +650,8 @@ const submitSearch = () => {
   gap: 10px;
   overflow-x: auto;
   scrollbar-width: none;
-  padding: 8px 20px 14px;
+  padding: 0 20px 14px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .home-filters::-webkit-scrollbar {
@@ -581,6 +672,10 @@ const submitSearch = () => {
   font-family: inherit;
   cursor: pointer;
   white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .home-filters__chip.is-active {
@@ -611,17 +706,30 @@ const submitSearch = () => {
 .cafe-card {
   display: flex;
   min-height: 100px;
-  overflow: hidden;
   border-radius: 8px;
   background: var(--kd-white);
   box-shadow: 0 0 8px var(--kd-shadow);
+  transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .cafe-card__photo {
   width: 90px;
   height: 100px;
   flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 8px 0 0 8px;
+  background: var(--kd-secondary);
+}
+
+.cafe-card__photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
+}
+
+.cafe-card__photo.is-broken img {
+  display: none;
 }
 
 .cafe-card__body {
@@ -639,14 +747,21 @@ const submitSearch = () => {
 
 .cafe-card__stars {
   display: flex;
+  flex-shrink: 0;
   gap: 2px;
   color: var(--kd-black);
 }
 
 .cafe-card__status {
   margin: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
   font-size: 10px;
   font-weight: 700;
+  line-height: 1.2;
+  text-align: right;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -700,6 +815,7 @@ const submitSearch = () => {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   align-items: center;
+  width: 100%;
   height: calc(100px + env(safe-area-inset-bottom));
   padding: 0 12px env(safe-area-inset-bottom);
   background: var(--kd-white-80);
@@ -714,6 +830,9 @@ const submitSearch = () => {
   background: transparent;
   color: var(--kd-primary-25);
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .home-tabbar__item.is-active {
@@ -747,6 +866,27 @@ const submitSearch = () => {
   border-radius: 8px;
 }
 
+.home-hero__bell:active,
+.home-search__submit:active,
+.home-filters__chip:active,
+.home-tabbar__item:active {
+  transform: scale(0.94);
+}
+
+.cafe-card:active {
+  transform: scale(0.99);
+}
+
+.cafe-list-enter-active,
+.cafe-list-leave-active {
+  transition: opacity 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cafe-list-enter-from,
+.cafe-list-leave-to {
+  opacity: 0;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -759,9 +899,48 @@ const submitSearch = () => {
   border: 0;
 }
 
+@media (hover: hover) {
+  .home-search__submit:hover {
+    opacity: 0.92;
+  }
+
+  .home-filters__chip:hover:not(.is-active) {
+    background: color-mix(in srgb, var(--kd-ink) 16%, transparent);
+  }
+}
+
+@media (min-width: 540px) {
+  .home,
+  .home-tabbar {
+    max-width: 480px;
+    margin-inline: auto;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .home-featured {
     scroll-behavior: auto;
+    scroll-snap-type: x proximity;
+  }
+
+  .home-hero__bell,
+  .home-search__submit,
+  .home-dots__dot,
+  .home-filters__chip,
+  .cafe-card,
+  .home-tabbar__item,
+  .cafe-list-enter-active,
+  .cafe-list-leave-active {
+    transition-duration: 1ms;
+  }
+
+  .home-dots__dot.is-active,
+  .home-hero__bell:active,
+  .home-search__submit:active,
+  .home-filters__chip:active,
+  .home-tabbar__item:active,
+  .cafe-card:active {
+    transform: none;
   }
 }
 
