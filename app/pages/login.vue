@@ -61,6 +61,7 @@ definePageMeta({
 });
 
 const supabase = useSupabaseClient();
+const redirect = useSupabaseCookieRedirect();
 
 const email = ref('');
 const password = ref('');
@@ -82,7 +83,8 @@ const handleLogin = async () => {
       return;
     }
 
-    await navigateTo('/app');
+    const path = redirect.pluck()
+    await navigateTo(path || '/app');
   } catch (err: unknown) {
     error.value = err instanceof Error ? err.message : 'Unable to sign in.';
   } finally {

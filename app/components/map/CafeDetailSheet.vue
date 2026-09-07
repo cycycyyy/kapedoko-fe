@@ -83,11 +83,11 @@
 
       <div class="cafe-detail__scroll">
         <div class="cafe-detail__gallery">
-          <div class="cafe-detail__hero" :class="{ 'is-broken': broken.hero }">
+          <div class="cafe-detail__hero" :class="{ 'is-mark': heroIsMark }">
             <img
-              :src="heroPhoto"
-              :alt="`${cafe.name} interior`"
-              @error="broken['hero'] = true"
+              :src="heroSrc"
+              :alt="heroIsMark ? '' : `${cafe.name} interior`"
+              @error="onHeroError"
             />
           </div>
           <div v-if="photos.length > 1" class="cafe-detail__thumbs" role="group" aria-label="Cafe photos">
@@ -212,6 +212,7 @@
 <script lang="ts" setup>
 import { Coffee, Navigation, Phone, Plug, Star, Wifi } from 'lucide-vue-next'
 import type { Cafe } from '~/types/cafe'
+import { isKapedokoMark, KAPEDOKO_MARK_SRC } from '~/utils/logo'
 
 const SHEET_HEIGHT = 0.88
 const PEEK_VIEWPORT = 0.62
@@ -243,6 +244,12 @@ const photos = computed(() => {
 })
 
 const heroPhoto = computed(() => photos.value[activePhoto.value] ?? photos.value[0])
+const heroIsMark = computed(() => Boolean(broken.value.hero) || isKapedokoMark(heroPhoto.value))
+const heroSrc = computed(() => (heroIsMark.value ? KAPEDOKO_MARK_SRC : heroPhoto.value))
+
+const onHeroError = () => {
+  if (!isKapedokoMark(heroPhoto.value)) broken.value.hero = true
+}
 
 const hasWifi = computed(
   () => props.cafe && props.cafe.amenities !== 'none' && props.cafe.amenities.includes('wifi'),
@@ -468,6 +475,21 @@ const onDismiss = () => emit('update:open', false)
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.cafe-detail__hero.is-mark {
+  background:
+    radial-gradient(
+      circle at 50% 38%,
+      color-mix(in srgb, var(--kd-white) 78%, transparent) 0%,
+      transparent 62%
+    ),
+    var(--kd-secondary);
+}
+
+.cafe-detail__hero.is-mark img {
+  object-fit: contain;
+  padding: 36px 48px;
 }
 
 .cafe-detail__hero.is-broken,

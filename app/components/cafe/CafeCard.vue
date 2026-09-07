@@ -4,13 +4,13 @@
     :class="{ 'is-selected': selected }"
     :aria-current="selected ? 'true' : undefined"
   >
-    <div class="cafe-card__photo" :class="{ 'is-broken': broken }">
+    <div class="cafe-card__photo" :class="{ 'is-mark': useMark }">
       <img
-        :src="cafe.image"
-        :alt="cafe.name"
+        :src="photoSrc"
+        :alt="useMark ? '' : cafe.name"
         width="90"
         height="100"
-        @error="broken = true"
+        @error="onPhotoError"
       />
     </div>
 
@@ -41,7 +41,7 @@
         <Ban :size="14" :stroke-width="2" aria-hidden="true" />
         No WiFi or Power Outlets
       </p>
-      <p v-else class="cafe-card__amenities">
+      <p v-else-if="cafe.amenities.length" class="cafe-card__amenities">
         <span v-if="cafe.amenities.includes('wifi')" class="cafe-card__amenity">
           <Wifi :size="14" :stroke-width="2" aria-hidden="true" />
           WiFi
@@ -58,14 +58,21 @@
 <script lang="ts" setup>
 import { Ban, Plug, Star, Wifi } from 'lucide-vue-next'
 import type { Cafe } from '~/types/cafe'
+import { isKapedokoMark, KAPEDOKO_MARK_SRC } from '~/utils/logo'
 
-defineProps<{
+const props = defineProps<{
   cafe: Pick<Cafe, 'name' | 'address' | 'image' | 'open' | 'status' | 'amenities' | 'rating'>
   selected?: boolean
   distanceLabel?: string
 }>()
 
 const broken = ref(false)
+const useMark = computed(() => broken.value || isKapedokoMark(props.cafe.image))
+const photoSrc = computed(() => (useMark.value ? KAPEDOKO_MARK_SRC : props.cafe.image))
+
+const onPhotoError = () => {
+  if (!isKapedokoMark(props.cafe.image)) broken.value = true
+}
 </script>
 
 <style scoped>
@@ -94,6 +101,15 @@ const broken = ref(false)
   background: var(--kd-secondary);
 }
 
+.cafe-card__photo.is-mark {
+  background-color: var(--kd-secondary);
+  background-image: radial-gradient(
+    circle at 50% 32%,
+    color-mix(in srgb, var(--kd-white) 78%, transparent) 0%,
+    transparent 58%
+  );
+}
+
 .cafe-card__photo img {
   display: block;
   width: 100%;
@@ -101,8 +117,19 @@ const broken = ref(false)
   object-fit: cover;
 }
 
-.cafe-card__photo.is-broken img {
-  display: none;
+.cafe-card__photo.is-mark img {
+  object-fit: contain;
+  object-position: center 46%;
+  padding: 14px 16px 12px;
+}
+
+.cafe-card.is-selected .cafe-card__photo.is-mark {
+  background-color: color-mix(in srgb, var(--kd-primary) 7%, var(--kd-white));
+  background-image: radial-gradient(
+    circle at 50% 32%,
+    color-mix(in srgb, var(--kd-white) 90%, transparent) 0%,
+    transparent 58%
+  );
 }
 
 .cafe-card__body {

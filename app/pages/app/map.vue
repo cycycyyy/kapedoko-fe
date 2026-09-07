@@ -86,7 +86,7 @@
             Finding your location…
           </p>
 
-          <p v-else class="map-demo" role="note">Demo cafes for preview</p>
+          <p v-else-if="source === 'demo'" class="map-demo" role="note">Demo cafes for preview</p>
 
           <div v-if="tilesFailed" class="map-error" role="alert">
             <p>Map tiles couldn’t load. Check your connection, then try again.</p>
@@ -149,11 +149,12 @@ import CafeDetailSheet from '~/components/map/CafeDetailSheet.vue'
 import AppTabBar from '~/components/navigation/AppTabBar.vue'
 import { cafesNear, filterCafes } from '~/data/mock-cafes'
 import type { Cafe } from '~/types/cafe'
-import { distanceMeters, formatDistance } from '~/utils/geo'
+import { distanceMeters, formatDistance, SEARCH_RADIUS_M } from '~/utils/geo'
 
 const ionRouter = useIonRouter()
 const { status: locationStatus, location, usingFallback, center, requestLocation } =
   useDeviceLocation()
+const { cafes: liveCafes, source } = useApprovedShops()
 
 const query = ref('')
 const submittedQuery = ref('')
@@ -175,7 +176,15 @@ const showTabBar = computed(() => !mapSettled.value)
 const mapCenter = computed(() => (location.value ? center.value : null))
 const accuracy = computed(() => location.value?.accuracy ?? 0)
 
-const cafes = computed(() => (mapCenter.value ? cafesNear(mapCenter.value) : []))
+const cafes = computed(() => {
+  if (!mapCenter.value) return []
+  if (source.value === 'live' && liveCafes.value.length) {
+    return liveCafes.value.filter(
+      (cafe) => distanceMeters(mapCenter.value!, cafe) <= SEARCH_RADIUS_M,
+    )
+  }
+  return cafesNear(mapCenter.value)
+})
 const visibleCafes = computed(() => filterCafes(cafes.value, submittedQuery.value))
 const selectedCafe = computed(
   () => cafes.value.find((cafe) => cafe.id === selectedId.value) ?? null,
