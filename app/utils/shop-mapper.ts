@@ -1,7 +1,7 @@
 import type { Amenity, Cafe } from '../types/cafe'
-import type { ShopReviewStatsRow, ShopRow } from '../types/shop'
+import type { MarkerTier, ShopReviewStatsRow, ShopRow } from '../types/shop'
 import { formatHoursHint, isOpenNow } from './hours'
-import { KAPEDOKO_MARK_SRC } from './logo'
+import { isKapedokoMark, KAPEDOKO_MARK_SRC } from './logo'
 
 const REVIEW_THRESHOLD = 3
 const AMENITY_YES_PCT = 50
@@ -56,10 +56,19 @@ export function ratingFromStats(stats?: ShopReviewStatsRow | null): { rating: nu
   }
 }
 
+export function shopLogoUrl(
+  shop: Pick<ShopRow, 'logo_object_key' | 'cover_photo_url'>,
+  publicBase?: string,
+): string | null {
+  const url = shopImageUrl(shop, publicBase)
+  return isKapedokoMark(url) ? null : url
+}
+
 export function mapShopToCafe(
   shop: ShopRow,
   stats?: ShopReviewStatsRow | null,
   publicBase?: string,
+  markerTier: MarkerTier = 'standard',
 ): Cafe {
   const image = shopImageUrl(shop, publicBase)
   const open = isOpenNow(shop.hours)
@@ -84,5 +93,6 @@ export function mapShopToCafe(
     reviews: [],
     lat: Number(shop.latitude),
     lng: Number(shop.longitude),
+    markerTier,
   }
 }

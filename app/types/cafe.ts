@@ -1,3 +1,5 @@
+import type { MarkerTier } from './shop'
+
 export type Amenity = 'wifi' | 'plug'
 
 export interface LatLng {
@@ -38,4 +40,5 @@ export interface Cafe {
   reviews: CafeReview[]
   lat: number
   lng: number
+  markerTier: MarkerTier
 }

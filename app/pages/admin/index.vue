@@ -52,6 +52,39 @@
             <p class="admin__meta">Pinned at {{ shop.latitude.toFixed(5) }}, {{ shop.longitude.toFixed(5) }}</p>
             <p v-if="shop.rejection_reason" class="admin__reason">{{ shop.rejection_reason }}</p>
 
+            <form
+              v-if="shop.status === 'approved'"
+              class="admin__placement"
+              @submit.prevent="onSavePin(shop)"
+            >
+              <p class="admin__meta">Live pin: {{ markerTierFor(shop.id) }}</p>
+              <label class="admin__field">
+                <span>Map pin</span>
+                <select v-model="draftFor(shop).tier">
+                  <option value="standard">Standard</option>
+                  <option value="partner">Partner</option>
+                  <option value="promoted">Promoted</option>
+                </select>
+              </label>
+              <div v-if="draftFor(shop).tier !== 'standard'" class="admin__dates">
+                <label class="admin__field">
+                  <span>Starts</span>
+                  <input v-model="draftFor(shop).startsAt" type="datetime-local" required />
+                </label>
+                <label class="admin__field">
+                  <span>Ends</span>
+                  <input v-model="draftFor(shop).endsAt" type="datetime-local" required />
+                </label>
+              </div>
+              <button
+                type="submit"
+                class="admin__approve"
+                :disabled="savingId === shop.id"
+              >
+                Save pin
+              </button>
+            </form>
+
             <div v-if="shop.status === 'pending'" class="admin__actions">
               <button
                 type="button"
@@ -78,16 +111,25 @@
 </template>
 
 <script lang="ts" setup>
-import type { ShopRow, ShopStatus } from '~/types/shop'
+import type { MarkerTier, ShopRow, ShopStatus } from '~/types/shop'
 import { summarizeHours } from '~/utils/hours'
 import { isKapedokoMark } from '~/utils/logo'
+import { isPlacementActive } from '~/utils/marker-tier'
 import { shopImageUrl } from '~/utils/shop-mapper'
 
 type FilterId = ShopStatus
 
-const { shops, status, error, savingId, moderate } = useAdminShops()
+interface PlacementDraft {
+  tier: MarkerTier
+  startsAt: string
+  endsAt: string
+}
+
+const { shops, status, error, savingId, moderate, markerTierFor, savePlacement, placementsByShop } =
+  useAdminShops()
 const config = useRuntimeConfig()
 const publicBase = String(config.public.r2PublicBaseUrl || '')
+const drafts = reactive<Record<string, PlacementDraft>>({})
 
 const logoSrc = (shop: ShopRow) => {
   const url = shopImageUrl(shop, publicBase)
@@ -102,6 +144,40 @@ const filters: { id: FilterId; label: string }[] = [
 
 const visible = computed(() => shops.value.filter((shop) => shop.status === activeFilter.value))
 
+const pad = (value: number) => String(value).padStart(2, '0')
+
+const toLocalInput = (date: Date) =>
+  `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+
+const defaultDraft = (shop: ShopRow): PlacementDraft => {
+  const now = new Date()
+  const end = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+  const active = (placementsByShop.value.get(shop.id) ?? []).find((row) => isPlacementActive(row))
+  return {
+    tier: markerTierFor(shop.id),
+    startsAt: toLocalInput(active ? new Date(active.starts_at) : now),
+    endsAt: toLocalInput(active ? new Date(active.ends_at) : end),
+  }
+}
+
+const draftFor = (shop: ShopRow) => {
+  const current = drafts[shop.id]
+  if (current) return current
+  const next = defaultDraft(shop)
+  drafts[shop.id] = next
+  return next
+}
+
+watch(
+  [shops, placementsByShop],
+  () => {
+    for (const shop of shops.value) {
+      if (!drafts[shop.id]) drafts[shop.id] = defaultDraft(shop)
+    }
+  },
+  { immediate: true },
+)
+
 const onApprove = async (shop: ShopRow) => {
   await moderate(shop, 'approved')
 }
@@ -110,6 +186,12 @@ const onReject = async (shop: ShopRow) => {
   const reason = window.prompt('Why is this listing being rejected?', '')
   if (reason == null) return
   await moderate(shop, 'rejected', reason)
+}
+
+const onSavePin = async (shop: ShopRow) => {
+  const draft = draftFor(shop)
+  await savePlacement(shop, draft.tier, draft.startsAt, draft.endsAt)
+  drafts[shop.id] = defaultDraft(shop)
 }
 </script>
 
@@ -257,6 +339,48 @@ const onReject = async (shop: ShopRow) => {
 .admin__approve:disabled,
 .admin__reject:disabled {
   opacity: 0.55;
+}
+
+.admin__placement {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.admin__dates {
+  display: grid;
+  gap: 10px;
+}
+
+.admin__field {
+  display: grid;
+  gap: 4px;
+  color: var(--kd-primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.admin__field select,
+.admin__field input {
+  height: 50px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--kd-secondary);
+  color: var(--kd-ink);
+  font-size: 12px;
+  font-weight: 400;
+  font-family: inherit;
+}
+
+.admin__field select:focus-visible,
+.admin__field input:focus-visible {
+  outline: 2px solid var(--kd-primary);
+  outline-offset: 2px;
+}
+
+.admin__placement .admin__approve {
+  width: 100%;
 }
 
 @media (min-width: 540px) {

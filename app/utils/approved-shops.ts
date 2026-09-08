@@ -1,6 +1,6 @@
 import type { Cafe } from '../types/cafe'
 import type { GeoBounds } from './geography'
-import type { ShopReviewStatsRow, ShopRow } from '../types/shop'
+import type { MarkerTier, ShopMarkerTierRow, ShopReviewStatsRow, ShopRow } from '../types/shop'
 import { mapShopToCafe } from './shop-mapper'
 
 export const APPROVED_SHOP_COLUMNS =
@@ -47,14 +47,19 @@ export async function fetchApprovedCafes(
   if (!approved.length) return []
 
   const ids = approved.map((shop) => shop.id)
-  const { data: stats } = await supabase
-    .from('shop_review_stats')
-    .select('*')
-    .in('shop_id', ids)
+  const [{ data: stats }, { data: tiers }] = await Promise.all([
+    supabase.from('shop_review_stats').select('*').in('shop_id', ids),
+    supabase.from('shop_marker_tiers').select('shop_id, marker_tier').in('shop_id', ids),
+  ])
 
   const statsById = new Map(
     ((stats ?? []) as ShopReviewStatsRow[]).map((row) => [row.shop_id, row]),
   )
+  const tierById = new Map(
+    ((tiers ?? []) as ShopMarkerTierRow[]).map((row) => [row.shop_id, row.marker_tier as MarkerTier]),
+  )
 
-  return approved.map((shop) => mapShopToCafe(shop, statsById.get(shop.id), publicBase))
+  return approved.map((shop) =>
+    mapShopToCafe(shop, statsById.get(shop.id), publicBase, tierById.get(shop.id) ?? 'standard'),
+  )
 }

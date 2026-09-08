@@ -46,10 +46,12 @@ export function useMapCafes() {
       const prev = next.get(cafe.id)
       if (
         prev
-        && prev.lat === cafe.lat
+        &&         prev.lat === cafe.lat
         && prev.lng === cafe.lng
         && prev.name === cafe.name
         && prev.status === cafe.status
+        && prev.markerTier === cafe.markerTier
+        && prev.image === cafe.image
       ) {
         continue
       }

@@ -1,5 +1,24 @@
 export type ShopStatus = 'pending' | 'approved' | 'rejected'
 
+export type MarkerTier = 'standard' | 'partner' | 'promoted'
+
+export type ShopPlacementKind = 'partner' | 'sponsored'
+
+export interface ShopPlacementRow {
+  id: string
+  shop_id: string
+  kind: ShopPlacementKind
+  starts_at: string
+  ends_at: string
+  created_by: string | null
+  created_at: string
+}
+
+export interface ShopMarkerTierRow {
+  shop_id: string
+  marker_tier: MarkerTier
+}
+
 export type DayKey = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
 
 export type DayHours =

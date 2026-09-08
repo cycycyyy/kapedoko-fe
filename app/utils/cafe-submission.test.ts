@@ -19,13 +19,14 @@ import {
 } from './hours'
 import { isValidPhone, optionalPhone } from './phone'
 import { cafeNameError, isValidAddress, isValidCafeName } from './identity'
-import { amenitiesFromStats, shopImageUrl } from './shop-mapper'
+import { amenitiesFromStats, mapShopToCafe, shopImageUrl, shopLogoUrl } from './shop-mapper'
 import { KAPEDOKO_MARK_SRC, logoFileError } from './logo'
 import { formatShopStreet } from './geocode'
 import { authUserId } from './auth'
 import { suggestCafes } from './cafe-search'
 import { googleMapsDirectionsUrl } from './maps'
 import type { Cafe } from '../types/cafe'
+import type { ShopRow } from '../types/shop'
 
 describe('metro manila coverage', () => {
   test('accepts the fallback center', () => {
@@ -196,6 +197,46 @@ describe('shop image urls', () => {
       shopImageUrl(shop, 'https://80fe00aa3cade8afa8a9436eb980192f.r2.cloudflarestorage.com'),
     ).toBe(KAPEDOKO_MARK_SRC)
   })
+
+  test('exposes a logo url only for public assets', () => {
+    expect(shopLogoUrl(shop, 'https://pub-abc.r2.dev')).toBe(
+      'https://pub-abc.r2.dev/shop-logos/user/logo.png',
+    )
+    expect(shopLogoUrl(shop, '')).toBeNull()
+  })
+})
+
+describe('shop to cafe mapping', () => {
+  const shop: ShopRow = {
+    id: 'shop-1',
+    name: 'Yardstick',
+    description: null,
+    address: 'Makati Avenue, Makati City',
+    latitude: 14.5547,
+    longitude: 121.0244,
+    categories: [],
+    hours: null,
+    cover_photo_url: null,
+    logo_object_key: 'shop-logos/user/logo.png',
+    contact_number: null,
+    status: 'approved',
+    submitted_by: null,
+    reviewed_by: null,
+    reviewed_at: null,
+    rejection_reason: null,
+    created_at: '2026-09-09T00:00:00.000Z',
+    updated_at: '2026-09-09T00:00:00.000Z',
+  }
+
+  test('carries the effective marker tier and public logo', () => {
+    const cafe = mapShopToCafe(shop, null, 'https://pub-abc.r2.dev', 'promoted')
+    expect(cafe.markerTier).toBe('promoted')
+    expect(cafe.image).toBe('https://pub-abc.r2.dev/shop-logos/user/logo.png')
+  })
+
+  test('defaults unpaid shops to the standard pin', () => {
+    expect(mapShopToCafe(shop).markerTier).toBe('standard')
+  })
 })
 
 describe('cafe search suggestions', () => {
@@ -215,6 +256,7 @@ describe('cafe search suggestions', () => {
     reviews: [],
     lat,
     lng,
+    markerTier: 'standard',
   })
 
   test('ranks name prefix matches ahead of address hits', () => {

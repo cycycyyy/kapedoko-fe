@@ -189,9 +189,9 @@ import NearbyCafesSheet from '~/components/map/NearbyCafesSheet.vue'
 import CafeDetailSheet from '~/components/map/CafeDetailSheet.vue'
 import AppTabBar from '~/components/navigation/AppTabBar.vue'
 import type { Cafe } from '~/types/cafe'
-import type { GeoBounds } from '~/utils/geography'
 import { cafeMatchesQuery } from '~/utils/cafe-search'
 import { distanceMeters, formatDistance } from '~/utils/geo'
+import { pointInBounds, type GeoBounds } from '~/utils/geography'
 
 const ionRouter = useIonRouter()
 const { status: locationStatus, location, usingFallback, center, requestLocation } =
@@ -215,6 +215,7 @@ const sheetOpen = ref(false)
 const detailOpen = ref(false)
 const listWasOpen = ref(false)
 const selectedId = ref<string | null>(null)
+const viewBounds = ref<GeoBounds | null>(null)
 const mapReady = ref(false)
 const tilesFailed = ref(false)
 const mapEpoch = ref(0)
@@ -236,10 +237,14 @@ const sheetCafes = computed(() => {
 })
 const visibleCafes = computed(() => {
   const selected = cafeById(selectedId.value)
-  if (selected && !viewportCafes.value.some((cafe) => cafe.id === selected.id)) {
-    return [...viewportCafes.value, selected]
+  const bounds = viewBounds.value
+  const inView = bounds
+    ? viewportCafes.value.filter((cafe) => pointInBounds(cafe, bounds))
+    : viewportCafes.value
+  if (selected && !inView.some((cafe) => cafe.id === selected.id)) {
+    return [...inView, selected]
   }
-  return viewportCafes.value
+  return inView
 })
 const showSuggestions = computed(
   () => searchFocused.value && query.value.trim().length > 0,
@@ -380,6 +385,7 @@ const onSelectCafe = (id: string) => {
 }
 
 const onViewChange = (view: { bounds: GeoBounds; center: { lat: number; lng: number } }) => {
+  viewBounds.value = view.bounds
   loadViewport(view.bounds, view.center)
 }
 
