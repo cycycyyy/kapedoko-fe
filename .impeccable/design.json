@@ -218,7 +218,7 @@
       "kind": "card",
       "refersTo": "card-cafe",
       "description": "Cafe-card topology for a pending submit preview: 90×100 mark, no amenities or ratings.",
-      "html": "<article class=\"ds-pending-listing\"><div class=\"ds-pending-mark\"></div><div class=\"ds-pending-body\"><p class=\"ds-pending-status\">Pending review</p><h3>Lamp Quarters Cafe</h3><p>Shoe Ave, Barangay San Roque, Marikina</p><p>8:00am–8:00pm</p><p>No phone added</p></div></article>",
+      "html": "<article class=\"ds-pending-listing\"><div class=\"ds-pending-mark\"></div><div class=\"ds-pending-body\"><p class=\"ds-pending-status\">Pending review</p><h3>Lamp Quarters Cafe</h3><p>BGC High Street, Taguig City</p><p>8:00am–8:00pm</p><p>No phone added</p></div></article>",
       "css": ".ds-pending-listing { display: flex; gap: 12px; min-height: 100px; } .ds-pending-mark { flex: 0 0 90px; width: 90px; height: 100px; overflow: hidden; border-radius: 8px; background: var(--kd-secondary); } .ds-pending-body { min-width: 0; display: flex; flex-direction: column; gap: 4px; color: var(--kd-ink); font: 400 12px/1.35 Satoshi, sans-serif; } .ds-pending-status { margin: 0; color: var(--kd-primary); font: 700 12px/1.2 Satoshi, sans-serif; } .ds-pending-body h3 { margin: 0; color: var(--kd-primary); font: 700 16px/1.375 Satoshi, sans-serif; } .ds-pending-body p { margin: 0; }"
     },
     {
@@ -226,7 +226,7 @@
       "kind": "custom",
       "refersTo": "input-sheet-field",
       "description": "White Map-style peek on the pin step: 8px top corners, sheet-lift shadow, rice-paper street line.",
-      "html": "<section class=\"ds-pin-peek\"><h2>Pin the cafe</h2><p>Drag the pin or search so the marker sits on the shop, not the next street.</p><label class=\"ds-pin-address\"><span>Address</span><textarea rows=\"2\" placeholder=\"Street, barangay, Marikina\">Bayan-Bayanan Avenue, Amang Rodriguez Village, Marikina</textarea></label></section>",
+      "html": "<section class=\"ds-pin-peek\"><h2>Pin the cafe</h2><p>Drag the pin or search so the marker sits on the shop, not the next street.</p><label class=\"ds-pin-address\"><span>Address</span><textarea rows=\"2\" placeholder=\"Street, barangay, city\">BGC High Street, Taguig City</textarea></label></section>",
       "css": ".ds-pin-peek { padding: 16px 20px 8px; border-radius: 8px 8px 0 0; background: var(--kd-white); box-shadow: 0 -2px 16px var(--kd-shadow); } .ds-pin-peek h2 { margin: 0; color: var(--kd-primary); font: 700 16px/1.2 Satoshi, sans-serif; } .ds-pin-peek p { margin: 4px 0 0; color: var(--kd-ink); font: 400 12px/1.35 Satoshi, sans-serif; } .ds-pin-address { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; color: var(--kd-primary); font: 700 12px/1.2 Satoshi, sans-serif; } .ds-pin-address textarea { min-height: 64px; max-height: 88px; padding: 12px 16px; border: 0; border-radius: 8px; background: var(--kd-secondary); color: var(--kd-ink); font: 400 12px/1.35 Satoshi, sans-serif; resize: none; caret-color: var(--kd-primary); } .ds-pin-address textarea::placeholder { color: #5c534c; } .ds-pin-address textarea:focus { outline: none; box-shadow: 0 0 0 2px var(--kd-white), 0 0 0 4px var(--kd-primary); }"
     },
     {

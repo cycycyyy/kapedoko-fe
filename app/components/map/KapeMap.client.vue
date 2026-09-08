@@ -9,7 +9,11 @@ import L from 'leaflet'
 import type { Circle, Map as LeafletMap, Marker, TileLayer } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { Cafe, LatLng } from '~/types/cafe'
-import { SEARCH_RADIUS_M } from '~/utils/geo'
+import type { GeoBounds } from '~/utils/geography'
+import { destinationPoint, distanceMeters, MAP_VIEW_RADIUS_M, SEARCH_RADIUS_M } from '~/utils/geo'
+
+const COINCIDENT_THRESHOLD_M = 30
+const COINCIDENT_OFFSET_M = 45
 
 const props = defineProps<{
   center: LatLng
@@ -25,6 +29,7 @@ const emit = defineEmits<{
   tilesReady: []
   tilesError: []
   select: [id: string]
+  viewchange: [view: { bounds: GeoBounds; center: LatLng; zoom: number }]
 }>()
 
 const config = useRuntimeConfig()
@@ -36,6 +41,7 @@ let userMarker: Marker | null = null
 let accuracyCircle: Circle | null = null
 let radiusCircle: Circle | null = null
 const cafeMarkers = new Map<string, Marker>()
+const cafeMarkerSelected = new Map<string, boolean>()
 let tilesSettled = false
 let sizeTimer: ReturnType<typeof window.setInterval> | null = null
 
@@ -45,7 +51,7 @@ const prefersReducedMotion = () =>
 const cafeIconHtml = (selected: boolean) => {
   if (selected) {
     return `<span class="kd-cafe-pin__mark kd-cafe-pin__mark--logo" aria-hidden="true">
-      <img src="/assets/kapedoko-logo_dark.png" alt="" width="32" height="42" />
+      <img src="/assets/kapedoko-logo_dark.png" alt="" width="26" height="34" />
     </span>`
   }
 
@@ -55,24 +61,24 @@ const cafeIconHtml = (selected: boolean) => {
         cx="20"
         cy="20"
         r="16.2"
-        fill="currentColor"
-        stroke="var(--kd-white)"
+        fill="#372d25"
+        stroke="#ffffff"
         stroke-width="3.2"
         paint-order="stroke fill"
       />
       <path
         d="M15.6 10.8v3.8M21.4 10.3v4.2"
-        stroke="var(--kd-white)"
+        stroke="#ffffff"
         stroke-width="2.2"
         stroke-linecap="round"
       />
       <path
         d="M11.4 16.4h14.4v7.4a3.7 3.7 0 0 1-3.7 3.7h-7a3.7 3.7 0 0 1-3.7-3.7z"
-        fill="var(--kd-white)"
+        fill="#ffffff"
       />
       <path
         d="M25.8 18.1c3.6.15 4.4 2.55 4.4 4s-1 3.9-4.45 4.05"
-        stroke="var(--kd-white)"
+        stroke="#ffffff"
         stroke-width="2.5"
         stroke-linecap="round"
       />
@@ -80,11 +86,11 @@ const cafeIconHtml = (selected: boolean) => {
   </span>`
 }
 
-const makeCafeIcon = (selected: boolean) => {
-  const width = selected ? 40 : 36
-  const height = selected ? 52 : 36
+const makeCafeIcon = (selected: boolean, entering = false) => {
+  const width = selected ? 32 : 36
+  const height = selected ? 42 : 36
   return L.divIcon({
-    className: `kd-cafe-pin${selected ? ' is-selected' : ''}`,
+    className: `leaflet-div-icon kd-cafe-pin${selected ? ' is-selected' : ''}${entering ? ' is-entering' : ''}`,
     html: cafeIconHtml(selected),
     iconSize: [width, height],
     iconAnchor: selected ? [width / 2, height - 2] : [width / 2, height / 2],
@@ -93,7 +99,7 @@ const makeCafeIcon = (selected: boolean) => {
 
 const makeUserIcon = () => {
   return L.divIcon({
-    className: 'kd-user-dot',
+    className: 'leaflet-div-icon kd-user-dot',
     html: '<span class="kd-user-dot__pulse"></span><span class="kd-user-dot__core"></span>',
     iconSize: [22, 22],
     iconAnchor: [11, 11],
@@ -104,8 +110,8 @@ const fitToRadius = (animate = true) => {
   if (!map) return
   const lat = props.center.lat
   const lng = props.center.lng
-  const latDelta = SEARCH_RADIUS_M / 111_320
-  const lngDelta = SEARCH_RADIUS_M / (111_320 * Math.cos((lat * Math.PI) / 180))
+  const latDelta = MAP_VIEW_RADIUS_M / 111_320
+  const lngDelta = MAP_VIEW_RADIUS_M / (111_320 * Math.cos((lat * Math.PI) / 180))
   const bounds = L.latLngBounds(
     [lat - latDelta, lng - lngDelta],
     [lat + latDelta, lng + lngDelta],
@@ -114,7 +120,7 @@ const fitToRadius = (animate = true) => {
   map.fitBounds(bounds, {
     paddingTopLeft: [20, props.headerPad],
     paddingBottomRight: [20, props.bottomPad],
-    maxZoom: 15,
+    maxZoom: 17,
     animate: animate && !prefersReducedMotion(),
   })
 }
@@ -126,7 +132,7 @@ const syncUser = () => {
   if (!userMarker) {
     userMarker = L.marker(latlng, {
       icon: makeUserIcon(),
-      zIndexOffset: 600,
+      zIndexOffset: 100,
       interactive: false,
       keyboard: false,
     }).addTo(map)
@@ -166,37 +172,67 @@ const syncUser = () => {
   }
 }
 
+const markerLatLng = (cafe: Cafe, index: number, total: number): [number, number] | null => {
+  const lat = Number(cafe.lat)
+  const lng = Number(cafe.lng)
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
+
+  const point = { lat, lng }
+  if (distanceMeters(props.center, point) >= COINCIDENT_THRESHOLD_M) {
+    return [lat, lng]
+  }
+
+  const bearing = total > 1 ? (360 / total) * index : 45
+  const offset = destinationPoint(props.center, COINCIDENT_OFFSET_M, bearing)
+  return [offset.lat, offset.lng]
+}
+
 const syncCafes = () => {
   if (!map) return
   const seen = new Set<string>()
+  const cafes = props.cafes.filter(
+    (cafe) => Number.isFinite(Number(cafe.lat)) && Number.isFinite(Number(cafe.lng)),
+  )
 
-  for (const cafe of props.cafes) {
+  cafes.forEach((cafe, index) => {
     seen.add(cafe.id)
-    const latlng: [number, number] = [cafe.lat, cafe.lng]
+    const latlng = markerLatLng(cafe, index, cafes.length)
+    if (!latlng) return
     const selected = cafe.id === props.selectedId
     const existing = cafeMarkers.get(cafe.id)
 
     if (!existing) {
       const marker = L.marker(latlng, {
-        icon: makeCafeIcon(selected),
+        icon: makeCafeIcon(selected, true),
         title: cafe.name,
         keyboard: true,
-        zIndexOffset: selected ? 500 : 200,
+        zIndexOffset: selected ? 700 : 400,
       })
       marker.on('click', () => emit('select', cafe.id))
       marker.addTo(map)
       cafeMarkers.set(cafe.id, marker)
+      cafeMarkerSelected.set(cafe.id, selected)
+      window.setTimeout(() => {
+        marker.getElement()?.classList.remove('is-entering')
+      }, 450)
     } else {
-      existing.setLatLng(latlng)
-      existing.setIcon(makeCafeIcon(selected))
-      existing.setZIndexOffset(selected ? 500 : 200)
+      const current = existing.getLatLng()
+      if (current.lat !== latlng[0] || current.lng !== latlng[1]) {
+        existing.setLatLng(latlng)
+      }
+      if (cafeMarkerSelected.get(cafe.id) !== selected) {
+        existing.setIcon(makeCafeIcon(selected, false))
+        existing.setZIndexOffset(selected ? 700 : 400)
+        cafeMarkerSelected.set(cafe.id, selected)
+      }
     }
-  }
+  })
 
   for (const [id, marker] of cafeMarkers) {
     if (seen.has(id)) continue
     map.removeLayer(marker)
     cafeMarkers.delete(id)
+    cafeMarkerSelected.delete(id)
   }
 }
 
@@ -206,6 +242,22 @@ const focusCafe = (cafe: Cafe, extraBottom = 0) => {
   target.y += extraBottom / 2
   const latlng = map.unproject(target, map.getZoom())
   map.panTo(latlng, { animate: !prefersReducedMotion() })
+}
+
+const emitView = () => {
+  if (!map) return
+  const bounds = map.getBounds()
+  const mapCenter = map.getCenter()
+  emit('viewchange', {
+    bounds: {
+      south: bounds.getSouth(),
+      north: bounds.getNorth(),
+      west: bounds.getWest(),
+      east: bounds.getEast(),
+    },
+    center: { lat: mapCenter.lat, lng: mapCenter.lng },
+    zoom: map.getZoom(),
+  })
 }
 
 const invalidate = () => {
@@ -225,6 +277,7 @@ const destroy = () => {
   accuracyCircle = null
   radiusCircle = null
   cafeMarkers.clear()
+  cafeMarkerSelected.clear()
 }
 
 const init = () => {
@@ -242,7 +295,7 @@ const init = () => {
   })
 
   map.attributionControl?.setPrefix('')
-  map.setView([props.center.lat, props.center.lng], 14)
+  map.setView([props.center.lat, props.center.lng], 16)
 
   tileLayer = L.tileLayer(config.public.mapTiles.url, {
     attribution: config.public.mapTiles.attribution,
@@ -271,8 +324,13 @@ const init = () => {
   tileLayer.addTo(map)
   syncUser()
   syncCafes()
+  map.on('moveend', emitView)
+  map.on('zoomend', emitView)
   fitToRadius(false)
-  requestAnimationFrame(() => invalidate())
+  requestAnimationFrame(() => {
+    invalidate()
+    emitView()
+  })
   sizeTimer = window.setInterval(() => invalidate(), 250)
   window.setTimeout(() => {
     if (sizeTimer) {
@@ -307,14 +365,18 @@ watch(
   () => [props.center.lat, props.center.lng, props.accuracy],
   () => {
     syncUser()
-    fitToRadius()
+    syncCafes()
   },
 )
 
 watch(
-  () => [props.cafes, props.selectedId],
+  () => props.cafes.map((cafe) => cafe.id).join('|'),
   () => syncCafes(),
-  { deep: true },
+)
+
+watch(
+  () => props.selectedId,
+  () => syncCafes(),
 )
 
 watch(
@@ -383,19 +445,24 @@ defineExpose({
   bottom: calc(52vh + 12px);
 }
 
+.kape-map :deep(.leaflet-marker-pane) {
+  z-index: 600;
+}
+
+.kape-map :deep(.leaflet-div-icon.kd-cafe-pin),
+.kape-map :deep(.leaflet-div-icon.kd-user-dot) {
+  background: transparent;
+  border: 0;
+}
+
 .kape-map :deep(.kd-cafe-pin) {
   display: grid;
   place-items: center;
   color: var(--kd-primary);
-  filter: drop-shadow(0 3px 5px var(--kd-shadow));
-  transform-origin: center center;
-  animation: kd-pin-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .kape-map :deep(.kd-cafe-pin.is-selected) {
   place-items: end center;
-  transform-origin: center bottom;
-  filter: drop-shadow(0 4px 8px var(--kd-shadow));
 }
 
 .kape-map :deep(.kd-cafe-pin:focus-visible) {
@@ -408,7 +475,23 @@ defineExpose({
   border-radius: 8px;
 }
 
-.kape-map :deep(.kd-cafe-pin__mark),
+.kape-map :deep(.kd-cafe-pin__mark) {
+  display: block;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 3px 5px var(--kd-shadow));
+  transform-origin: center center;
+}
+
+.kape-map :deep(.kd-cafe-pin.is-entering .kd-cafe-pin__mark) {
+  animation: kd-pin-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.kape-map :deep(.kd-cafe-pin.is-selected .kd-cafe-pin__mark) {
+  transform-origin: center bottom;
+  filter: drop-shadow(0 4px 8px var(--kd-shadow));
+}
+
 .kape-map :deep(.kd-cafe-pin svg) {
   display: block;
   width: 100%;
@@ -417,9 +500,10 @@ defineExpose({
 
 .kape-map :deep(.kd-cafe-pin__mark--logo img) {
   display: block;
-  width: 100%;
-  height: 100%;
-  max-width: none;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
   object-fit: contain;
 }
 
@@ -473,7 +557,7 @@ defineExpose({
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .kape-map :deep(.kd-cafe-pin),
+  .kape-map :deep(.kd-cafe-pin.is-entering .kd-cafe-pin__mark),
   .kape-map :deep(.kd-user-dot__pulse) {
     animation: none;
   }

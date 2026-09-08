@@ -24,6 +24,7 @@
           @tiles-ready="onTilesReady"
           @tiles-error="onTilesError"
           @select="onSelectCafe"
+          @viewchange="onViewChange"
         />
 
         <div class="map-chrome">
@@ -60,19 +61,61 @@
                   v-model="query"
                   type="search"
                   name="q"
+                  role="combobox"
                   placeholder="Search a coffee shop"
                   autocomplete="off"
                   enterkeyhint="search"
+                  aria-autocomplete="list"
+                  :aria-expanded="showSuggestions"
+                  aria-controls="map-search-list"
+                  :aria-activedescendant="activeSuggestionId"
+                  @focus="onSearchFocus"
+                  @blur="onSearchBlur"
+                  @keydown="onSearchKeydown"
                 />
                 <button type="submit" class="map-search__submit" aria-label="Search">
                   <Search :size="24" :stroke-width="2" />
                 </button>
               </label>
+
+              <ul
+                v-if="showSuggestions"
+                id="map-search-list"
+                class="map-search__results"
+                role="listbox"
+                aria-label="Coffee shop suggestions"
+              >
+                <li v-if="suggestions.length === 0" class="map-search__empty" role="option" aria-disabled="true">
+                  No matching coffee shops
+                </li>
+                <li
+                  v-for="(cafe, index) in suggestions"
+                  :id="`map-search-option-${cafe.id}`"
+                  :key="cafe.id"
+                  role="option"
+                  :aria-selected="index === activeIndex"
+                >
+                  <button
+                    type="button"
+                    class="map-search__suggestion"
+                    :class="{ 'is-active': index === activeIndex }"
+                    @mousedown.prevent="pickSuggestion(cafe)"
+                  >
+                    <span class="map-search__suggestion-name">{{ cafe.name }}</span>
+                    <span class="map-search__suggestion-meta">
+                      {{ cafe.address }}
+                      <template v-if="suggestionDistances[cafe.id]">
+                        · {{ suggestionDistances[cafe.id] }}
+                      </template>
+                    </span>
+                  </button>
+                </li>
+              </ul>
             </form>
           </header>
 
           <div v-if="usingFallback && locationStatus !== 'requesting'" class="map-banner" role="status">
-            <p>Using demo location. Enable location to see cafes near you.</p>
+            <p>Location is off. Enable it to see cafes near you.</p>
             <button type="button" class="map-banner__action" @click="requestLocation">
               Enable location
             </button>
@@ -85,8 +128,6 @@
           >
             Finding your location…
           </p>
-
-          <p v-else-if="source === 'demo'" class="map-demo" role="note">Demo cafes for preview</p>
 
           <div v-if="tilesFailed" class="map-error" role="alert">
             <p>Map tiles couldn’t load. Check your connection, then try again.</p>
@@ -124,7 +165,7 @@
 
     <NearbyCafesSheet
       v-model:open="sheetOpen"
-      :cafes="visibleCafes"
+      :cafes="sheetCafes"
       :selected-id="selectedId"
       :distances="distances"
       @present="onSheetPresent"
@@ -147,17 +188,29 @@ import KapeMap from '~/components/map/KapeMap.client.vue'
 import NearbyCafesSheet from '~/components/map/NearbyCafesSheet.vue'
 import CafeDetailSheet from '~/components/map/CafeDetailSheet.vue'
 import AppTabBar from '~/components/navigation/AppTabBar.vue'
-import { cafesNear, filterCafes } from '~/data/mock-cafes'
 import type { Cafe } from '~/types/cafe'
-import { distanceMeters, formatDistance, SEARCH_RADIUS_M } from '~/utils/geo'
+import type { GeoBounds } from '~/utils/geography'
+import { cafeMatchesQuery } from '~/utils/cafe-search'
+import { distanceMeters, formatDistance } from '~/utils/geo'
 
 const ionRouter = useIonRouter()
 const { status: locationStatus, location, usingFallback, center, requestLocation } =
   useDeviceLocation()
-const { cafes: liveCafes, source } = useApprovedShops()
+const {
+  viewportCafes,
+  nearbyCafes,
+  suggestions,
+  cafeById,
+  remember,
+  loadNearby,
+  loadViewport,
+  searchCafes,
+} = useMapCafes()
 
 const query = ref('')
 const submittedQuery = ref('')
+const searchFocused = ref(false)
+const activeIndex = ref(-1)
 const sheetOpen = ref(false)
 const detailOpen = ref(false)
 const listWasOpen = ref(false)
@@ -176,19 +229,33 @@ const showTabBar = computed(() => !mapSettled.value)
 const mapCenter = computed(() => (location.value ? center.value : null))
 const accuracy = computed(() => location.value?.accuracy ?? 0)
 
-const cafes = computed(() => {
-  if (!mapCenter.value) return []
-  if (source.value === 'live' && liveCafes.value.length) {
-    return liveCafes.value.filter(
-      (cafe) => distanceMeters(mapCenter.value!, cafe) <= SEARCH_RADIUS_M,
-    )
-  }
-  return cafesNear(mapCenter.value)
+const sheetCafes = computed(() => {
+  const term = submittedQuery.value.trim()
+  if (!term) return nearbyCafes.value
+  return nearbyCafes.value.filter((cafe) => cafeMatchesQuery(cafe, term))
 })
-const visibleCafes = computed(() => filterCafes(cafes.value, submittedQuery.value))
-const selectedCafe = computed(
-  () => cafes.value.find((cafe) => cafe.id === selectedId.value) ?? null,
+const visibleCafes = computed(() => {
+  const selected = cafeById(selectedId.value)
+  if (selected && !viewportCafes.value.some((cafe) => cafe.id === selected.id)) {
+    return [...viewportCafes.value, selected]
+  }
+  return viewportCafes.value
+})
+const showSuggestions = computed(
+  () => searchFocused.value && query.value.trim().length > 0,
 )
+const activeSuggestionId = computed(() => {
+  const cafe = suggestions.value[activeIndex.value]
+  return cafe ? `map-search-option-${cafe.id}` : undefined
+})
+const suggestionDistances = computed(() => {
+  const origin = mapCenter.value
+  if (!origin) return {}
+  return Object.fromEntries(
+    suggestions.value.map((cafe) => [cafe.id, formatDistance(distanceMeters(origin, cafe))]),
+  )
+})
+const selectedCafe = computed(() => cafeById(selectedId.value))
 const lastDetailCafe = ref<Cafe | null>(null)
 watch(selectedCafe, (cafe) => {
   if (cafe) lastDetailCafe.value = cafe
@@ -197,7 +264,7 @@ const distances = computed(() => {
   const origin = mapCenter.value
   if (!origin) return {}
   return Object.fromEntries(
-    visibleCafes.value.map((cafe) => [cafe.id, formatDistance(distanceMeters(origin, cafe))]),
+    sheetCafes.value.map((cafe) => [cafe.id, formatDistance(distanceMeters(origin, cafe))]),
   )
 })
 
@@ -211,6 +278,10 @@ const bottomPad = computed(() => {
 })
 
 const goBack = async () => {
+  if (showSuggestions.value) {
+    searchFocused.value = false
+    return
+  }
   if (detailOpen.value) {
     detailOpen.value = false
     return
@@ -226,11 +297,71 @@ const goBack = async () => {
   await navigateTo('/app')
 }
 
-const submitSearch = () => {
-  submittedQuery.value = query.value
-  if (selectedId.value && !visibleCafes.value.some((cafe) => cafe.id === selectedId.value)) {
-    selectedId.value = null
+const onSearchFocus = () => {
+  searchFocused.value = true
+}
+
+const onSearchBlur = () => {
+  window.setTimeout(() => {
+    searchFocused.value = false
+    activeIndex.value = -1
+  }, 120)
+}
+
+const onSearchKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'Escape') {
+    searchFocused.value = false
+    activeIndex.value = -1
+    return
   }
+
+  if (!showSuggestions.value || suggestions.value.length === 0) return
+
+  if (event.key === 'ArrowDown') {
+    event.preventDefault()
+    activeIndex.value = (activeIndex.value + 1) % suggestions.value.length
+    return
+  }
+
+  if (event.key === 'ArrowUp') {
+    event.preventDefault()
+    activeIndex.value =
+      activeIndex.value <= 0 ? suggestions.value.length - 1 : activeIndex.value - 1
+    return
+  }
+
+  if (event.key === 'Enter' && activeIndex.value >= 0) {
+    const cafe = suggestions.value[activeIndex.value]
+    if (!cafe) return
+    event.preventDefault()
+    pickSuggestion(cafe)
+  }
+}
+
+const pickSuggestion = (cafe: Cafe) => {
+  remember([cafe])
+  query.value = cafe.name
+  submittedQuery.value = ''
+  searchFocused.value = false
+  activeIndex.value = -1
+  onSelectCafe(cafe.id)
+}
+
+const submitSearch = () => {
+  searchFocused.value = false
+  activeIndex.value = -1
+  submittedQuery.value = query.value.trim()
+  window.setTimeout(() => {
+    const matches = sheetCafes.value
+    if (matches.length === 1 && matches[0]) {
+      onSelectCafe(matches[0].id)
+      return
+    }
+    sheetOpen.value = true
+    if (selectedId.value && !matches.some((cafe) => cafe.id === selectedId.value)) {
+      selectedId.value = null
+    }
+  }, 0)
 }
 
 const openSheet = () => {
@@ -242,10 +373,14 @@ const onSelectCafe = (id: string) => {
   if (sheetOpen.value) listWasOpen.value = true
   sheetOpen.value = false
   detailOpen.value = true
-  const cafe = cafes.value.find((item) => item.id === id)
+  const cafe = cafeById(id)
   if (!cafe) return
   const extra = Math.round(window.innerHeight * 0.52)
   mapRef.value?.focusCafe(cafe, extra)
+}
+
+const onViewChange = (view: { bounds: GeoBounds; center: { lat: number; lng: number } }) => {
+  loadViewport(view.bounds, view.center)
 }
 
 const onTilesReady = () => {
@@ -278,6 +413,23 @@ const refreshMap = () => {
 const onSheetPresent = () => {
   refreshMap()
 }
+
+watch(query, (value) => {
+  activeIndex.value = -1
+  searchCafes(value, mapCenter.value)
+})
+
+watch(
+  mapCenter,
+  (origin) => {
+    if (origin) void loadNearby(origin)
+  },
+  { immediate: true },
+)
+
+watch(usingFallback, (fallback, previous) => {
+  if (previous && !fallback) mapRef.value?.recenter()
+})
 
 watch(sheetOpen, (open) => {
   if (!open && !detailOpen.value) selectedId.value = null
@@ -348,11 +500,12 @@ onMounted(() => {
 .map-hero,
 .map-banner,
 .map-error,
-.map-demo,
 .map-locate,
 .map-cta,
 .map-back,
 .map-search,
+.map-search__results,
+.map-search__suggestion,
 .map-banner__action,
 .map-error__retry {
   pointer-events: auto;
@@ -388,6 +541,7 @@ onMounted(() => {
 
 .map-back:focus-visible,
 .map-search__submit:focus-visible,
+.map-search__suggestion:focus-visible,
 .map-locate:focus-visible,
 .map-cta:focus-visible,
 .map-banner__action:focus-visible,
@@ -431,6 +585,8 @@ onMounted(() => {
 }
 
 .map-search {
+  position: relative;
+  z-index: 3;
   margin-top: 16px;
 }
 
@@ -487,22 +643,71 @@ onMounted(() => {
   -webkit-tap-highlight-color: transparent;
 }
 
+.map-search__results {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 4;
+  margin: 0;
+  padding: 6px;
+  max-height: min(42vh, 320px);
+  overflow-y: auto;
+  list-style: none;
+  border-radius: 8px;
+  background: var(--kd-white);
+  box-shadow: 0 8px 24px var(--kd-shadow);
+}
+
+.map-search__empty {
+  padding: 14px 12px;
+  color: var(--kd-ink);
+  font-size: 12px;
+}
+
+.map-search__suggestion {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.map-search__suggestion.is-active,
+.map-search__suggestion:hover {
+  background: var(--kd-secondary);
+}
+
+.map-search__suggestion-name {
+  color: var(--kd-primary);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.map-search__suggestion-meta {
+  color: var(--kd-ink);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
 .map-banner,
-.map-error,
-.map-demo {
+.map-error {
   margin: 0 20px;
   padding: 10px 12px;
   border-radius: 8px;
   background: color-mix(in srgb, var(--kd-white) 92%, transparent);
   box-shadow: 0 2px 8px var(--kd-shadow);
   color: var(--kd-ink);
-}
-
-.map-demo {
-  display: inline-flex;
-  width: fit-content;
-  font-size: 12px;
-  font-weight: 700;
 }
 
 .map-banner {
@@ -601,6 +806,7 @@ onMounted(() => {
 
 .map-back:active,
 .map-search__submit:active,
+.map-search__suggestion:active,
 .map-locate:active,
 .map-cta:active,
 .map-banner__action:active,
@@ -661,6 +867,7 @@ onMounted(() => {
 
   .map-back:active,
   .map-search__submit:active,
+  .map-search__suggestion:active,
   .map-locate:active,
   .map-cta:active {
     transform: none;

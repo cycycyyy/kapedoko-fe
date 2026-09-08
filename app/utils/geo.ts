@@ -1,13 +1,14 @@
 import type { LatLng } from '~/types/cafe'
+import { METRO_MANILA_CENTER } from './geography'
 
 const EARTH_RADIUS_M = 6_371_000
 
-export const METRO_MANILA_FALLBACK: LatLng = {
-  lat: 14.5547,
-  lng: 121.0244,
-}
+export const METRO_MANILA_FALLBACK: LatLng = METRO_MANILA_CENTER
 
 export const SEARCH_RADIUS_M = 3_000
+export const MAP_VIEW_RADIUS_M = 1_000
+export const VIEWPORT_QUERY_MAX_RADIUS_M = 8_000
+export const VIEWPORT_FETCH_LIMIT = 80
 
 export function destinationPoint(
   origin: LatLng,

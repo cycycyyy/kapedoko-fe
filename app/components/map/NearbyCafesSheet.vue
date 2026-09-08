@@ -13,12 +13,12 @@
     <div class="nearby-sheet">
       <header class="nearby-sheet__header">
         <Coffee :size="24" :stroke-width="2" aria-hidden="true" />
-        <h2>Demo cafes near me</h2>
+        <h2>Cafes near me</h2>
       </header>
 
       <div class="nearby-sheet__list" role="list" aria-label="Cafes near me">
         <p v-if="cafes.length === 0" class="nearby-sheet__empty">
-          No coffee shops match that search.
+          No coffee shops nearby.
         </p>
 
         <button

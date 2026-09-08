@@ -15,8 +15,7 @@ interface SubmitShopInput {
   logoFile: File | null
 }
 
-interface PresignResponse {
-  uploadUrl?: string
+interface UploadLogoResponse {
   objectKey?: string
   publicUrl?: string | null
   error?: string
@@ -32,27 +31,16 @@ export function useShopSubmission() {
   const uploadLogo = async (file: File): Promise<string | null> => {
     if (!isAllowedLogo(file)) return null
 
+    const form = new FormData()
+    form.append('file', file)
+
     const { data, error: fnError } = await supabase.functions.invoke('presign-upload', {
-      body: { contentType: file.type, size: file.size },
+      body: form,
     })
 
-    if (fnError || !data) {
-      throw new Error('Logo upload isn’t available yet. Submit without a logo, or try again later.')
-    }
-
-    const payload = data as PresignResponse
-    if (payload.error || !payload.uploadUrl || !payload.objectKey) {
-      throw new Error(payload.error || 'Logo upload failed. Try a smaller JPG or PNG.')
-    }
-
-    const put = await fetch(payload.uploadUrl, {
-      method: 'PUT',
-      headers: { 'Content-Type': file.type },
-      body: file,
-    })
-
-    if (!put.ok) {
-      throw new Error('The logo didn’t upload. Check your connection and try again.')
+    const payload = (data ?? null) as UploadLogoResponse | null
+    if (fnError || !payload?.objectKey) {
+      throw new Error(friendlyUploadError(fnError?.message, payload?.error))
     }
 
     return payload.objectKey
@@ -112,10 +100,22 @@ export function useShopSubmission() {
   return { submitShop, submitting, error, uploadLogo }
 }
 
+function friendlyUploadError(fnMessage?: string, payloadError?: string): string {
+  const text = `${fnMessage ?? ''} ${payloadError ?? ''}`.toLowerCase()
+  if (payloadError) return payloadError
+  if (text.includes('failed to fetch')) {
+    return 'Could not reach the logo upload service. Check your connection and try again.'
+  }
+  if (text.includes('sign in')) {
+    return 'Sign in again, then submit the cafe.'
+  }
+  return 'Logo upload failed. Submit without a logo, or try again later.'
+}
+
 function friendlyInsertError(message?: string): string {
   const text = (message ?? '').toLowerCase()
-  if (text.includes('shops_in_marikina')) {
-    return 'Pin the cafe inside Marikina before submitting.'
+  if (text.includes('shops_in_coverage') || text.includes('shops_in_marikina')) {
+    return 'Metro Manila only for now. Pin the cafe inside Metro Manila before submitting.'
   }
   if (text.includes('shops_hours_shape')) {
     return 'Check the opening hours and try again.'

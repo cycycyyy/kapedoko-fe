@@ -9,8 +9,11 @@
 --   authenticated users insert as themselves with status = pending
 --   WiFi / outlets live on reviews + shop_review_stats, not on shops
 --
--- This follow-up adds launch-geography checks, identity/contact
--- validation, a logo object key (R2), and reviewed_at bookkeeping.
+-- This follow-up adds identity/contact validation, a logo object
+-- key (R2), and reviewed_at bookkeeping.
+-- Geography lives in db/20260908_metro_manila_coverage.sql — run
+-- that next. Do not re-add a Marikina bounding box here; doing so
+-- after 20260908 blocks every Metro Manila pin outside Marikina.
 -- Do NOT introduce a separate shop_submissions table — shops is
 -- the submission queue.
 -- =========================================================
@@ -47,14 +50,10 @@ alter table shops add constraint shops_logo_object_key_format
     or logo_object_key ~ '^[a-zA-Z0-9][a-zA-Z0-9/_.:-]*$'
   );
 
--- Marikina launch bounding box (slightly padded city limits).
--- Skip this constraint first if you already inserted out-of-area rows.
+-- Geography is enforced by coverage_regions + shops_require_coverage
+-- in db/20260908_metro_manila_coverage.sql. Drop the old city box so
+-- re-running this file cannot shrink Metro Manila back to Marikina.
 alter table shops drop constraint if exists shops_in_marikina;
-alter table shops add constraint shops_in_marikina
-  check (
-    latitude between 14.618 and 14.678
-    and longitude between 121.078 and 121.138
-  );
 
 -- --- Hours ---
 create or replace function is_valid_shop_hours(hours jsonb)

@@ -4,7 +4,7 @@
       <div class="admin">
         <header class="admin__hero">
           <h1>Submissions</h1>
-          <p>Approve listings that are in Marikina and ready to appear on the map.</p>
+          <p>Approve listings that are in Metro Manila and ready to appear on the map.</p>
         </header>
 
         <p v-if="status === 'forbidden'" class="admin__state">
@@ -33,8 +33,18 @@
 
           <article v-for="shop in visible" :key="shop.id" class="admin__card">
             <div class="admin__card-top">
-              <h2>{{ shop.name }}</h2>
-              <p class="admin__status">{{ shop.status }}</p>
+              <img
+                v-if="logoSrc(shop)"
+                class="admin__logo"
+                :src="logoSrc(shop)"
+                :alt="`${shop.name} logo`"
+                width="48"
+                height="48"
+              />
+              <div class="admin__card-heading">
+                <h2>{{ shop.name }}</h2>
+                <p class="admin__status">{{ shop.status }}</p>
+              </div>
             </div>
             <p>{{ shop.address }}</p>
             <p>{{ summarizeHours(shop.hours) }}</p>
@@ -70,10 +80,19 @@
 <script lang="ts" setup>
 import type { ShopRow, ShopStatus } from '~/types/shop'
 import { summarizeHours } from '~/utils/hours'
+import { isKapedokoMark } from '~/utils/logo'
+import { shopImageUrl } from '~/utils/shop-mapper'
 
 type FilterId = ShopStatus
 
 const { shops, status, error, savingId, moderate } = useAdminShops()
+const config = useRuntimeConfig()
+const publicBase = String(config.public.r2PublicBaseUrl || '')
+
+const logoSrc = (shop: ShopRow) => {
+  const url = shopImageUrl(shop, publicBase)
+  return isKapedokoMark(url) ? '' : url
+}
 const activeFilter = ref<FilterId>('pending')
 const filters: { id: FilterId; label: string }[] = [
   { id: 'pending', label: 'Pending' },
@@ -169,9 +188,26 @@ const onReject = async (shop: ShopRow) => {
 
 .admin__card-top {
   display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.admin__logo {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--kd-secondary);
+}
+
+.admin__card-heading {
+  display: flex;
+  flex: 1;
   align-items: baseline;
   justify-content: space-between;
   gap: 10px;
+  min-width: 0;
 }
 
 .admin__card h2 {

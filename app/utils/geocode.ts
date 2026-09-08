@@ -1,5 +1,5 @@
 import type { LatLng } from '../types/cafe'
-import { MARIKINA_BOUNDS } from './marikina'
+import { coverageBounds, isInCoverage } from './geography'
 
 const NOMINATIM = 'https://nominatim.openstreetmap.org'
 const USER_AGENT = 'KapeDoko/1.0 (cafe directory; https://kapedoko.app)'
@@ -17,10 +17,11 @@ interface NominatimPlace {
     village?: string
     city?: string
     town?: string
+    municipality?: string
   }
 }
 
-const REGION_NOISE = /^(philippines|metro manila|eastern manila( district)?|district( i{1,3})?|\d{4})$/i
+const REGION_NOISE = /^(philippines|metro manila|national capital region|eastern manila( district)?|district( i{1,3})?|\d{4})$/i
 
 export function formatShopStreet(place: Pick<NominatimPlace, 'display_name' | 'address'>): string {
   const street =
@@ -33,17 +34,20 @@ export function formatShopStreet(place: Pick<NominatimPlace, 'display_name' | 'a
     place.address?.neighbourhood ||
     place.address?.village ||
     ''
-  const fromParts = [street, barangay, 'Marikina'].filter(Boolean)
+  const city =
+    place.address?.city ||
+    place.address?.town ||
+    place.address?.municipality ||
+    ''
+  const fromParts = [street, barangay, city].filter(Boolean)
   if (street) return [...new Set(fromParts)].join(', ')
 
   const kept = (place.display_name || '')
     .split(',')
     .map((part) => part.trim())
     .filter((part) => part && !REGION_NOISE.test(part))
-    .slice(0, 2)
+    .slice(0, 3)
 
-  if (!kept.length) return ''
-  if (!kept.some((part) => /marikina/i.test(part))) kept.push('Marikina')
   return kept.join(', ')
 }
 
@@ -67,16 +71,12 @@ export async function reverseGeocode(point: LatLng): Promise<string | null> {
   return formatShopStreet(data) || data.display_name?.trim() || null
 }
 
-export async function searchMarikinaAddress(query: string): Promise<{ label: string; point: LatLng }[]> {
+export async function searchCoverageAddress(query: string): Promise<{ label: string; point: LatLng }[]> {
   const term = query.trim()
   if (term.length < 3) return []
 
-  const viewbox = [
-    MARIKINA_BOUNDS.west,
-    MARIKINA_BOUNDS.north,
-    MARIKINA_BOUNDS.east,
-    MARIKINA_BOUNDS.south,
-  ].join(',')
+  const bounds = coverageBounds()
+  const viewbox = [bounds.west, bounds.north, bounds.east, bounds.south].join(',')
 
   const data = await nominatim<NominatimPlace[]>(
     `/search?q=${encodeURIComponent(term)}&format=jsonv2&limit=5&addressdetails=1&viewbox=${viewbox}&bounded=1`,
@@ -89,8 +89,10 @@ export async function searchMarikinaAddress(query: string): Promise<{ label: str
       const lat = Number.parseFloat(place.lat ?? '')
       const lng = Number.parseFloat(place.lon ?? '')
       if (!Number.isFinite(lat) || !Number.isFinite(lng) || !place.display_name) return null
+      const point = { lat, lng }
+      if (!isInCoverage(point)) return null
       const label = formatShopStreet(place) || place.display_name
-      return { label, point: { lat, lng } }
+      return { label, point }
     })
     .filter((item): item is { label: string; point: LatLng } => Boolean(item))
 }

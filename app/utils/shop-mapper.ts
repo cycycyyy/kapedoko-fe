@@ -7,11 +7,27 @@ const REVIEW_THRESHOLD = 3
 const AMENITY_YES_PCT = 50
 
 export function shopImageUrl(shop: Pick<ShopRow, 'logo_object_key' | 'cover_photo_url'>, publicBase?: string): string {
-  if (shop.logo_object_key && publicBase) {
-    return `${publicBase.replace(/\/$/, '')}/${shop.logo_object_key}`
+  const key = shop.logo_object_key?.replace(/^\/+/, '')
+  const base = usablePublicBase(publicBase)
+  if (key && base) {
+    const path = key.split('/').filter(Boolean).map(encodeURIComponent).join('/')
+    return `${base}/${path}`
   }
   if (shop.cover_photo_url) return shop.cover_photo_url
   return KAPEDOKO_MARK_SRC
+}
+
+function usablePublicBase(publicBase?: string): string | null {
+  const base = publicBase?.trim().replace(/\/$/, '')
+  if (!base) return null
+  try {
+    const host = new URL(base).hostname
+    // Signed S3 API host — browsers cannot GET objects from it without a signature.
+    if (host.endsWith('.r2.cloudflarestorage.com')) return null
+  } catch {
+    return null
+  }
+  return base
 }
 
 export function amenitiesFromStats(stats?: ShopReviewStatsRow | null): Amenity[] | 'none' {
@@ -66,7 +82,7 @@ export function mapShopToCafe(
     rating,
     ratingLabel: label,
     reviews: [],
-    lat: shop.latitude,
-    lng: shop.longitude,
+    lat: Number(shop.latitude),
+    lng: Number(shop.longitude),
   }
 }

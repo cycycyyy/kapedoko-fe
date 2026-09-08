@@ -14,12 +14,12 @@
 
     <div class="picker__search">
       <label class="picker__search-field">
-        <span class="sr-only">Search an address in Marikina</span>
+        <span class="sr-only">Search an address in Metro Manila</span>
         <input
           v-model="query"
           type="search"
           name="address-search"
-          placeholder="Search an address in Marikina"
+          placeholder="Search an address in Metro Manila"
           autocomplete="off"
           enterkeyhint="search"
           @keydown.enter.prevent="runSearch"
@@ -34,7 +34,7 @@
       {{ searchError }}
     </p>
     <p v-else-if="!inBounds" class="picker__banner picker__banner--error" role="alert">
-      That pin is outside Marikina. Move it back into the city to continue.
+      That pin is outside Metro Manila. Metro Manila only for now.
     </p>
 
     <ul v-if="results.length" class="picker__results">
@@ -60,7 +60,7 @@
           rows="2"
           name="address"
           autocomplete="street-address"
-          placeholder="Street, barangay, Marikina"
+          placeholder="Street, barangay, city"
           :aria-invalid="Boolean(addressIssue)"
           @input="emit('update:address', ($event.target as HTMLTextAreaElement).value)"
         />
@@ -76,8 +76,13 @@ import type { Map as LeafletMap, Marker } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { LocateFixed, Search } from 'lucide-vue-next'
 import type { LatLng } from '~/types/cafe'
-import { reverseGeocode, searchMarikinaAddress } from '~/utils/geocode'
-import { isInMarikina, MARIKINA_BOUNDS, MARIKINA_CENTER } from '~/utils/marikina'
+import { reverseGeocode, searchCoverageAddress } from '~/utils/geocode'
+import {
+  coverageBounds,
+  coverageCenter,
+  coverageRings,
+  isInCoverage,
+} from '~/utils/geography'
 
 const props = defineProps<{
   lat: number | null
@@ -104,12 +109,13 @@ let previousLookup = ''
 let map: LeafletMap | null = null
 let marker: Marker | null = null
 
+const fallback = coverageCenter()
 const point = computed<LatLng>(() => ({
-  lat: props.lat ?? MARIKINA_CENTER.lat,
-  lng: props.lng ?? MARIKINA_CENTER.lng,
+  lat: props.lat ?? fallback.lat,
+  lng: props.lng ?? fallback.lng,
 }))
 
-const inBounds = computed(() => isInMarikina(point.value))
+const inBounds = computed(() => isInCoverage(point.value))
 
 const pinHtml = `<span class="kd-cafe-pin__mark kd-cafe-pin__mark--logo" aria-hidden="true">
   <img src="/assets/kapedoko-logo_dark.png" alt="" width="32" height="42" />
@@ -140,9 +146,9 @@ const setPoint = async (next: LatLng, lookup = true) => {
 const runSearch = async () => {
   searchError.value = ''
   results.value = []
-  const found = await searchMarikinaAddress(query.value)
+  const found = await searchCoverageAddress(query.value)
   if (!found.length) {
-    searchError.value = 'No Marikina addresses matched that search. Move the pin instead.'
+    searchError.value = 'No Metro Manila addresses matched that search. Move the pin instead.'
     return
   }
   results.value = found
@@ -163,18 +169,23 @@ const useMyLocation = async () => {
     locationNote.value = 'Location is off. Drag the pin onto the cafe instead.'
     return
   }
-  if (!isInMarikina(location.value)) {
-    locationNote.value = 'Your location is outside Marikina. Pin the cafe on the map instead.'
+  if (!isInCoverage(location.value)) {
+    locationNote.value = 'Your location is outside Metro Manila. Metro Manila only for now — pin the cafe on the map instead.'
     return
   }
   await setPoint(location.value)
 }
 
-const marikinaBounds = () =>
-  L.latLngBounds(
-    [MARIKINA_BOUNDS.south, MARIKINA_BOUNDS.west],
-    [MARIKINA_BOUNDS.north, MARIKINA_BOUNDS.east],
+const regionBounds = () => {
+  const bounds = coverageBounds()
+  return L.latLngBounds(
+    [bounds.south, bounds.west],
+    [bounds.north, bounds.east],
   )
+}
+
+const regionLatLngs = () =>
+  coverageRings().map((ring) => ring.map(([lng, lat]) => [lat, lng] as [number, number]))
 
 const init = () => {
   if (!root.value) return
@@ -182,18 +193,18 @@ const init = () => {
   map = L.map(root.value, {
     zoomControl: false,
     attributionControl: true,
-    maxBounds: marikinaBounds().pad(0.18),
+    maxBounds: regionBounds().pad(0.12),
     maxBoundsViscosity: 0.85,
   })
   map.attributionControl?.setPrefix('')
-  map.setView([point.value.lat, point.value.lng], 15)
+  map.setView([point.value.lat, point.value.lng], 13)
 
   L.tileLayer(config.public.mapTiles.url, {
     attribution: config.public.mapTiles.attribution,
     maxZoom: 19,
   }).addTo(map)
 
-  L.rectangle(marikinaBounds(), {
+  L.polygon(regionLatLngs(), {
     color: '#372d25',
     weight: 1,
     fill: false,
@@ -219,7 +230,7 @@ const init = () => {
   })
 
   if (props.lat == null || props.lng == null) {
-    void setPoint(MARIKINA_CENTER)
+    void setPoint(fallback)
   }
 
   requestAnimationFrame(() => map?.invalidateSize({ animate: false }))

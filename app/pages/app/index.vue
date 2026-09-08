@@ -116,9 +116,8 @@
 
         <Transition name="cafe-list" mode="out-in">
           <section :key="listKey" class="home-list" aria-label="Cafes">
-            <p v-if="source === 'demo'" class="home-demo" role="note">Demo cafes for preview</p>
             <p v-if="visibleCafes.length === 0" class="home-empty">
-              No coffee shops match that search.
+              {{ cafes.length === 0 ? 'No coffee shops yet.' : 'No coffee shops match that search.' }}
             </p>
 
             <CafeCard
@@ -168,7 +167,6 @@ import {
 } from 'lucide-vue-next'
 import CafeCard from '~/components/cafe/CafeCard.vue'
 import AppTabBar from '~/components/navigation/AppTabBar.vue'
-import type { Cafe } from '~/types/cafe'
 
 type FilterId = 'near' | 'popular' | 'wifi' | 'plugs'
 
@@ -197,81 +195,8 @@ const featured = [
   },
 ]
 
-const demoCafes: Cafe[] = [
-  {
-    id: 'c1',
-    name: 'Toby’s Estate',
-    address: 'BGC High Street, Taguig City',
-    image: '/assets/cafes/tobys.jpg',
-    photos: ['/assets/cafes/tobys.jpg'],
-    open: true,
-    status: 'Open',
-    hoursHint: 'Opens till 10pm',
-    amenities: ['wifi', 'plug'],
-    popular: true,
-    rating: 5,
-    ratingLabel: '5.0',
-    reviews: [],
-    lat: 14.5547,
-    lng: 121.0244,
-  },
-  {
-    id: 'c2',
-    name: 'Commune Cafe + Bar',
-    address: 'Poblacion, Makati City',
-    image: '/assets/cafes/commune.jpg',
-    photos: ['/assets/cafes/commune.jpg'],
-    open: true,
-    status: 'Open',
-    hoursHint: 'Opens till 12am',
-    amenities: ['plug'],
-    popular: true,
-    rating: 4,
-    ratingLabel: '4.0',
-    reviews: [],
-    lat: 14.565,
-    lng: 121.03,
-  },
-  {
-    id: 'c3',
-    name: 'Single Origin',
-    address: 'Salcedo Village, Makati City',
-    image: '/assets/cafes/single-origin.jpg',
-    photos: ['/assets/cafes/single-origin.jpg'],
-    open: false,
-    status: 'Closed, opens at 9:00am',
-    hoursHint: 'Opens at 9:00am',
-    amenities: ['wifi', 'plug'],
-    popular: false,
-    rating: 4,
-    ratingLabel: '4.0',
-    reviews: [],
-    lat: 14.56,
-    lng: 121.02,
-  },
-  {
-    id: 'c4',
-    name: 'KapeTayo',
-    address: 'Katipunan Ave, Quezon City',
-    image: '/assets/cafes/kapetayo.jpg',
-    photos: ['/assets/cafes/kapetayo.jpg'],
-    open: true,
-    status: 'Open',
-    hoursHint: 'Opens till 9pm',
-    amenities: 'none',
-    popular: false,
-    rating: 3,
-    ratingLabel: '3.0',
-    reviews: [],
-    lat: 14.637,
-    lng: 121.074,
-  },
-]
-
-const { cafes: liveCafes, source } = useApprovedShops()
-const cafes = computed(() => (
-  source.value === 'live' && liveCafes.value.length ? liveCafes.value : demoCafes
-))
+const { cafes: liveCafes } = useApprovedShops()
+const cafes = computed(() => liveCafes.value)
 
 const query = ref('')
 const submittedQuery = ref('')
@@ -687,19 +612,11 @@ onMounted(() => {
   padding: 0 20px;
 }
 
-.home-empty,
-.home-demo {
-  margin: 0 0 8px;
-  color: var(--kd-ink);
-  font-size: 12px;
-  font-weight: 700;
-}
-
 .home-empty {
   margin: 1.5rem 0 0;
   text-align: center;
+  color: var(--kd-ink);
   font-size: 14px;
-  font-weight: 400;
 }
 
 .home-fab {

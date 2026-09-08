@@ -125,7 +125,7 @@ import CafeLocationPicker from '~/components/submit/CafeLocationPicker.client.vu
 import CafeDetailsStep from '~/components/submit/CafeDetailsStep.vue'
 import { allDayEveryDay, isValidWeeklyHours, sameHoursEveryDay, summarizeHours } from '~/utils/hours'
 import { addressError, cafeNameError, normalizeAddress, normalizeCafeName } from '~/utils/identity'
-import { isInMarikina } from '~/utils/marikina'
+import { isInCoverage } from '~/utils/geography'
 import { isValidPhone } from '~/utils/phone'
 import { logoFileError } from '~/utils/logo'
 import type { WeeklyHours } from '~/types/shop'
@@ -204,8 +204,8 @@ const validateIdentity = () => {
 
 const validateLocation = () => {
   issues.address = addressError(draft.address)
-  if (draft.lat == null || draft.lng == null || !isInMarikina({ lat: draft.lat, lng: draft.lng })) {
-    issues.address = issues.address || 'Pin the cafe inside Marikina.'
+  if (draft.lat == null || draft.lng == null || !isInCoverage({ lat: draft.lat, lng: draft.lng })) {
+    issues.address = issues.address || 'Metro Manila only for now. Pin the cafe inside Metro Manila.'
   }
   return !issues.address
 }

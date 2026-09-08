@@ -1,5 +1,14 @@
 import { describe, expect, test } from 'bun:test'
-import { isInMarikina, MARIKINA_CENTER } from './marikina'
+import {
+  METRO_MANILA_CENTER,
+  boundsContain,
+  boundsFromRadius,
+  clampQueryBounds,
+  coverageBounds,
+  isInCoverage,
+  padBounds,
+  pointInBounds,
+} from './geography'
 import {
   allDayEveryDay,
   isOpenNow,
@@ -10,18 +19,51 @@ import {
 } from './hours'
 import { isValidPhone, optionalPhone } from './phone'
 import { cafeNameError, isValidAddress, isValidCafeName } from './identity'
-import { amenitiesFromStats } from './shop-mapper'
-import { logoFileError } from './logo'
+import { amenitiesFromStats, shopImageUrl } from './shop-mapper'
+import { KAPEDOKO_MARK_SRC, logoFileError } from './logo'
 import { formatShopStreet } from './geocode'
 import { authUserId } from './auth'
+import { suggestCafes } from './cafe-search'
+import { googleMapsDirectionsUrl } from './maps'
+import type { Cafe } from '../types/cafe'
 
-describe('marikina bounds', () => {
-  test('accepts city hall', () => {
-    expect(isInMarikina(MARIKINA_CENTER)).toBe(true)
+describe('metro manila coverage', () => {
+  test('accepts the fallback center', () => {
+    expect(isInCoverage(METRO_MANILA_CENTER)).toBe(true)
   })
 
-  test('rejects Makati', () => {
-    expect(isInMarikina({ lat: 14.5547, lng: 121.0244 })).toBe(false)
+  test('accepts representative NCR cities', () => {
+    expect(isInCoverage({ lat: 14.6507, lng: 121.1029 })).toBe(true) // Marikina
+    expect(isInCoverage({ lat: 14.5547, lng: 121.0244 })).toBe(true) // Makati
+    expect(isInCoverage({ lat: 14.619, lng: 121.051 })).toBe(true) // Quezon City
+    expect(isInCoverage({ lat: 14.423, lng: 121.047 })).toBe(true) // Muntinlupa
+    expect(isInCoverage({ lat: 14.5894, lng: 120.9842 })).toBe(true) // Manila
+  })
+
+  test('rejects points outside NCR', () => {
+    expect(isInCoverage({ lat: 14.586, lng: 121.175 })).toBe(false) // Antipolo
+    expect(isInCoverage({ lat: 14.359, lng: 121.056 })).toBe(false) // San Pedro
+  })
+
+  test('fallback sits inside the region bounds', () => {
+    const bounds = coverageBounds()
+    expect(METRO_MANILA_CENTER.lat).toBeGreaterThan(bounds.south)
+    expect(METRO_MANILA_CENTER.lat).toBeLessThan(bounds.north)
+    expect(METRO_MANILA_CENTER.lng).toBeGreaterThan(bounds.west)
+    expect(METRO_MANILA_CENTER.lng).toBeLessThan(bounds.east)
+  })
+
+  test('viewport queries pad and clamp map bounds', () => {
+    const origin = METRO_MANILA_CENTER
+    const tight = boundsFromRadius(origin, 1_000)
+    const padded = padBounds(tight, 0.3)
+    expect(boundsContain(padded, tight)).toBe(true)
+    expect(pointInBounds(origin, tight)).toBe(true)
+
+    const city = boundsFromRadius(origin, 20_000)
+    const clamped = clampQueryBounds(origin, city, 8_000)
+    expect(clamped.north - clamped.south).toBeLessThan(city.north - city.south)
+    expect(pointInBounds(origin, clamped)).toBe(true)
   })
 })
 
@@ -87,6 +129,13 @@ describe('shop street line', () => {
       display_name: 'Shoe Ave, San Roque, Marikina, Metro Manila, 1800, Philippines',
     })).toBe('Shoe Ave, San Roque, Marikina')
   })
+
+  test('keeps the Nominatim city instead of forcing Marikina', () => {
+    expect(formatShopStreet({
+      display_name: '26th Street, Bonifacio Global City, Taguig, Metro Manila, 1634, Philippines',
+      address: { road: '26th Street', suburb: 'Bonifacio Global City', city: 'Taguig' },
+    })).toBe('26th Street, Bonifacio Global City, Taguig')
+  })
 })
 
 describe('amenities from reviews', () => {
@@ -127,5 +176,67 @@ describe('logo files', () => {
     expect(logoFileError(png)).toBeNull()
     expect(logoFileError(pdf)).toBe('Use a JPG, PNG, or WebP image.')
     expect(logoFileError(huge)).toBe('Keep the logo under 2 MB.')
+  })
+})
+
+describe('shop image urls', () => {
+  const shop = {
+    logo_object_key: 'shop-logos/user/logo.png',
+    cover_photo_url: null as string | null,
+  }
+
+  test('builds a public r2.dev url', () => {
+    expect(shopImageUrl(shop, 'https://pub-abc.r2.dev/')).toBe(
+      'https://pub-abc.r2.dev/shop-logos/user/logo.png',
+    )
+  })
+
+  test('ignores the private S3 API host', () => {
+    expect(
+      shopImageUrl(shop, 'https://80fe00aa3cade8afa8a9436eb980192f.r2.cloudflarestorage.com'),
+    ).toBe(KAPEDOKO_MARK_SRC)
+  })
+})
+
+describe('cafe search suggestions', () => {
+  const stub = (id: string, name: string, address: string, lat: number, lng: number): Cafe => ({
+    id,
+    name,
+    address,
+    image: '',
+    photos: [],
+    open: true,
+    status: 'Open',
+    hoursHint: '',
+    amenities: [],
+    popular: false,
+    rating: 0,
+    ratingLabel: 'New',
+    reviews: [],
+    lat,
+    lng,
+  })
+
+  test('ranks name prefix matches ahead of address hits', () => {
+    const origin = { lat: 14.5547, lng: 121.0244 }
+    const cafes = [
+      stub('far', 'Other Cup', 'Makati Avenue, Makati', 14.6, 121.08),
+      stub('near', 'Makati Cafe', 'Makati Avenue, Makati', 14.5547, 121.0244),
+      stub('name', 'Makati Roasters', 'Poblacion, Makati', 14.57, 121.03),
+    ]
+
+    expect(suggestCafes(cafes, 'maka', origin).map((cafe) => cafe.id)).toEqual([
+      'near',
+      'name',
+      'far',
+    ])
+  })
+})
+
+describe('google maps directions', () => {
+  test('builds a free Google Maps directions url from coordinates', () => {
+    expect(googleMapsDirectionsUrl(14.5547, 121.0244)).toBe(
+      'https://www.google.com/maps/dir/?api=1&destination=14.5547%2C121.0244',
+    )
   })
 })

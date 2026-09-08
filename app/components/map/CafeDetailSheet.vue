@@ -19,6 +19,7 @@
             :href="mapsHref"
             target="_blank"
             rel="noopener noreferrer"
+            aria-label="Navigate to this cafe in Google Maps"
           >
             <span class="cafe-detail__action-face cafe-detail__action-face--primary">
               <Navigation :size="14" :stroke-width="2.25" aria-hidden="true" />
@@ -213,6 +214,7 @@
 import { Coffee, Navigation, Phone, Plug, Star, Wifi } from 'lucide-vue-next'
 import type { Cafe } from '~/types/cafe'
 import { isKapedokoMark, KAPEDOKO_MARK_SRC } from '~/utils/logo'
+import { googleMapsDirectionsUrl } from '~/utils/maps'
 
 const SHEET_HEIGHT = 0.88
 const PEEK_VIEWPORT = 0.62
@@ -260,8 +262,7 @@ const hasPlug = computed(
 
 const mapsHref = computed(() => {
   if (!props.cafe) return '#'
-  const { lat, lng } = props.cafe
-  return `https://www.openstreetmap.org/directions?from=&to=${lat}%2C${lng}#map=18/${lat}/${lng}`
+  return googleMapsDirectionsUrl(props.cafe.lat, props.cafe.lng)
 })
 
 watch(
