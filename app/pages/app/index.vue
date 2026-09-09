@@ -182,7 +182,7 @@
         </span>
         <span class="sr-only">Home</span>
       </button>
-      <button type="button" class="home-tabbar__item" aria-label="Saved cafes">
+      <button type="button" class="home-tabbar__item" aria-label="Saved cafes" @click="goToFavorites">
         <Heart :size="24" :stroke-width="2" />
       </button>
       <button type="button" class="home-tabbar__item" aria-label="Map">
@@ -361,6 +361,10 @@ const submitSearch = async () => {
   const path = next ? `/app/search?q=${encodeURIComponent(next)}` : '/app/search'
 
   await navigateTo(path)
+}
+
+const goToFavorites = async () => {
+  await navigateTo('/app/favorites')
 }
 
 const setFilter = (id: FilterId) => {
