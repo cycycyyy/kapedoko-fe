@@ -34,7 +34,7 @@ export default defineNuxtConfig({
       login: "/login",
       callback: "/confirm",
       include: undefined, // protect all routes by default...
-      exclude: ["/app", "/app/onboarding", "/register"], // ...except these
+      exclude: ["/app", "/app/onboarding", "/app/search", "/register"], // ...except these
       saveRedirectToCookie: true, // remember where user was headed
     },
   },
