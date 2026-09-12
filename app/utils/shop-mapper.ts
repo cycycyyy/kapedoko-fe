@@ -1,5 +1,12 @@
-import type { Amenity, Cafe } from '../types/cafe'
-import type { MarkerTier, ShopReviewStatsRow, ShopRow } from '../types/shop'
+import type { Amenity, Cafe, CafeReview } from '../types/cafe'
+import type { MarkerTier, ShopBusynessNowRow, ShopReviewStatsRow, ShopRow } from '../types/shop'
+import {
+  busynessLabel,
+  isValidBusynessLevel,
+  matchaInsightFromStats,
+  plugInsightFromStats,
+  wifiInsightFromStats,
+} from './cafe-review'
 import { formatHoursHint, isOpenNow } from './hours'
 import { isKapedokoMark, KAPEDOKO_MARK_SRC } from './logo'
 
@@ -90,9 +97,29 @@ export function mapShopToCafe(
     popular: (stats?.total_reviews ?? 0) >= REVIEW_THRESHOLD && (stats?.recommend_pct ?? 0) >= 70,
     rating,
     ratingLabel: label,
+    wifiInsight: wifiInsightFromStats(stats),
+    plugInsight: plugInsightFromStats(stats),
+    matchaInsight: matchaInsightFromStats(stats),
+    busyness: null,
     reviews: [],
     lat: Number(shop.latitude),
     lng: Number(shop.longitude),
     markerTier,
+  }
+}
+
+export function withCafeReviews(cafe: Cafe, reviews: CafeReview[]): Cafe {
+  return { ...cafe, reviews }
+}
+
+export function withCafeBusyness(cafe: Cafe, row?: ShopBusynessNowRow | null): Cafe {
+  if (!row || !isValidBusynessLevel(row.level)) return { ...cafe, busyness: null }
+  return {
+    ...cafe,
+    busyness: {
+      level: row.level,
+      label: busynessLabel(row.level),
+      count: row.report_count,
+    },
   }
 }

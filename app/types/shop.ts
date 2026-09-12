@@ -49,6 +49,14 @@ export interface ShopRow {
   updated_at: string
 }
 
+export type ReviewTriState = 'yes' | 'no' | 'unsure'
+export type WifiSpeed = 'slow' | 'okay' | 'fast'
+export type WifiTimeLimit = 'unlimited' | 'voucher' | 'purchase' | 'unsure'
+export type PowerAccess = 'easy' | 'limited' | 'scarce'
+export type NoiseLevel = 'quiet' | 'mixed' | 'loud'
+export type StayFit = 'long' | 'short' | 'unsure'
+export type BusynessLevel = 'quiet' | 'comfortable' | 'busy' | 'full'
+
 export interface ShopReviewStatsRow {
   shop_id: string
   total_reviews: number
@@ -58,7 +66,81 @@ export interface ShopReviewStatsRow {
   wifi_time_limit_mode: string | null
   power_yes_count: number | null
   power_available_pct: number | null
+  power_access_mode?: string | null
   recommend_pct: number | null
+  visit_again_pct?: number | null
+  matcha_yes_count?: number | null
+  matcha_available_pct?: number | null
+  noise_mode?: string | null
+  stay_fit_mode?: string | null
+}
+
+export interface ShopReviewRow {
+  id: string
+  shop_id: string
+  user_id: string
+  wifi_available: ReviewTriState
+  wifi_speed: WifiSpeed | null
+  wifi_time_limit: WifiTimeLimit | null
+  power_available: ReviewTriState
+  power_access: PowerAccess | null
+  serves_matcha: ReviewTriState
+  noise: NoiseLevel
+  stay_fit: StayFit
+  recommend: boolean
+  visit_again: boolean
+  comment: string | null
+  flagged_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ShopReviewInsert {
+  shop_id: string
+  user_id: string
+  wifi_available: ReviewTriState
+  wifi_speed: WifiSpeed | null
+  wifi_time_limit: WifiTimeLimit | null
+  power_available: ReviewTriState
+  power_access: PowerAccess | null
+  serves_matcha: ReviewTriState
+  noise: NoiseLevel
+  stay_fit: StayFit
+  recommend: boolean
+  visit_again: boolean
+  comment: string | null
+}
+
+export interface ShopReviewPublicRow {
+  id: string
+  shop_id: string
+  created_at: string
+  updated_at: string
+  author_name: string
+  wifi_available: ReviewTriState
+  wifi_speed: WifiSpeed | null
+  wifi_time_limit: WifiTimeLimit | null
+  power_available: ReviewTriState
+  power_access: PowerAccess | null
+  serves_matcha: ReviewTriState
+  noise: NoiseLevel
+  stay_fit: StayFit
+  recommend: boolean
+  visit_again: boolean
+  comment: string | null
+}
+
+export interface ShopBusynessNowRow {
+  shop_id: string
+  level: BusynessLevel
+  report_count: number
+  last_reported_at: string
+}
+
+export interface ShopBusynessInsert {
+  shop_id: string
+  user_id: string
+  level: BusynessLevel
 }
 
 export interface ShopInsert {

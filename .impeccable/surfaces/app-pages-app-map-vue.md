@@ -20,3 +20,7 @@ STORY: Someone already out opens Map, shares location, sees nearby work cafes wi
 FIRST VIEWPORT: Full-screen OSM map fitted to a 3 km radius; white top fade; back, dark lockup, MAPS; 50px search; coffee-brown “Show cafes near me” above the home indicator; tab bar only until tiles resolve.
 FORM: Figma Map Selection overlay plus peek sheet; user-pinned frames 47:1261 and 67:653; Operate + pinned Figma, concept-seed skipped; code-led.
 FINISH: finish review shipped; DESIGN.md records overlay chrome, forest/brick status, amenity text, 45/48px CTAs, rice-paper tiles, and demo fixture labeling
+
+## Status family
+
+White 8px island under search. Locating previews the map’s you-dot with a double ping, then vanishes. Location-off and tile-error share the island with a rice-paper or brick well and a 45/48 coffee-brown action.

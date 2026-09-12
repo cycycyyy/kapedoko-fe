@@ -1,6 +1,6 @@
 import type { Cafe, LatLng } from '~/types/cafe'
 import type { GeoBounds } from '~/utils/geography'
-import { fetchApprovedCafes } from '~/utils/approved-shops'
+import { fetchApprovedCafeById, fetchApprovedCafes, hydrateCafeDetail } from '~/utils/approved-shops'
 import {
   boundsContain,
   boundsFromRadius,
@@ -38,30 +38,56 @@ export function useMapCafes() {
 
   const publicBase = () => String(config.public.r2PublicBaseUrl || '')
 
-  const remember = (cafes: Cafe[]) => {
+  const remember = (cafes: Cafe[], mode: 'merge' | 'replace' = 'merge') => {
     if (!cafes.length) return
     const next = new Map(cache.value)
     let changed = false
     for (const cafe of cafes) {
       const prev = next.get(cafe.id)
+      const merged = prev && mode === 'merge'
+        ? {
+            ...cafe,
+            reviews: cafe.reviews.length ? cafe.reviews : prev.reviews,
+            wifiInsight: cafe.wifiInsight ?? prev.wifiInsight,
+            plugInsight: cafe.plugInsight ?? prev.plugInsight,
+            matchaInsight: cafe.matchaInsight ?? prev.matchaInsight,
+            busyness: cafe.busyness ?? prev.busyness,
+          }
+        : cafe
       if (
         prev
-        &&         prev.lat === cafe.lat
-        && prev.lng === cafe.lng
-        && prev.name === cafe.name
-        && prev.status === cafe.status
-        && prev.markerTier === cafe.markerTier
-        && prev.image === cafe.image
+        && prev.lat === merged.lat
+        && prev.lng === merged.lng
+        && prev.name === merged.name
+        && prev.status === merged.status
+        && prev.markerTier === merged.markerTier
+        && prev.image === merged.image
+        && prev.reviews === merged.reviews
+        && prev.busyness === merged.busyness
+        && prev.wifiInsight === merged.wifiInsight
       ) {
         continue
       }
-      next.set(cafe.id, cafe)
+      next.set(cafe.id, merged)
       changed = true
     }
     if (changed) cache.value = next
   }
 
   const cafeById = (id: string | null) => (id ? cache.value.get(id) ?? null : null)
+
+  const hydrateCafe = async (id: string) => {
+    const current = cafeById(id)
+    try {
+      const base = current ?? await fetchApprovedCafeById(supabase, publicBase(), id)
+      if (!base) return current
+      const detailed = await hydrateCafeDetail(supabase, base)
+      remember([detailed], 'replace')
+      return detailed
+    } catch {
+      return current
+    }
+  }
 
   const viewportCafes = computed(() => [...cache.value.values()])
 
@@ -161,6 +187,7 @@ export function useMapCafes() {
     error,
     cafeById,
     remember,
+    hydrateCafe,
     loadNearby,
     loadViewport,
     searchCafes,

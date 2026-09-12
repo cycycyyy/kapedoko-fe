@@ -114,26 +114,49 @@
             </form>
           </header>
 
-          <div v-if="usingFallback && locationStatus !== 'requesting'" class="map-banner" role="status">
-            <p>Location is off. Enable it to see cafes near you.</p>
-            <button type="button" class="map-banner__action" @click="requestLocation">
-              Enable location
-            </button>
-          </div>
+          <div class="map-status">
+            <Transition name="map-note">
+              <div
+                v-if="usingFallback && locationStatus !== 'requesting'"
+                key="off"
+                class="map-note"
+                role="status"
+              >
+                <span class="map-note__mark" aria-hidden="true">
+                  <LocateOff :size="16" :stroke-width="2.25" />
+                </span>
+                <p class="map-note__copy">Location is off. Enable it to see cafes near you.</p>
+                <button type="button" class="map-note__action" @click="requestLocation">
+                  Enable location
+                </button>
+              </div>
+              <div
+                v-else-if="locationStatus === 'requesting' && !mapSettled"
+                key="live"
+                class="map-note map-note--live"
+                role="status"
+                aria-busy="true"
+              >
+                <span class="map-note__you" aria-hidden="true">
+                  <span class="map-note__you-pulse" />
+                  <span class="map-note__you-pulse map-note__you-pulse--late" />
+                  <span class="map-note__you-core" />
+                </span>
+                <p class="map-note__copy">Finding your location…</p>
+              </div>
+            </Transition>
 
-          <p
-            v-else-if="locationStatus === 'requesting' && !mapSettled"
-            class="map-banner map-banner--quiet"
-            role="status"
-          >
-            Finding your location…
-          </p>
-
-          <div v-if="tilesFailed" class="map-error" role="alert">
-            <p>Map tiles couldn’t load. Check your connection, then try again.</p>
-            <button type="button" class="map-error__retry" @click="retryTiles">
-              Retry map
-            </button>
+            <Transition name="map-note">
+              <div v-if="tilesFailed" key="tiles" class="map-note map-note--alert" role="alert">
+                <span class="map-note__mark" aria-hidden="true">
+                  <MapIcon :size="16" :stroke-width="2.25" />
+                </span>
+                <p class="map-note__copy">Map tiles couldn’t load. Check your connection, then try again.</p>
+                <button type="button" class="map-note__action" @click="retryTiles">
+                  Retry map
+                </button>
+              </div>
+            </Transition>
           </div>
 
           <button
@@ -176,12 +199,14 @@
       v-model:open="detailOpen"
       :cafe="selectedCafe || lastDetailCafe"
       @present="onSheetPresent"
+      @dismissed="onDetailDismissed"
+      @review="onReviewCafe"
     />
   </IonPage>
 </template>
 
 <script lang="ts" setup>
-import { ChevronLeft, Coffee, LocateFixed, Search } from 'lucide-vue-next'
+import { ChevronLeft, Coffee, LocateFixed, LocateOff, Map as MapIcon, Search } from 'lucide-vue-next'
 import { Capacitor } from '@capacitor/core'
 import { useIonRouter } from '@ionic/vue'
 import KapeMap from '~/components/map/KapeMap.client.vue'
@@ -202,6 +227,7 @@ const {
   suggestions,
   cafeById,
   remember,
+  hydrateCafe,
   loadNearby,
   loadViewport,
   searchCafes,
@@ -262,6 +288,7 @@ const suggestionDistances = computed(() => {
 })
 const selectedCafe = computed(() => cafeById(selectedId.value))
 const lastDetailCafe = ref<Cafe | null>(null)
+const pendingReviewId = ref<string | null>(null)
 watch(selectedCafe, (cafe) => {
   if (cafe) lastDetailCafe.value = cafe
 })
@@ -378,10 +405,40 @@ const onSelectCafe = (id: string) => {
   if (sheetOpen.value) listWasOpen.value = true
   sheetOpen.value = false
   detailOpen.value = true
-  const cafe = cafeById(id)
-  if (!cafe) return
-  const extra = Math.round(window.innerHeight * 0.52)
-  mapRef.value?.focusCafe(cafe, extra)
+  const existing = cafeById(id)
+  if (existing) {
+    const extra = Math.round(window.innerHeight * 0.52)
+    mapRef.value?.focusCafe(existing, extra)
+  }
+  void hydrateCafe(id).then((cafe) => {
+    if (!cafe || selectedId.value !== id) return
+    const extra = Math.round(window.innerHeight * 0.52)
+    mapRef.value?.focusCafe(cafe, extra)
+  })
+}
+
+const onReviewCafe = () => {
+  const id = selectedId.value || lastDetailCafe.value?.id
+  if (!id) return
+  listWasOpen.value = false
+  sheetOpen.value = false
+  if (!detailOpen.value) {
+    void navigateTo(`/app/cafes/${id}/review`)
+    return
+  }
+  pendingReviewId.value = id
+  detailOpen.value = false
+  window.setTimeout(() => {
+    if (pendingReviewId.value === id) onDetailDismissed()
+  }, 450)
+}
+
+const onDetailDismissed = () => {
+  const id = pendingReviewId.value
+  if (!id) return
+  pendingReviewId.value = null
+  selectedId.value = null
+  void navigateTo(`/app/cafes/${id}/review`)
 }
 
 const onViewChange = (view: { bounds: GeoBounds; center: { lat: number; lng: number } }) => {
@@ -443,24 +500,42 @@ watch(sheetOpen, (open) => {
 })
 
 watch(detailOpen, (open) => {
-  if (!open) {
-    selectedId.value = null
-    const restoreList = listWasOpen.value
-    listWasOpen.value = false
-    if (restoreList) {
-      window.setTimeout(() => {
-        sheetOpen.value = true
-      }, 320)
-    }
+  if (open) {
+    refreshMap()
+    return
+  }
+  if (pendingReviewId.value) {
+    refreshMap()
+    return
+  }
+  selectedId.value = null
+  const restoreList = listWasOpen.value
+  listWasOpen.value = false
+  if (restoreList) {
+    window.setTimeout(() => {
+      sheetOpen.value = true
+    }, 320)
   }
   refreshMap()
 })
 
 watch(visibleCafes, (list) => {
+  if (detailOpen.value) return
   if (selectedId.value && !list.some((cafe) => cafe.id === selectedId.value)) {
     selectedId.value = null
   }
 })
+
+const route = useRoute()
+watch(
+  () => route.query.cafe,
+  (value) => {
+    const id = Array.isArray(value) ? value[0] : value
+    if (typeof id !== 'string' || !id) return
+    onSelectCafe(id)
+  },
+  { immediate: true },
+)
 
 onMounted(() => {
   if (Capacitor.getPlatform() === 'android') {
@@ -504,16 +579,15 @@ onMounted(() => {
 }
 
 .map-hero,
-.map-banner,
-.map-error,
+.map-status,
+.map-note,
 .map-locate,
 .map-cta,
 .map-back,
 .map-search,
 .map-search__results,
 .map-search__suggestion,
-.map-banner__action,
-.map-error__retry {
+.map-note__action {
   pointer-events: auto;
 }
 
@@ -550,8 +624,7 @@ onMounted(() => {
 .map-search__suggestion:focus-visible,
 .map-locate:focus-visible,
 .map-cta:focus-visible,
-.map-banner__action:focus-visible,
-.map-error__retry:focus-visible {
+.map-note__action:focus-visible {
   outline: 2px solid var(--kd-primary);
   outline-offset: 2px;
   border-radius: 8px;
@@ -706,40 +779,93 @@ onMounted(() => {
   line-height: 1.35;
 }
 
-.map-banner,
-.map-error {
+.map-status {
+  position: relative;
+  display: grid;
+  gap: 8px;
+}
+
+.map-note {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 12px;
   margin: 0 20px;
-  padding: 10px 12px;
+  padding: 8px 8px 8px 12px;
   border-radius: 8px;
-  background: color-mix(in srgb, var(--kd-white) 92%, transparent);
+  background: var(--kd-white);
   box-shadow: 0 2px 8px var(--kd-shadow);
   color: var(--kd-ink);
 }
 
-.map-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+.map-note--live {
+  padding-right: 14px;
 }
 
-.map-banner p,
-.map-error p {
+.map-note__you {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+}
+
+.map-note__you-core {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--kd-primary);
+  border: 2px solid var(--kd-white);
+  box-shadow: 0 2px 6px var(--kd-shadow);
+  z-index: 1;
+}
+
+.map-note__you-pulse {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 1.5px solid var(--kd-primary);
+  background: color-mix(in srgb, var(--kd-primary) 18%, transparent);
+  animation: map-note-ping 1.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+.map-note__you-pulse--late {
+  animation-delay: 0.55s;
+}
+
+.map-note__mark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--kd-secondary);
+  color: var(--kd-primary);
+}
+
+.map-note--alert .map-note__mark {
+  background: color-mix(in srgb, var(--kd-closed) 16%, var(--kd-white));
+  color: var(--kd-closed);
+}
+
+.map-note__copy {
+  flex: 1 1 auto;
+  min-width: 0;
   margin: 0;
   font-size: 12px;
   line-height: 1.35;
 }
 
-.map-banner--quiet {
-  display: block;
-}
-
-.map-banner__action,
-.map-error__retry {
+.map-note__action {
   flex-shrink: 0;
-  min-height: 48px;
-  height: 48px;
-  padding: 0 12px;
+  margin-left: auto;
+  height: 45px;
+  min-height: 45px;
+  min-width: 44px;
+  padding: 0 14px;
   border: 0;
   border-radius: 8px;
   background: var(--kd-primary);
@@ -748,14 +874,37 @@ onMounted(() => {
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 140ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.map-error {
-  margin-top: 10px;
+.map-note__action:hover {
+  background: color-mix(in srgb, var(--kd-primary) 88%, var(--kd-black));
 }
 
-.map-error__retry {
-  margin-top: 10px;
+:root.is-android .map-note__action {
+  height: 48px;
+  min-height: 48px;
+}
+
+.map-note-enter-active,
+.map-note-leave-active {
+  transition: opacity 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.map-note-leave-active {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 1;
+}
+
+.map-note-enter-from,
+.map-note-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 
 .map-locate {
@@ -815,8 +964,7 @@ onMounted(() => {
 .map-search__suggestion:active,
 .map-locate:active,
 .map-cta:active,
-.map-banner__action:active,
-.map-error__retry:active {
+.map-note__action:active {
   transform: scale(0.96);
 }
 
@@ -843,6 +991,21 @@ onMounted(() => {
   }
 }
 
+@keyframes map-note-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  75% {
+    transform: scale(2.45);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.45);
+    opacity: 0;
+  }
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -865,17 +1028,30 @@ onMounted(() => {
 @media (prefers-reduced-motion: reduce) {
   .map-cta,
   .map-locate,
+  .map-note__you-pulse,
   .tabbar-enter-active,
-  .tabbar-leave-active {
+  .tabbar-leave-active,
+  .map-note-enter-active,
+  .map-note-leave-active {
     animation: none;
     transition-duration: 1ms;
+  }
+
+  .map-note__you-pulse--late {
+    display: none;
+  }
+
+  .map-note__you-pulse {
+    transform: scale(2.1);
+    opacity: 0.22;
   }
 
   .map-back:active,
   .map-search__submit:active,
   .map-search__suggestion:active,
   .map-locate:active,
-  .map-cta:active {
+  .map-cta:active,
+  .map-note__action:active {
     transform: none;
   }
 }
