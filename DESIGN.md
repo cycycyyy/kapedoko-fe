@@ -4,8 +4,8 @@ description: A warm, practical cafe guide for finding work-ready coffee shops in
 colors:
   coffee-brown: "#372d25"
   rice-paper: "#ece6db"
-  sage-green: "#7b9e87"
-  blush-red: "#cb8e8e"
+  forest-open: "#3f6a50"
+  brick-closed: "#a45d5d"
   ink: "#1e1e1e"
   white: "#ffffff"
   black: "#000000"
@@ -15,6 +15,11 @@ typography:
   display:
     fontFamily: "Satoshi, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
     fontSize: "24px"
+    fontWeight: 700
+    lineHeight: 1.2
+  headline:
+    fontFamily: "Satoshi, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    fontSize: "20px"
     fontWeight: 700
     lineHeight: 1.2
   title:
@@ -34,6 +39,7 @@ typography:
     lineHeight: 1.2
 rounded:
   sm: "4px"
+  chrome: "5px"
   md: "6px"
   lg: "8px"
   pill: "999px"
@@ -51,6 +57,13 @@ components:
     rounded: "{rounded.lg}"
     height: "45px"
     padding: "0 20px"
+  button-primary-android:
+    backgroundColor: "{colors.coffee-brown}"
+    textColor: "{colors.white}"
+    typography: "{typography.title}"
+    rounded: "{rounded.lg}"
+    height: "48px"
+    padding: "0 20px"
   button-secondary:
     backgroundColor: "{colors.white}"
     textColor: "{colors.coffee-brown}"
@@ -65,6 +78,41 @@ components:
     rounded: "{rounded.sm}"
     height: "27px"
     width: "97px"
+  cafe-pin:
+    backgroundColor: "{colors.coffee-brown}"
+    textColor: "{colors.white}"
+    width: "36px"
+    height: "36px"
+  cafe-pin-selected:
+    backgroundColor: "{colors.coffee-brown}"
+    textColor: "{colors.white}"
+    width: "44px"
+    height: "44px"
+  input-search:
+    backgroundColor: "{colors.white}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.lg}"
+    height: "50px"
+    padding: "0 16px"
+  button-outline:
+    backgroundColor: "{colors.white}"
+    textColor: "{colors.coffee-brown}"
+    typography: "{typography.title}"
+    rounded: "{rounded.lg}"
+    height: "45px"
+    padding: "0 20px"
+  status-chip-open:
+    backgroundColor: "{colors.forest-open}"
+    textColor: "{colors.white}"
+    rounded: "{rounded.sm}"
+    height: "28px"
+    padding: "6px 10px"
+  status-chip-closed:
+    backgroundColor: "{colors.brick-closed}"
+    textColor: "{colors.white}"
+    rounded: "{rounded.sm}"
+    height: "28px"
+    padding: "6px 10px"
 ---
 
 # Design System: KapeDoko
@@ -75,7 +123,7 @@ components:
 
 KapeDoko’s current visual system feels like a dependable neighborhood counter: warm, familiar, and immediately useful. A dark coffee-brown anchor gives the interface a recognizable home, while white content surfaces keep practical cafe information easy to scan. The system is compact and phone-first, with a little editorial warmth in featured cafe imagery and the logo-led onboarding.
 
-Controls are quietly tactile rather than decorative. Small rounded corners, short labels, focused status colors, and restrained card shadows help people make a decision while they are already out in the city. The product’s visual language supports the work-readiness mission: amenities, open status, and location remain more actionable than atmosphere.
+Controls are quietly tactile rather than decorative. Small rounded corners, short labels, focused status colors, and restrained card shadows help people make a decision while they are already out in the city. The same counter language continues onto the map: rice-paper-warmed tiles sit under white overlay chrome, cafe markers are coffee-brown circles with a cup mark, and nearby cafes pull into a white peek sheet that reuses Home’s cafe cards. The product’s visual language supports the work-readiness mission: amenities, open status, and location remain more actionable than atmosphere.
 
 **Key Characteristics:**
 - Coffee-brown brand anchor with warm cream support
@@ -83,29 +131,32 @@ Controls are quietly tactile rather than decorative. Small rounded corners, shor
 - Rounded 4–8px surfaces and pill-shaped progress indicators
 - Tonal depth through white surfaces and subtle ambient shadows
 - Logo and amenity iconography used as recognizable product cues
+- Full-bleed map overlay: white header fade, floating search, coffee-brown circle markers, coffee-brown CTA, white peek and cafe-detail sheets
 
 ## Colors
 
-The palette is material and grounded: coffee-brown establishes identity, rice-paper adds warmth, and quiet status colors communicate availability without competing with the content.
+The palette is material and grounded: coffee-brown establishes identity, rice-paper adds warmth, and quieter forest and brick communicate availability without competing with the content.
 
 ### Primary
-- **Coffee Brown** (`{colors.coffee-brown}`): The brand anchor for the home hero, primary actions, active filters, headings, and selected navigation.
+- **Coffee Brown** (`{colors.coffee-brown}`): The brand anchor for the home hero, primary actions, active filters, headings, selected navigation, cafe pins, and the map’s bottom CTA.
 
 ### Secondary
-- **Rice Paper** (`{colors.rice-paper}`): A warm supporting surface for secondary UI and the lighter side of the brand palette.
+- **Rice Paper** (`{colors.rice-paper}`): A warm supporting surface for secondary UI, map placeholders, and the lighter side of the brand palette. On the map, OSM tiles are warmed toward this paper rather than left as raw cartography.
 
 ### Tertiary
-- **Sage Green** (`{colors.sage-green}`): The positive state for open cafes and available information.
-- **Blush Red** (`{colors.blush-red}`): The restrained negative state for closed cafes and destructive feedback.
+- **Forest Open** (`{colors.forest-open}`): Open status on cafe cards (Home and Map) and the cafe-detail status chip.
+- **Brick Closed** (`{colors.brick-closed}`): Closed status on cafe cards (Home and Map) and the cafe-detail status chip.
 
 ### Neutral
 - **Ink** (`{colors.ink}`): Default readable text and dark content details.
-- **White** (`{colors.white}`): Primary content surface, input surface, and reversed text on coffee-brown.
+- **White** (`{colors.white}`): Primary content surface, input surface, map header fade, peek sheet, and reversed text on coffee-brown.
 - **Black** (`{colors.black}`): Strongest icon and onboarding text treatment.
 - **Soft Gray** (`{colors.soft-gray}`): Muted controls, borders, and inactive UI.
 - **Placeholder Gray** (`{colors.placeholder-gray}`): Inactive carousel dots and low-emphasis placeholder treatment.
 
 **The Coffee-Brown Anchor Rule.** Coffee-brown anchors primary actions and major branded surfaces; status colors communicate state rather than replacing the brand color.
+
+**The Status Contrast Rule.** Cafe open/closed uses forest and brick only: 12px bold text on white cards, or a filled chip with white text on the cafe-detail sheet. Do not restyle status with unused paler Brand Guide greens and pinks.
 
 ## Typography
 
@@ -115,53 +166,62 @@ The palette is material and grounded: coffee-brown establishes identity, rice-pa
 
 ### Hierarchy
 - **Display** (700, 24px, 1.2): Completion moments and prominent onboarding statements.
-- **Title** (700, 16px, 1.375): Cafe names, key copy, and prominent controls.
-- **Body** (400, 12px, 1.35): Addresses, search text, and supporting metadata.
-- **Label** (700, 10px, 1.2): Open/closed status and small state annotations.
+- **Headline** (700, 20px, 1.2): Sheet titles on nearby cafes and cafe detail.
+- **Title** (700, 16px, 1.375): Cafe names, key copy, and prominent controls including the map CTA.
+- **Body** (400, 12px, 1.35): Addresses, search text, distances, amenity labels, and supporting metadata.
+- **Label** (700, 10px, 1.2): Tiny annotations such as map attribution and compact sheet actions. Cafe open/closed status uses body size (12px) at label weight (700) in forest or brick.
 
 ## Layout
 
 The layout is mobile-first and edge-aware. Content uses 20px horizontal gutters, with stacked cafe cards separated by 14px and compact horizontal scrolling for featured content and filters. The home hero owns the top of the screen with a dark branded surface, a watermark, logo bar, search field, and featured carousel. The primary navigation is a four-column bottom bar with safe-area padding for native shells.
 
-Interaction surfaces use 36–50px controls in the home shell and 45px full-width onboarding actions. Horizontal carousels use scroll snapping and hide their scrollbar; reduced-motion users receive immediate rather than smooth scrolling. Expanded web layouts should preserve the compact content rhythm instead of stretching cards into a desktop dashboard.
+Interaction surfaces use 36–50px controls in the home shell, 45px full-width onboarding actions, and a 45px iOS / 48px Android full-width primary CTA on the map overlay. Horizontal carousels use scroll snapping and hide their scrollbar; reduced-motion users receive immediate rather than smooth scrolling. Expanded web layouts should preserve the compact content rhythm instead of stretching cards into a desktop dashboard; map chrome and map sheets cap at 480px from 540px.
+
+**The Overlay Chrome Rule.** A full-bleed map keeps rice-paper-warmed tiles under a white header fade, a floating 50px search field, and a coffee-brown bottom CTA above the home indicator. Nearby results and cafe detail open as white Ionic peek sheets; the nearby sheet reuses Home’s cafe cards.
 
 ## Elevation & Depth
 
-Depth is tonal and light. White cards sit on white content surfaces but are separated with a subtle ambient shadow rather than strong borders. The translucent bottom bar uses a small blur to remain visually connected to the content beneath it. Coffee-brown surfaces provide the strongest separation through contrast.
+Depth is tonal and light. White cards sit on white content surfaces but are separated with a small shadow rather than strong borders. Featured home cards keep a diffuse ambient glow; cafe cards and floating map chrome use a short graphic lift. The translucent bottom bar uses a small blur to remain visually connected to the content beneath it. Coffee-brown surfaces provide the strongest separation through contrast. Map sheets lift over the tiles with a modest upward shadow, not a heavy dashboard panel.
 
 ### Shadow Vocabulary
-- **Ambient card shadow** (`0 0 8px var(--kd-shadow)`): Featured cards and cafe cards at rest.
-- **Graphic shadow** (`0 2px 8px var(--kd-shadow)`): Onboarding illustration lift.
-- **Focus ring** (`0 0 0 2px var(--kd-white), 0 0 0 4px var(--kd-primary)`): Search field focus against the dark hero.
+- **Ambient card shadow** (`0 0 8px var(--kd-shadow)`): Featured cards at rest.
+- **Graphic shadow** (`0 2px 8px var(--kd-shadow)`): Cafe cards, floating map search, status banners, the locate control, and the onboarding illustration.
+- **Sheet lift** (`0 -2px 16px var(--kd-shadow)`): Nearby cafes and cafe-detail sheets over the map.
+- **Marker drop shadow** (`drop-shadow(0 3px 5px var(--kd-shadow))`): Cafe markers at rest; selected markers use `drop-shadow(0 4px 8px var(--kd-shadow))`.
+- **Focus ring** (`0 0 0 2px var(--kd-white), 0 0 0 4px var(--kd-primary)`): Search field focus against the dark hero and over map tiles.
+- **Selected card lift** (`0 4px 12px var(--kd-shadow)`): Selected cafe card in the nearby list sits on rice-paper with a stronger graphic shadow, not a coffee-brown ring.
 
-**The Quiet Depth Rule.** Use tonal contrast and small ambient shadows to separate surfaces; avoid heavy floating panels.
+**The Quiet Depth Rule.** Use tonal contrast and small ambient or graphic shadows to separate surfaces. Overlay chrome and map sheets may lift slightly; do not add heavy dashboard panels.
 
 ## Shapes
 
-The form language is gently rounded and compact. Standard controls use 8px corners, filters use a tighter 4px corner, and carousel indicators are fully pill-shaped. Borders are sparse; focus is communicated with a visible two-tone outline. Images clip to their parent card radius and use `object-fit: cover`.
+The form language is gently rounded and compact. Standard controls use 8px corners, filters use a tighter 4px corner, and carousel indicators are fully pill-shaped. Borders are sparse; focus is communicated with a visible two-tone outline. Images clip to their parent card radius and use `object-fit: cover`. Map sheets share the 8px corner language of cafe cards and primary actions. Sheet handles and the active tab well use a 5px chrome radius. Cafe markers are coffee-brown circles with a white halo, not teardrop pins.
 
 ## Components
 
 ### Buttons
 - **Shape:** Gently rounded corners (8px).
-- **Primary:** Coffee-brown fill, white text, bold 16px label, 45px height, full-width in onboarding.
+- **Primary:** Coffee-brown fill, white text, bold 16px label, 45px height on iOS and onboarding, 48px height on Android overlay CTAs, full-width in onboarding and as the map’s “Show cafes near me” action.
 - **Secondary:** White fill with coffee-brown text, used on the final dark onboarding screen.
+- **Outline:** White fill, coffee-brown 1px stroke and 16px bold label, 45px (48px on Android). Used for “Leave a review” on cafe detail.
+- **Compact sheet actions:** 10px bold labels on a 28px painted face inside a 44px hit area. Coffee-brown fill for Navigate; 10% ink fill for Call.
 - **Hover / Focus:** Slight opacity reduction on hover, compact scale response on press, and a 2px visible focus outline.
 
 ### Chips
 - **Style:** Compact 97px × 27px filter controls with a 4px radius, muted translucent ink at rest, and coffee-brown when active.
 - **State:** Active chips use white bold text; inactive chips use coffee-brown regular text. The row scrolls horizontally.
+- **Status chips:** Cafe-detail open/closed is a 4px chip with forest or brick fill and white 12px bold text, optically aligned with compact Call. Cards keep status as forest/brick text, not a chip.
 
 ### Cards / Containers
 - **Corner Style:** 8px.
 - **Background:** White content surface.
-- **Shadow Strategy:** Subtle ambient shadow with no heavy border.
+- **Shadow Strategy:** Graphic shadow on cafe cards; ambient shadow on featured home cards.
 - **Internal Padding:** Cafe metadata uses approximately 11px top, 13px right, 10px bottom, and 15px left.
-- **Signature treatment:** Cafe cards pair a 90px × 100px cropped image with concise status, name, address, and amenity information.
+- **Signature treatment:** Cafe cards pair a 90px × 100px cropped image with concise status, name, address, optional distance, and amenity information. Open/closed is 12px bold in forest or brick. WiFi and outlet availability appear as visible text beside their icons, not as icons alone. A selected card uses a rice-paper fill and a stronger graphic lift.
 
 ### Inputs / Fields
-- **Style:** White 50px search field with 16px horizontal padding, coffee-brown text, and an 8px radius.
-- **Focus:** Two-tone white and coffee-brown focus ring that remains visible on the dark hero.
+- **Style:** White 50px search field with 16px horizontal padding, coffee-brown text, and an 8px radius. On Home it sits in the dark hero; on Map it floats over tiles with the graphic shadow.
+- **Focus:** Two-tone white and coffee-brown focus ring that remains visible on the dark hero and over the map.
 - **Placeholder:** Muted ink at 50% opacity.
 
 ### Navigation
@@ -174,14 +234,35 @@ The form language is gently rounded and compact. Standard controls use 8px corne
 - **Progress:** Small pill dots use muted ink at rest and coffee-brown for the active step.
 - **Imagery:** Existing KapeDoko logo and onboarding graphic assets are the identity-bearing elements; preserve them.
 
+### Map Overlay
+- **Style:** Full-bleed map with a white-to-transparent header fade, dark lockup, floating search, coffee-brown bottom CTA, and a white peek sheet of cafe cards.
+- **Tiles:** OSM tiles are filtered toward rice-paper warmth (`sepia(0.32) saturate(0.62) hue-rotate(-12deg) brightness(1.03)`). Leaflet must own an inner canvas node so Vue class updates cannot strip `leaflet-container`.
+- **Markers:** Unselected cafe markers are coffee-brown circles with a white halo and a side-view cup. The selected marker becomes the KapeDoko lockup icon. The user mark is a smaller white-ringed coffee-brown dot.
+- **Demo labeling:** When fixture cafes are on screen, label them as demo (map note and sheet heading). Do not present mock listings as live coverage.
+
+### Cafe Detail Sheet
+- **Shape:** White Ionic sheet at 88% height, 8px top corners, sheet-lift shadow, 50×8 handle at 5px radius. Caps at 480px from 540px.
+- **Header:** 20px coffee-brown cafe name with a compact Navigate action. WiFi and outlet labels sit beside their icons. Hours stay ink, not muted gray.
+- **Status:** Forest or brick filled chip plus hours, with Call as a compact quiet action when a phone number exists.
+- **Gallery:** 175px hero with selectable thumbs; the active thumb uses the same two-tone coffee-brown focus ring as search.
+- **Insights:** KapéBean counts introduce WiFi and outlet facts as readable text, not icons alone.
+- **Reviews:** Outlined “Leave a review” or a full-width coffee-brown “Review this cafe” when the list is empty. Preview builds may explain that leaving a review is not available yet.
+
+**The Cafe Marker Rule.** Unselected cafe markers are coffee-brown circles with a white halo and a side-view cup. The selected marker uses the KapeDoko lockup icon. The user mark stays a smaller white-ringed coffee-brown dot. Leaflet must own an inner canvas node so Vue class updates cannot strip `leaflet-container`.
+
+**The Demo Fixture Rule.** Sample cafe names, ratings, and photography stay labeled as demo whenever they appear; they are scaffolding, not proof of coverage.
+
 ## Do's and Don'ts
 
 ### Do:
 - **Do** use coffee-brown as the visual anchor for branded surfaces, active states, and primary actions.
 - **Do** keep cafe metadata short, legible, and easy to scan on a phone.
 - **Do** preserve the existing KapeDoko logo, wordmark, watermark, and onboarding graphic assets.
-- **Do** expose WiFi, power outlet, hours, and location information as text or accessible names alongside icons.
+- **Do** expose WiFi, power outlet, hours, and location information as visible text or accessible names alongside icons.
 - **Do** respect safe-area insets and reduced-motion preferences across web and native shells.
+- **Do** use 45px primary CTAs on iOS and 48px on Android for full-width overlay actions.
+- **Do** label fixture cafe lists as demo when mock data is on screen.
+- **Do** draw unselected cafe markers as coffee-brown circles with a white halo and a side-view cup; the selected marker uses the KapeDoko lockup icon.
 
 ### Don't:
 - **Don't** make atmosphere, stock photography, or placeholder cafe data more prominent than work-readiness facts.
@@ -189,3 +270,5 @@ The form language is gently rounded and compact. Standard controls use 8px corne
 - **Don't** use icons alone to communicate amenities or status.
 - **Don't** introduce heavy borders, dramatic shadows, or dense desktop-only layouts that break the compact mobile rhythm.
 - **Don't** treat sample cafe names, ratings, or Unsplash photography as evidence of real coverage.
+- **Don't** restyle cafe open/closed status with unused paler Brand Guide greens and pinks.
+- **Don't** invent a new red accent for pins.

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">KapeDoko</string>
+    <string name="title_activity_main">KapeDoko</string>
+    <string name="package_name">com.kapedoko.fe</string>
+    <string name="custom_url_scheme">com.kapedoko.fe</string>
+</resources>

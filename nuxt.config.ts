@@ -34,8 +34,20 @@ export default defineNuxtConfig({
       login: "/login",
       callback: "/confirm",
       include: undefined, // protect all routes by default...
-      exclude: ["/app", "/app/onboarding", "/register"], // ...except these
+      exclude: ["/app", "/app/map", "/app/onboarding", "/register"],
       saveRedirectToCookie: true, // remember where user was headed
+    },
+  },
+  runtimeConfig: {
+    public: {
+      mapTiles: {
+        url:
+          process.env.NUXT_PUBLIC_MAP_TILE_URL ||
+          "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+        attribution:
+          process.env.NUXT_PUBLIC_MAP_ATTRIBUTION ||
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      },
     },
   },
 });

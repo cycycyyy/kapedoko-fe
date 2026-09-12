@@ -120,95 +120,28 @@
               No coffee shops match that search.
             </p>
 
-            <article
+            <CafeCard
               v-for="cafe in visibleCafes"
               :key="cafe.id"
-              class="cafe-card"
-            >
-              <div
-                class="cafe-card__photo"
-                :class="{ 'is-broken': brokenImages.has(cafe.id) }"
-              >
-                <img
-                  :src="cafe.image"
-                  :alt="cafe.name"
-                  width="90"
-                  height="100"
-                  @error="markBroken(cafe.id)"
-                />
-              </div>
-
-              <div class="cafe-card__body">
-                <div class="cafe-card__meta">
-                  <div class="cafe-card__stars" aria-label="Rating 5 out of 5">
-                    <Star
-                      v-for="n in 5"
-                      :key="n"
-                      :size="12"
-                      :stroke-width="1.75"
-                      fill="currentColor"
-                    />
-                  </div>
-                  <p
-                    class="cafe-card__status"
-                    :class="cafe.open ? 'is-open' : 'is-closed'"
-                  >
-                    {{ cafe.status }}
-                  </p>
-                </div>
-
-                <h2>{{ cafe.name }}</h2>
-                <p class="cafe-card__address">{{ cafe.address }}</p>
-
-                <p v-if="cafe.amenities === 'none'" class="cafe-card__none">
-                  <Ban :size="14" :stroke-width="2" aria-hidden="true" />
-                  No WiFi or Power Outlets
-                </p>
-                <p v-else class="cafe-card__amenities">
-                  <Wifi v-if="cafe.amenities.includes('wifi')" :size="14" :stroke-width="2" aria-label="WiFi" />
-                  <Plug v-if="cafe.amenities.includes('plug')" :size="14" :stroke-width="2" aria-label="Power outlets" />
-                </p>
-              </div>
-            </article>
+              :cafe="cafe"
+            />
           </section>
         </Transition>
       </div>
     </IonContent>
 
-    <nav class="home-tabbar" aria-label="Primary">
-      <button type="button" class="home-tabbar__item is-active" aria-current="page">
-        <span class="home-tabbar__icon">
-          <House :size="18" :stroke-width="2" />
-        </span>
-        <span class="sr-only">Home</span>
-      </button>
-      <button type="button" class="home-tabbar__item" aria-label="Saved cafes">
-        <Heart :size="24" :stroke-width="2" />
-      </button>
-      <button type="button" class="home-tabbar__item" aria-label="Map">
-        <Map :size="24" :stroke-width="2" />
-      </button>
-      <button type="button" class="home-tabbar__item" aria-label="Profile">
-        <UserRoundPen :size="24" :stroke-width="2" />
-      </button>
-    </nav>
+    <AppTabBar active="home" />
   </IonPage>
 </template>
 
 <script lang="ts" setup>
 import {
-  Ban,
   Bell,
   Coffee,
-  Heart,
-  House,
-  Map,
-  Plug,
   Search,
-  Star,
-  UserRoundPen,
-  Wifi,
 } from 'lucide-vue-next'
+import CafeCard from '~/components/cafe/CafeCard.vue'
+import AppTabBar from '~/components/navigation/AppTabBar.vue'
 
 type FilterId = 'near' | 'popular' | 'wifi' | 'plugs'
 type Amenity = 'wifi' | 'plug'
@@ -222,6 +155,7 @@ interface Cafe {
   status: string
   amenities: Amenity[] | 'none'
   popular: boolean
+  rating: number
 }
 
 const filters: { id: FilterId; label: string }[] = [
@@ -259,6 +193,7 @@ const cafes: Cafe[] = [
     status: 'Open',
     amenities: ['wifi', 'plug'],
     popular: true,
+    rating: 5,
   },
   {
     id: 'c2',
@@ -269,6 +204,7 @@ const cafes: Cafe[] = [
     status: 'Open',
     amenities: ['plug'],
     popular: true,
+    rating: 4,
   },
   {
     id: 'c3',
@@ -279,6 +215,7 @@ const cafes: Cafe[] = [
     status: 'Closed, opens at 9:00am',
     amenities: ['wifi', 'plug'],
     popular: false,
+    rating: 4,
   },
   {
     id: 'c4',
@@ -289,6 +226,7 @@ const cafes: Cafe[] = [
     status: 'Open',
     amenities: 'none',
     popular: false,
+    rating: 3,
   },
 ]
 
@@ -703,178 +641,10 @@ const markBroken = (id: string) => {
   font-size: 14px;
 }
 
-.cafe-card {
-  display: flex;
-  min-height: 100px;
-  border-radius: 8px;
-  background: var(--kd-white);
-  box-shadow: 0 0 8px var(--kd-shadow);
-  transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.cafe-card__photo {
-  width: 90px;
-  height: 100px;
-  flex-shrink: 0;
-  overflow: hidden;
-  border-radius: 8px 0 0 8px;
-  background: var(--kd-secondary);
-}
-
-.cafe-card__photo img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.cafe-card__photo.is-broken img {
-  display: none;
-}
-
-.cafe-card__body {
-  flex: 1;
-  min-width: 0;
-  padding: 11px 13px 10px 15px;
-}
-
-.cafe-card__meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.cafe-card__stars {
-  display: flex;
-  flex-shrink: 0;
-  gap: 2px;
-  color: var(--kd-black);
-}
-
-.cafe-card__status {
-  margin: 0;
-  min-width: 0;
-  flex: 1 1 auto;
-  overflow: hidden;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1.2;
-  text-align: right;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.cafe-card__status.is-open {
-  color: var(--kd-success);
-}
-
-.cafe-card__status.is-closed {
-  color: var(--kd-destructive);
-}
-
-.cafe-card h2 {
-  margin: 3px 0 0;
-  color: var(--kd-primary);
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.375;
-}
-
-.cafe-card__address {
-  margin: 0;
-  overflow: hidden;
-  color: var(--kd-ink);
-  font-size: 12px;
-  line-height: 1.35;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.cafe-card__amenities,
-.cafe-card__none {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  margin: 8px 0 0;
-  color: var(--kd-ink);
-}
-
-.cafe-card__none {
-  color: var(--kd-ink-25);
-  font-size: 10px;
-  font-style: italic;
-}
-
-.home-tabbar {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 10;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  align-items: center;
-  width: 100%;
-  height: calc(100px + env(safe-area-inset-bottom));
-  padding: 0 12px env(safe-area-inset-bottom);
-  background: var(--kd-white-80);
-  backdrop-filter: blur(4px);
-}
-
-.home-tabbar__item {
-  display: grid;
-  place-items: center;
-  height: 48px;
-  border: 0;
-  background: transparent;
-  color: var(--kd-primary-25);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: color 180ms cubic-bezier(0.16, 1, 0.3, 1),
-    transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.home-tabbar__item.is-active {
-  color: var(--kd-white);
-}
-
-.home-tabbar__icon {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 5px;
-  background: var(--kd-primary);
-}
-
-.home-tabbar__icon::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  bottom: -18px;
-  width: 30px;
-  height: 5px;
-  border-radius: 5px;
-  background: var(--kd-primary);
-}
-
-.home-tabbar__item:focus-visible {
-  outline: 2px solid var(--kd-primary);
-  outline-offset: 3px;
-  border-radius: 8px;
-}
-
 .home-hero__bell:active,
 .home-search__submit:active,
-.home-filters__chip:active,
-.home-tabbar__item:active {
+.home-filters__chip:active {
   transform: scale(0.94);
-}
-
-.cafe-card:active {
-  transform: scale(0.99);
 }
 
 .cafe-list-enter-active,
@@ -910,8 +680,7 @@ const markBroken = (id: string) => {
 }
 
 @media (min-width: 540px) {
-  .home,
-  .home-tabbar {
+  .home {
     max-width: 480px;
     margin-inline: auto;
   }
@@ -927,8 +696,6 @@ const markBroken = (id: string) => {
   .home-search__submit,
   .home-dots__dot,
   .home-filters__chip,
-  .cafe-card,
-  .home-tabbar__item,
   .cafe-list-enter-active,
   .cafe-list-leave-active {
     transition-duration: 1ms;
@@ -937,9 +704,7 @@ const markBroken = (id: string) => {
   .home-dots__dot.is-active,
   .home-hero__bell:active,
   .home-search__submit:active,
-  .home-filters__chip:active,
-  .home-tabbar__item:active,
-  .cafe-card:active {
+  .home-filters__chip:active {
     transform: none;
   }
 }
