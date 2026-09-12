@@ -262,8 +262,11 @@ const onFeaturedScroll = () => {
   }
 }
 
-const submitSearch = () => {
-  submittedQuery.value = query.value
+const submitSearch = async () => {
+  const next = query.value.trim()
+  const path = next ? `/app/search?q=${encodeURIComponent(next)}` : '/app/search'
+
+  await navigateTo(path)
 }
 
 const setFilter = (id: FilterId) => {
