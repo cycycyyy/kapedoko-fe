@@ -5,9 +5,9 @@
   "scripts": {
     "build": "nuxt build",
     "build:mobile": "nuxt generate",
-    "cap:sync": "pnpm build:mobile && cap sync",
-    "cap:android": "pnpm cap:sync && cap open android",
-    "cap:ios": "pnpm cap:sync && cap open ios",
+    "cap:sync": "bun run build:mobile && bunx cap sync",
+    "cap:android": "bun run cap:sync && bunx cap open android",
+    "cap:ios": "bun run cap:sync && bunx cap open ios",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@capacitor/core": "^8.5.1",
+    "@capacitor/geolocation": "^8.2.2",
     "@ionic/vue": "^8.8.19",
     "@ionic/vue-router": "^8.8.19",
     "@nuxt/image": "2.1.0",
@@ -23,6 +24,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "ionicons": "^8.1.0",
+    "leaflet": "1.9.4",
     "lucide-vue-next": "^1.0.0",
     "nuxt": "^4.5.2",
     "tailwind-merge": "^3.6.0",
@@ -35,6 +37,7 @@
     "@capacitor/cli": "^8.5.1",
     "@capacitor/ios": "^8.5.1",
     "@nuxtjs/tailwindcss": "^6.14.0",
+    "@types/leaflet": "^1.9.22",
     "shadcn-nuxt": "^2.8.2",
     "shadcn-vue": "^2.8.2"
   }
