@@ -117,7 +117,7 @@
         <Transition name="cafe-list" mode="out-in">
           <section :key="listKey" class="home-list" aria-label="Cafes">
             <p v-if="visibleCafes.length === 0" class="home-empty">
-              No coffee shops match that search.
+              {{ cafes.length === 0 ? 'No coffee shops yet.' : 'No coffee shops match that search.' }}
             </p>
 
             <CafeCard
@@ -128,6 +128,30 @@
           </section>
         </Transition>
       </div>
+
+      <button type="button" slot="fixed" class="home-fab" @click="addCafe">
+        <span class="home-fab__mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path
+              d="M8.2 3.2v3.2M13.2 2.8v3.6"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+            />
+            <path
+              d="M4.6 8.2h11.4v6.2a3.1 3.1 0 0 1-3.1 3.1H7.7a3.1 3.1 0 0 1-3.1-3.1z"
+              fill="currentColor"
+            />
+            <path
+              d="M16 9.8c3 .12 3.7 2.1 3.7 3.3s-.8 3.2-3.7 3.35"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+            />
+          </svg>
+        </span>
+        Add a cafe
+      </button>
     </IonContent>
 
     <AppTabBar active="home" />
@@ -135,6 +159,7 @@
 </template>
 
 <script lang="ts" setup>
+import { Capacitor } from '@capacitor/core'
 import {
   Bell,
   Coffee,
@@ -144,19 +169,6 @@ import CafeCard from '~/components/cafe/CafeCard.vue'
 import AppTabBar from '~/components/navigation/AppTabBar.vue'
 
 type FilterId = 'near' | 'popular' | 'wifi' | 'plugs'
-type Amenity = 'wifi' | 'plug'
-
-interface Cafe {
-  id: string
-  name: string
-  address: string
-  image: string
-  open: boolean
-  status: string
-  amenities: Amenity[] | 'none'
-  popular: boolean
-  rating: number
-}
 
 const filters: { id: FilterId; label: string }[] = [
   { id: 'near', label: 'Near You' },
@@ -183,52 +195,8 @@ const featured = [
   },
 ]
 
-const cafes: Cafe[] = [
-  {
-    id: 'c1',
-    name: 'Toby’s Estate',
-    address: 'BGC High Street, Taguig City',
-    image: '/assets/cafes/tobys.jpg',
-    open: true,
-    status: 'Open',
-    amenities: ['wifi', 'plug'],
-    popular: true,
-    rating: 5,
-  },
-  {
-    id: 'c2',
-    name: 'Commune Cafe + Bar',
-    address: 'Poblacion, Makati City',
-    image: '/assets/cafes/commune.jpg',
-    open: true,
-    status: 'Open',
-    amenities: ['plug'],
-    popular: true,
-    rating: 4,
-  },
-  {
-    id: 'c3',
-    name: 'Single Origin',
-    address: 'Salcedo Village, Makati City',
-    image: '/assets/cafes/single-origin.jpg',
-    open: false,
-    status: 'Closed, opens at 9:00am',
-    amenities: ['wifi', 'plug'],
-    popular: false,
-    rating: 4,
-  },
-  {
-    id: 'c4',
-    name: 'KapeTayo',
-    address: 'Katipunan Ave, Quezon City',
-    image: '/assets/cafes/kapetayo.jpg',
-    open: true,
-    status: 'Open',
-    amenities: 'none',
-    popular: false,
-    rating: 3,
-  },
-]
+const { cafes: liveCafes } = useApprovedShops()
+const cafes = computed(() => liveCafes.value)
 
 const query = ref('')
 const submittedQuery = ref('')
@@ -242,7 +210,7 @@ const listKey = computed(() => `${activeFilter.value}|${submittedQuery.value}`)
 const visibleCafes = computed(() => {
   const term = submittedQuery.value.trim().toLowerCase()
 
-  return cafes.filter((cafe) => {
+  return cafes.value.filter((cafe) => {
     const matchesQuery =
       !term ||
       cafe.name.toLowerCase().includes(term) ||
@@ -310,6 +278,16 @@ const markBroken = (id: string) => {
   next.add(id)
   brokenImages.value = next
 }
+
+const addCafe = async () => {
+  await navigateTo('/app/submit-cafe')
+}
+
+onMounted(() => {
+  if (Capacitor.getPlatform() === 'android') {
+    document.documentElement.classList.add('is-android')
+  }
+})
 </script>
 
 <style scoped>
@@ -324,7 +302,7 @@ const markBroken = (id: string) => {
 .home {
   min-height: 100%;
   background: var(--kd-white);
-  padding-bottom: calc(7.25rem + env(safe-area-inset-bottom));
+  padding-bottom: calc(11.5rem + env(safe-area-inset-bottom));
   container-type: inline-size;
   container-name: home;
 }
@@ -644,6 +622,65 @@ const markBroken = (id: string) => {
   font-size: 14px;
 }
 
+.home-fab {
+  position: fixed;
+  right: 20px;
+  bottom: calc(100px + env(safe-area-inset-bottom) + 12px);
+  z-index: 12;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 45px;
+  min-height: 45px;
+  padding: 0 16px 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--kd-primary);
+  color: var(--kd-white);
+  box-shadow: 0 4px 12px var(--kd-shadow);
+  font-size: 16px;
+  font-weight: 700;
+  font-family: inherit;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  animation: home-fab-rise 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.home-fab__mark {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.home-fab__mark svg {
+  display: block;
+  width: 22px;
+  height: 22px;
+}
+
+.home-fab:focus-visible {
+  outline: 2px solid var(--kd-primary);
+  outline-offset: 3px;
+}
+
+.home-fab:active {
+  transform: scale(0.96);
+}
+
+@keyframes home-fab-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .home-hero__bell:active,
 .home-search__submit:active,
 .home-filters__chip:active {
@@ -680,6 +717,10 @@ const markBroken = (id: string) => {
   .home-filters__chip:hover:not(.is-active) {
     background: color-mix(in srgb, var(--kd-ink) 16%, transparent);
   }
+
+  .home-fab:hover {
+    box-shadow: 0 6px 16px var(--kd-shadow);
+  }
 }
 
 @media (min-width: 540px) {
@@ -687,6 +728,15 @@ const markBroken = (id: string) => {
     max-width: 480px;
     margin-inline: auto;
   }
+
+  .home-fab {
+    right: calc(50% - 240px + 20px);
+  }
+}
+
+:root.is-android .home-fab {
+  height: 48px;
+  min-height: 48px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -699,15 +749,18 @@ const markBroken = (id: string) => {
   .home-search__submit,
   .home-dots__dot,
   .home-filters__chip,
+  .home-fab,
   .cafe-list-enter-active,
   .cafe-list-leave-active {
+    animation: none;
     transition-duration: 1ms;
   }
 
   .home-dots__dot.is-active,
   .home-hero__bell:active,
   .home-search__submit:active,
-  .home-filters__chip:active {
+  .home-filters__chip:active,
+  .home-fab:active {
     transform: none;
   }
 }

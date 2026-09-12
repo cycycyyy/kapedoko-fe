@@ -34,7 +34,15 @@ export default defineNuxtConfig({
       login: "/login",
       callback: "/confirm",
       include: undefined, // protect all routes by default...
-      exclude: ["/app", "/app/onboarding", "/app/search", "/app/favorites", "/app/map", "/register"], // ...except these
+      exclude: [
+        "/app",
+        "/app/onboarding",
+        "/app/search",
+        "/app/favorites",
+        "/app/map",
+        "/app/submit-cafe",
+        "/register",
+      ], // ...except these
       saveRedirectToCookie: true, // remember where user was headed
     },
   },
@@ -48,6 +56,7 @@ export default defineNuxtConfig({
           process.env.NUXT_PUBLIC_MAP_ATTRIBUTION ||
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       },
+      r2PublicBaseUrl: process.env.NUXT_PUBLIC_R2_PUBLIC_BASE_URL || "",
     },
   },
 });

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-07T08:05:00.000Z",
+  "generatedAt": "2026-09-07T10:12:00.000Z",
   "title": "Design System: KapeDoko",
   "extensions": {
     "colorMeta": {
@@ -66,15 +66,15 @@
       },
       "headline": {
         "displayName": "Sheet Headline",
-        "purpose": "Sheet titles on nearby cafes and cafe detail."
+        "purpose": "Sheet titles on nearby cafes, cafe detail, and Add a cafe questions."
       },
       "title": {
         "displayName": "Cafe Title",
-        "purpose": "Cafe names, key copy, prominent controls, and the map CTA."
+        "purpose": "Cafe names, key copy, prominent controls, the map CTA, and the Add a cafe header."
       },
       "body": {
         "displayName": "Cafe Metadata",
-        "purpose": "Addresses, search text, distances, amenity labels, and supporting details."
+        "purpose": "Addresses, search text, distances, amenity labels, supporting details, and submit step labels."
       },
       "label": {
         "displayName": "Tiny Annotation",
@@ -90,12 +90,12 @@
       {
         "name": "graphic-lift",
         "value": "0 2px 8px var(--kd-shadow)",
-        "purpose": "Lift cafe cards, floating map chrome, and the onboarding illustration."
+        "purpose": "Lift cafe cards, floating map chrome, the Add a cafe sheet, and the onboarding illustration."
       },
       {
         "name": "sheet-lift",
         "value": "0 -2px 16px var(--kd-shadow)",
-        "purpose": "Lift nearby cafes and cafe-detail sheets over the map."
+        "purpose": "Lift nearby cafes, cafe-detail sheets, and the Add a cafe pin peek over the map."
       },
       {
         "name": "pin-drop",
@@ -110,7 +110,7 @@
       {
         "name": "focus-ring",
         "value": "0 0 0 2px var(--kd-white), 0 0 0 4px var(--kd-primary)",
-        "purpose": "Search focus and selected cafe-detail thumbs against dark hero or map tiles."
+        "purpose": "Search focus, rice-paper submit fields, and selected cafe-detail thumbs against dark hero or map tiles."
       }
     ],
     "motion": [
@@ -122,7 +122,7 @@
       {
         "name": "enter-ease",
         "value": "cubic-bezier(0.16, 1, 0.3, 1)",
-        "purpose": "Map overlay rise, pin entrance, tab bar, and cafe card press."
+        "purpose": "Map overlay rise, pin entrance, Add a cafe peek, tab bar, and cafe card press."
       },
       {
         "name": "progress-transition",
@@ -144,7 +144,7 @@
       {
         "name": "map-cap",
         "value": "540px",
-        "purpose": "Cap map chrome and map sheets at 480px on wider viewports."
+        "purpose": "Cap map chrome, map sheets, and Add a cafe at 480px on wider viewports."
       }
     ]
   },
@@ -153,7 +153,7 @@
       "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "The main action on onboarding and map overlay flows: 45px on iOS, 48px on Android.",
+      "description": "The main action on onboarding, map overlay, and Add a cafe: 45px on iOS, 48px on Android.",
       "html": "<button class=\"ds-btn-primary\">Show cafes near me</button>",
       "css": ".ds-btn-primary { width: 100%; max-width: 350px; height: 45px; border: 0; border-radius: 8px; background: var(--kd-primary); color: var(--kd-white); padding: 0 20px; font: 700 16px/1.2 Satoshi, sans-serif; cursor: pointer; transition: opacity 160ms ease, transform 140ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-primary.is-android { height: 48px; } .ds-btn-primary:hover { opacity: .92; } .ds-btn-primary:active { transform: scale(.96); } .ds-btn-primary:focus-visible { outline: 2px solid var(--kd-primary); outline-offset: 3px; }"
     },
@@ -185,9 +185,49 @@
       "name": "Overlay Search",
       "kind": "input",
       "refersTo": "input-search",
-      "description": "The same 50px search field floating over map tiles with graphic lift.",
+      "description": "The same 50px search field floating over map tiles with graphic lift, including the Add a cafe pin step.",
       "html": "<label class=\"ds-search-overlay\"><input placeholder=\"Search a coffee shop\" /><button type=\"button\" class=\"ds-search-overlay-go\" aria-label=\"Search\"><svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"7\"/><path d=\"M20 20l-3.5-3.5\"/></svg></button></label>",
       "css": ".ds-search-overlay { display: flex; align-items: center; gap: 8px; height: 50px; padding: 0 8px 0 16px; border-radius: 8px; background: var(--kd-white); box-shadow: 0 2px 8px var(--kd-shadow); } .ds-search-overlay input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--kd-ink); font: 400 12px/1.35 Satoshi, sans-serif; caret-color: var(--kd-primary); } .ds-search-overlay input::placeholder { color: var(--kd-ink-50); } .ds-search-overlay-go { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; background: transparent; color: var(--kd-primary); cursor: pointer; } .ds-search-overlay:hover { box-shadow: 0 3px 10px var(--kd-shadow); } .ds-search-overlay:focus-within { box-shadow: 0 2px 8px var(--kd-shadow), 0 0 0 2px var(--kd-white), 0 0 0 4px var(--kd-primary); }"
+    },
+    {
+      "name": "Sheet Field",
+      "kind": "input",
+      "refersTo": "input-sheet-field",
+      "description": "Rice-paper 50px field inside the white Add a cafe sheet: no stroke, 8px corners.",
+      "html": "<label class=\"ds-sheet-field\"><span>Cafe name</span><input placeholder=\"e.g. Lamp Quarters Cafe\" /></label>",
+      "css": ".ds-sheet-field { display: flex; flex-direction: column; gap: 8px; color: var(--kd-primary); font: 700 12px/1.2 Satoshi, sans-serif; } .ds-sheet-field input { height: 50px; padding: 0 16px; border: 0; border-radius: 8px; background: var(--kd-secondary); color: var(--kd-ink); font: 400 16px/1.2 Satoshi, sans-serif; caret-color: var(--kd-primary); } .ds-sheet-field input::placeholder { color: #5c534c; } .ds-sheet-field:hover input { box-shadow: 0 0 0 1px color-mix(in srgb, var(--kd-primary) 18%, transparent); } .ds-sheet-field input:focus { outline: none; box-shadow: 0 0 0 2px var(--kd-white), 0 0 0 4px var(--kd-primary); }"
+    },
+    {
+      "name": "Logo Stamp",
+      "kind": "custom",
+      "refersTo": "logo-stamp",
+      "description": "Optional 96px rice-paper square for a cafe logo beside 12px coffee-brown text actions.",
+      "html": "<button type=\"button\" class=\"ds-logo-stamp\"><span class=\"ds-logo-stamp__empty\">Add logo</span></button>",
+      "css": ".ds-logo-stamp { display: grid; place-items: center; width: 96px; height: 96px; padding: 0; overflow: hidden; border: 0; border-radius: 8px; background: var(--kd-secondary); color: var(--kd-primary); cursor: pointer; transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-logo-stamp__empty { font: 700 12px/1.2 Satoshi, sans-serif; } .ds-logo-stamp:hover { filter: brightness(0.98); } .ds-logo-stamp:active { transform: scale(.96); } .ds-logo-stamp:focus-visible { outline: 2px solid var(--kd-primary); outline-offset: 2px; }"
+    },
+    {
+      "name": "Submit Step Ticks",
+      "kind": "custom",
+      "refersTo": "submit-ticks",
+      "description": "Three 5px pill ticks in a 64px row: placeholder-gray at rest, coffee-brown when on.",
+      "html": "<div class=\"ds-ticks\" aria-hidden=\"true\"><span class=\"is-on\"></span><span></span><span></span></div>",
+      "css": ".ds-ticks { display: flex; align-items: center; gap: 5px; width: 64px; } .ds-ticks span { flex: 1; height: 5px; border-radius: 999px; background: var(--kd-placeholder); transition: background-color 180ms ease; } .ds-ticks span.is-on { background: var(--kd-primary); }"
+    },
+    {
+      "name": "Pending Listing",
+      "kind": "card",
+      "refersTo": "card-cafe",
+      "description": "Cafe-card topology for a pending submit preview: 90×100 mark, no amenities or ratings.",
+      "html": "<article class=\"ds-pending-listing\"><div class=\"ds-pending-mark\"></div><div class=\"ds-pending-body\"><p class=\"ds-pending-status\">Pending review</p><h3>Lamp Quarters Cafe</h3><p>BGC High Street, Taguig City</p><p>8:00am–8:00pm</p><p>No phone added</p></div></article>",
+      "css": ".ds-pending-listing { display: flex; gap: 12px; min-height: 100px; } .ds-pending-mark { flex: 0 0 90px; width: 90px; height: 100px; overflow: hidden; border-radius: 8px; background: var(--kd-secondary); } .ds-pending-body { min-width: 0; display: flex; flex-direction: column; gap: 4px; color: var(--kd-ink); font: 400 12px/1.35 Satoshi, sans-serif; } .ds-pending-status { margin: 0; color: var(--kd-primary); font: 700 12px/1.2 Satoshi, sans-serif; } .ds-pending-body h3 { margin: 0; color: var(--kd-primary); font: 700 16px/1.375 Satoshi, sans-serif; } .ds-pending-body p { margin: 0; }"
+    },
+    {
+      "name": "Submit Pin Peek",
+      "kind": "custom",
+      "refersTo": "input-sheet-field",
+      "description": "White Map-style peek on the pin step: 8px top corners, sheet-lift shadow, rice-paper street line.",
+      "html": "<section class=\"ds-pin-peek\"><h2>Pin the cafe</h2><p>Drag the pin or search so the marker sits on the shop, not the next street.</p><label class=\"ds-pin-address\"><span>Address</span><textarea rows=\"2\" placeholder=\"Street, barangay, city\">BGC High Street, Taguig City</textarea></label></section>",
+      "css": ".ds-pin-peek { padding: 16px 20px 8px; border-radius: 8px 8px 0 0; background: var(--kd-white); box-shadow: 0 -2px 16px var(--kd-shadow); } .ds-pin-peek h2 { margin: 0; color: var(--kd-primary); font: 700 16px/1.2 Satoshi, sans-serif; } .ds-pin-peek p { margin: 4px 0 0; color: var(--kd-ink); font: 400 12px/1.35 Satoshi, sans-serif; } .ds-pin-address { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; color: var(--kd-primary); font: 700 12px/1.2 Satoshi, sans-serif; } .ds-pin-address textarea { min-height: 64px; max-height: 88px; padding: 12px 16px; border: 0; border-radius: 8px; background: var(--kd-secondary); color: var(--kd-ink); font: 400 12px/1.35 Satoshi, sans-serif; resize: none; caret-color: var(--kd-primary); } .ds-pin-address textarea::placeholder { color: #5c534c; } .ds-pin-address textarea:focus { outline: none; box-shadow: 0 0 0 2px var(--kd-white), 0 0 0 4px var(--kd-primary); }"
     },
     {
       "name": "Cafe Card",
@@ -233,7 +273,7 @@
       "name": "Map Overlay CTA",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "Coffee-brown full-width action sitting above the home indicator on the map.",
+      "description": "Coffee-brown full-width action sitting above the home indicator on the map and Add a cafe.",
       "html": "<button class=\"ds-map-cta\"><svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"M4 10h12v7a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3v-7Z\"/><path d=\"M16 11h2.5a2.5 2.5 0 0 1 0 5H16\"/><path d=\"M8 7v3\"/><path d=\"M12 7v3\"/></svg> Show cafes near me</button>",
       "css": ".ds-map-cta { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; height: 45px; border: 0; border-radius: 8px; background: var(--kd-primary); color: var(--kd-white); padding: 0 20px; font: 700 16px/1.2 Satoshi, sans-serif; cursor: pointer; box-shadow: 0 2px 8px var(--kd-shadow); transition: opacity 160ms ease, transform 140ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-map-cta.is-android { height: 48px; } .ds-map-cta:hover { opacity: .92; } .ds-map-cta:active { transform: scale(.96); } .ds-map-cta:focus-visible { outline: 2px solid var(--kd-primary); outline-offset: 2px; }"
     },
@@ -256,14 +296,15 @@
   ],
   "narrative": {
     "northStar": "The Neighborhood Coffee Counter",
-    "overview": "KapeDoko’s current visual system feels like a dependable neighborhood counter: warm, familiar, and immediately useful. A dark coffee-brown anchor gives the interface a recognizable home, while white content surfaces keep practical cafe information easy to scan. The system is compact and phone-first, with a little editorial warmth in featured cafe imagery and the logo-led onboarding.\n\nControls are quietly tactile rather than decorative. Small rounded corners, short labels, focused status colors, and restrained card shadows help people make a decision while they are already out in the city. The same counter language continues onto the map: rice-paper-warmed tiles sit under white overlay chrome, cafe markers are coffee-brown circles with a cup mark, and nearby cafes pull into a white peek sheet that reuses Home’s cafe cards. The product’s visual language supports the work-readiness mission: amenities, open status, and location remain more actionable than atmosphere.",
+    "overview": "KapeDoko’s current visual system feels like a dependable neighborhood counter: warm, familiar, and immediately useful. A dark coffee-brown anchor gives the interface a recognizable home, while white content surfaces keep practical cafe information easy to scan. The system is compact and phone-first, with a little editorial warmth in featured cafe imagery and the logo-led onboarding.\n\nControls are quietly tactile rather than decorative. Small rounded corners, short labels, focused status colors, and restrained card shadows help people make a decision while they are already out in the city. The same counter language continues onto the map: rice-paper-warmed tiles sit under white overlay chrome, cafe markers are coffee-brown circles with a cup mark, and nearby cafes pull into a white peek sheet that reuses Home’s cafe cards. Add a cafe is the same overlay to fill: rice-paper ground, white fade chrome, a floating white sheet, and a sticky coffee-brown Continue — not a coffee-brown campaign hero over a stacked form. The product’s visual language supports the work-readiness mission: amenities, open status, and location remain more actionable than atmosphere.",
     "keyCharacteristics": [
       "Coffee-brown brand anchor with warm cream support",
       "Compact mobile density with generous touch targets",
       "Rounded 4–8px surfaces and pill-shaped progress indicators",
       "Tonal depth through white surfaces and subtle ambient shadows",
       "Logo and amenity iconography used as recognizable product cues",
-      "Full-bleed map overlay: white header fade, floating search, coffee-brown circle markers, coffee-brown CTA, white peek and cafe-detail sheets"
+      "Full-bleed map overlay: white header fade, floating search, coffee-brown circle markers, coffee-brown CTA, white peek and cafe-detail sheets",
+      "Add a cafe overlay: rice-paper ground, white fade chrome with three ticks, floating 8px white sheet, rice-paper 50px fields, sticky 45/48px Continue; pin step is full-bleed warmed OSM with a sheet-lift peek"
     ],
     "rules": [
       {
@@ -282,9 +323,24 @@
         "section": "layout"
       },
       {
+        "name": "The Submit Overlay Rule",
+        "body": "Add a cafe sits on rice-paper under a white fade that holds back, title, and three ticks. Name, hours, and check float in an 8px white sheet; Continue stays sticky at 45px (48px on Android) above the home indicator. The pin step collapses the sheet to a 50px search strip over full-bleed warmed OSM, with a Map sheet-lift peek holding the shop street line.",
+        "section": "layout"
+      },
+      {
         "name": "The Quiet Depth Rule",
         "body": "Use tonal contrast and small ambient or graphic shadows to separate surfaces. Overlay chrome and map sheets may lift slightly; do not add heavy dashboard panels.",
         "section": "elevation"
+      },
+      {
+        "name": "The Rice-Paper Field Rule",
+        "body": "Fields inside the white submit sheet fill with rice-paper (50px, 8px, no stroke). Do not stack white fields on the white sheet.",
+        "section": "components"
+      },
+      {
+        "name": "The Pending Card Rule",
+        "body": "The review listing reuses cafe-card topology without amenities or ratings. Pending status is coffee-brown, not forest or brick.",
+        "section": "components"
       },
       {
         "name": "The Cafe Marker Rule",
@@ -304,6 +360,9 @@
       "Do expose WiFi, power outlet, hours, and location information as visible text or accessible names alongside icons.",
       "Do respect safe-area insets and reduced-motion preferences across web and native shells.",
       "Do use 45px primary CTAs on iOS and 48px on Android for full-width overlay actions.",
+      "Do keep Add a cafe on rice-paper with a floating white sheet and a sticky coffee-brown Continue.",
+      "Do collapse the pin step to a 50px search over full-bleed warmed OSM, with a sheet-lift peek for the street line.",
+      "Do reuse cafe-card topology for the pending preview without amenities or ratings.",
       "Do label fixture cafe lists as demo when mock data is on screen.",
       "Do draw unselected cafe markers as coffee-brown circles with a white halo and a side-view cup; the selected marker uses the KapeDoko lockup icon."
     ],
@@ -314,7 +373,10 @@
       "Don't introduce heavy borders, dramatic shadows, or dense desktop-only layouts that break the compact mobile rhythm.",
       "Don't treat sample cafe names, ratings, or Unsplash photography as evidence of real coverage.",
       "Don't restyle cafe open/closed status with unused paler Brand Guide greens and pinks.",
-      "Don't invent a new red accent for pins."
+      "Don't invent a new red accent for pins.",
+      "Don't put Add a cafe on a coffee-brown campaign hero or stacked form over a branded header.",
+      "Don't put amenities or ratings on the pending listing preview.",
+      "Don't restyle pending status as forest or brick open/closed."
     ]
   }
 }

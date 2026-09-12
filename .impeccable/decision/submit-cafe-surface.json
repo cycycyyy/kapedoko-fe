@@ -1,0 +1,85 @@
+{
+  "title": "How should Add a cafe be structured?",
+  "question": "The roll assigned a Map-language sheet. Lock a composition, steer, or re-roll. KapeDoko’s coffee-brown world stays; this choice is layout and rhythm, not a new brand.",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "Map sheet",
+      "kicker": "THE ROLL",
+      "thesis": "The contribution uses Map’s overlay grammar: rice-paper ground, a floating white sheet, sticky coffee-brown Continue — not a branded hero campaign.",
+      "palette": ["#372d25", "#ece6db", "#ffffff", "#1e1e1e"],
+      "materials": ["floating white sheet", "50px search field", "8px cafe-card corners", "sticky coffee-brown CTA"],
+      "viewport": "Compact chrome: back, Add a cafe, three ticks. A white sheet holds one question, the 50px name field, and a 96px logo stamp. Continue sits above the home indicator. The pin step drops the sheet to a search strip over a full-bleed map.",
+      "risk": "If the sheet is only padding around today’s form, it will read as the current page with the brown header shaved off.",
+      "comp": ".impeccable/mocks/decision/assigned.webp",
+      "wireframe": {
+        "cols": 12,
+        "rows": 16,
+        "regions": [
+          { "label": "back", "x": 0, "y": 0, "w": 2, "h": 2 },
+          { "label": "Add a cafe", "x": 2, "y": 0, "w": 7, "h": 1 },
+          { "label": "3 ticks", "x": 2, "y": 1, "w": 6, "h": 1 },
+          { "label": "white sheet", "x": 1, "y": 2, "w": 10, "h": 11 },
+          { "label": "What’s it called?", "x": 2, "y": 3, "w": 8, "h": 2 },
+          { "label": "name field", "x": 2, "y": 5, "w": 8, "h": 2, "accent": true },
+          { "label": "logo stamp", "x": 2, "y": 8, "w": 3, "h": 3 },
+          { "label": "Continue", "x": 1, "y": 14, "w": 10, "h": 2, "accent": true }
+        ]
+      }
+    },
+    {
+      "id": "interview",
+      "label": "One question",
+      "thesis": "Each step is one spoken question and one control. Copy stays operational. Progress is three ticks, not a story.",
+      "palette": ["#372d25", "#ece6db", "#ffffff", "#1e1e1e"],
+      "materials": ["single 20px question", "50px field", "quiet ticks", "bottom Continue"],
+      "viewport": "Back and three ticks only. “What’s the cafe called?” at headline size, then the name field, then an optional logo row. No lede. Continue pinned at the bottom. Pin step is the map filling everything under the question.",
+      "risk": "Too sparse: the pending-until-approved rule can vanish until the last step, and people may not know why the listing is not live yet.",
+      "comp": ".impeccable/mocks/decision/interview.webp",
+      "wireframe": {
+        "cols": 12,
+        "rows": 16,
+        "regions": [
+          { "label": "back", "x": 0, "y": 0, "w": 2, "h": 2 },
+          { "label": "1 of 3", "x": 9, "y": 0, "w": 3, "h": 2 },
+          { "label": "What’s the cafe called?", "x": 1, "y": 3, "w": 10, "h": 3, "accent": true },
+          { "label": "name field", "x": 1, "y": 7, "w": 10, "h": 2 },
+          { "label": "optional logo", "x": 1, "y": 10, "w": 4, "h": 3 },
+          { "label": "Continue", "x": 1, "y": 14, "w": 10, "h": 2, "accent": true }
+        ]
+      }
+    },
+    {
+      "id": "ticket",
+      "label": "Counter ticket",
+      "thesis": "The listing is written like a ticket at the neighborhood counter: numbered lines, fields as items, review as checking the slip before handing it over.",
+      "palette": ["#372d25", "#ece6db", "#ffffff", "#1e1e1e"],
+      "materials": ["coffee-brown stub", "white ticket body", "numbered line items", "logo as a corner stamp"],
+      "viewport": "A short coffee-brown stub reads 1 / 3 · Name. The white ticket body starts with Cafe name as line 01, logo as a stamp at the top-right. Continue is Hand this in, still the same coffee-brown button. Review is the completed slip.",
+      "risk": "Ticket chrome can feel cute or campaign-like if the stub gets large or the copy plays barista.",
+      "comp": ".impeccable/mocks/decision/ticket.webp",
+      "wireframe": {
+        "cols": 12,
+        "rows": 16,
+        "regions": [
+          { "label": "back", "x": 0, "y": 0, "w": 2, "h": 1 },
+          { "label": "1 / 3 Name", "x": 2, "y": 0, "w": 8, "h": 2, "accent": true },
+          { "label": "ticket body", "x": 1, "y": 3, "w": 10, "h": 10 },
+          { "label": "01 Cafe name", "x": 2, "y": 4, "w": 6, "h": 1 },
+          { "label": "name field", "x": 2, "y": 5, "w": 8, "h": 2 },
+          { "label": "logo stamp", "x": 8, "y": 3, "w": 3, "h": 3 },
+          { "label": "02 later", "x": 2, "y": 8, "w": 8, "h": 1 },
+          { "label": "Hand this in", "x": 1, "y": 14, "w": 10, "h": 2, "accent": true }
+        ]
+      }
+    }
+  ],
+  "reroll": {
+    "registers": ["safer", "bolder"]
+  },
+  "steer": true,
+  "buildPath": {
+    "value": "code",
+    "toggle": true
+  }
+}

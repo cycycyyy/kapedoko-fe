@@ -1,3 +1,5 @@
+import type { BusynessLevel, MarkerTier } from './shop'
+
 export type Amenity = 'wifi' | 'plug'
 
 export interface LatLng {
@@ -35,7 +37,14 @@ export interface Cafe {
   ratingLabel: string
   wifiInsight?: CafeInsight
   plugInsight?: CafeInsight
+  matchaInsight?: CafeInsight
+  busyness?: {
+    level: BusynessLevel
+    label: string
+    count: number
+  } | null
   reviews: CafeReview[]
   lat: number
   lng: number
+  markerTier: MarkerTier
 }

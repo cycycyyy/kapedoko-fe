@@ -1,10 +1,10 @@
 # KapeDoko Roadmap
 
-KapeDoko helps people in Marikina choose a cafe where they can actually work. The roadmap prioritizes trustworthy WiFi, power, hours, location, and structured community feedback over generic cafe discovery.
+KapeDoko helps people in Metro Manila choose a cafe where they can actually work. The roadmap prioritizes trustworthy WiFi, power, hours, location, and structured community feedback over generic cafe discovery. Coverage later expands beyond Metro Manila without changing the shop-submission model.
 
 ## Launch scope
 
-- **Launch geography:** Marikina only
+- **Launch geography:** Metro Manila (NCR) only; submissions outside NCR are blocked
 - **Platforms:** Nuxt web app plus Capacitor iOS and Android shells
 - **Seed data:** Manually curated cafe list; no scraping
 - **Guest experience:** Browse, search, filter, view cafe details, and use map/navigation without an account
@@ -23,7 +23,7 @@ Establish the shared contracts before building feature-specific screens.
   - Opening hours, location, contact details, and photos
   - Cafe categories, including future Matcha Cafe tagging
 - Define review, `shop_review_stats` view, favorites, shop-submission, moderation, and admin-role models.
-- Add seed-data import for the manually curated Marikina launch list.
+- Add seed-data import for the manually curated Metro Manila launch list.
 - Set up Cloudflare R2 and a presigned-upload Supabase Edge Function.
 - Establish image validation, resizing/thumbnail conventions, and ownership rules.
 - Add route/auth guards and a consistent guest-versus-authenticated capability model.
@@ -40,7 +40,7 @@ Establish the shared contracts before building feature-specific screens.
 ### 1. Map directory
 
 - Build the Leaflet map with OpenStreetMap tiles.
-- Use the current device location when permission is granted, with a manual Marikina fallback.
+- Use the current device location when permission is granted, with a manual Metro Manila fallback.
 - Show cafe markers, selected-marker state, map attribution, and a nearby-cafes result sheet.
 - Add a navigation action that opens the platform’s preferred maps application.
 - Handle location denied, unavailable, loading, and stale-location states clearly.
@@ -85,7 +85,7 @@ No map API key is required. OSM attribution and reasonable tile usage are requir
 
 ### 6. User-submitted shops and moderation
 
-- Allow authenticated users to submit a shop with required location, basic details, and optional photos.
+- Allow authenticated users to submit a shop with required Metro Manila location, basic details, and optional photos.
 - Track submission status as `pending`, `approved`, or `rejected`.
 - Keep pending and rejected shops out of public listings and map results.
 - Add an admin-only `/admin` route to:
@@ -105,7 +105,7 @@ No map API key is required. OSM attribution and reasonable tile usage are requir
 
 **MVP release criteria**
 
-- A guest can find a Marikina cafe from search or map, filter it by work needs, inspect its details, and navigate there.
+- A guest can find a Metro Manila cafe from search or map, filter it by work needs, inspect its details, and navigate there.
 - A signed-in user can favorite a cafe, submit a structured review, and submit a new shop.
 - An admin can approve/reject shops and moderate flagged content.
 - Approved shop data and aggregated KapéBeans stats appear consistently on cards, map results, and detail pages.
@@ -145,7 +145,7 @@ No map API key is required. OSM attribution and reasonable tile usage are requir
 
 ## Phase 3 — Monetization readiness
 
-This phase begins only after the Marikina directory and moderation workflow are reliable.
+This phase begins only after the Metro Manila directory and moderation workflow are reliable.
 
 - Convert the featured-shop slot into a paid placement with explicit sponsored labeling.
 - Define partner onboarding, placement duration, billing metadata, and content approval.
@@ -161,7 +161,7 @@ This phase begins only after the Marikina directory and moderation workflow are 
 | Frontend | Nuxt + Capacitor |
 | UI components | shadcn-vue + Ionic Vue |
 | Map | Leaflet + OpenStreetMap; no API key |
-| Geography | Marikina-only launch |
+| Geography | Metro Manila (NCR) launch; later regions activate without rewriting submissions |
 | Initial catalog | Manually curated seed list; no scraping |
 | Reviews | Structured inputs aggregated by the `shop_review_stats` view |
 | Auth policy | Guest discovery; auth required for Favorites, Reviews, and Shop Submission |
@@ -184,7 +184,7 @@ This phase begins only after the Marikina directory and moderation workflow are 
 4. Cafe detail and structured KapéBeans aggregation
 5. Auth, Favorites, onboarding, and gated actions
 6. Shop submission queue and admin moderation
-7. MVP hardening, accessibility, device testing, and Marikina launch
+7. MVP hardening, accessibility, device testing, and Metro Manila launch
 8. Matcha filtering, featured slot, push notifications, and personalization
 9. Paid featured placements and monetization reporting
 

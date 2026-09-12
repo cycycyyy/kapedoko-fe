@@ -19,6 +19,7 @@
             :href="mapsHref"
             target="_blank"
             rel="noopener noreferrer"
+            aria-label="Navigate to this cafe in Google Maps"
           >
             <span class="cafe-detail__action-face cafe-detail__action-face--primary">
               <Navigation :size="14" :stroke-width="2.25" aria-hidden="true" />
@@ -26,6 +27,15 @@
             </span>
           </a>
         </div>
+
+        <p
+          v-if="cafe.busyness"
+          class="cafe-detail__crowd"
+          :aria-label="`${cafe.busyness.label}, based on ${cafe.busyness.count} recent check-ins`"
+        >
+          {{ cafe.busyness.label }}
+          <span>· {{ cafe.busyness.count }} check-ins</span>
+        </p>
 
         <p v-if="hasWifi || hasPlug" class="cafe-detail__amenities-inline">
           <span v-if="hasWifi" class="cafe-detail__amenity">
@@ -83,11 +93,11 @@
 
       <div class="cafe-detail__scroll">
         <div class="cafe-detail__gallery">
-          <div class="cafe-detail__hero" :class="{ 'is-broken': broken.hero }">
+          <div class="cafe-detail__hero" :class="{ 'is-mark': heroIsMark }">
             <img
-              :src="heroPhoto"
-              :alt="`${cafe.name} interior`"
-              @error="broken['hero'] = true"
+              :src="heroSrc"
+              :alt="heroIsMark ? '' : `${cafe.name} interior`"
+              @error="onHeroError"
             />
           </div>
           <div v-if="photos.length > 1" class="cafe-detail__thumbs" role="group" aria-label="Cafe photos">
@@ -139,7 +149,20 @@
           </div>
         </section>
 
-        <div v-if="cafe.reviews.length > 0" class="cafe-detail__review-block">
+        <section v-if="cafe.matchaInsight" class="cafe-detail__insight" :aria-label="cafe.matchaInsight.title">
+          <Leaf :size="24" :stroke-width="2" aria-hidden="true" />
+          <div>
+            <h3>
+              <span class="cafe-detail__said">
+                {{ cafe.matchaInsight.count }} of our KapéBeans said
+              </span>
+              {{ cafe.matchaInsight.title }}
+            </h3>
+            <p>{{ cafe.matchaInsight.body }}</p>
+          </div>
+        </section>
+
+        <div class="cafe-detail__review-block">
           <button
             type="button"
             class="cafe-detail__leave"
@@ -147,13 +170,10 @@
           >
             Leave a review
           </button>
-          <p v-if="reviewNotice" class="cafe-detail__notice" role="status">
-            {{ reviewNotice }}
-          </p>
         </div>
 
         <section class="cafe-detail__reviews" aria-label="KapéBean reviews">
-          <h3 v-if="cafe.reviews.length > 0">Reviews by our KapéBeans</h3>
+          <h3>Reviews by our KapéBeans</h3>
 
           <div v-if="cafe.reviews.length === 0" class="cafe-detail__empty">
             <Coffee :size="24" :stroke-width="2" aria-hidden="true" />
@@ -191,34 +211,21 @@
           </article>
         </section>
       </div>
-
-      <div class="cafe-detail__footer">
-        <button
-          v-if="cafe.reviews.length === 0"
-          type="button"
-          class="cafe-detail__review-cta"
-          @click="onReview"
-        >
-          Review this cafe
-        </button>
-        <p v-if="reviewNotice && cafe.reviews.length === 0" class="cafe-detail__notice" role="status">
-          {{ reviewNotice }}
-        </p>
-      </div>
     </div>
   </IonModal>
 </template>
 
 <script lang="ts" setup>
-import { Coffee, Navigation, Phone, Plug, Star, Wifi } from 'lucide-vue-next'
+import { Coffee, Leaf, Navigation, Phone, Plug, Star, Wifi } from 'lucide-vue-next'
 import type { Cafe } from '~/types/cafe'
+import { isKapedokoMark, KAPEDOKO_MARK_SRC } from '~/utils/logo'
+import { googleMapsDirectionsUrl } from '~/utils/maps'
 
 const SHEET_HEIGHT = 0.88
 const PEEK_VIEWPORT = 0.62
 const PEEK = PEEK_VIEWPORT / SHEET_HEIGHT
 const EXPANDED = 1
 const BREAKPOINTS = [0, PEEK, EXPANDED]
-const REVIEW_NOTICE = 'Leaving a review isn’t available in this preview yet.'
 
 const props = defineProps<{
   open: boolean
@@ -228,12 +235,12 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:open': [value: boolean]
   present: []
+  dismissed: []
   review: []
 }>()
 
 const broken = ref<Record<string, boolean>>({})
 const activePhoto = ref(0)
-const reviewNotice = ref('')
 
 const photos = computed(() => {
   if (!props.cafe) return []
@@ -243,6 +250,12 @@ const photos = computed(() => {
 })
 
 const heroPhoto = computed(() => photos.value[activePhoto.value] ?? photos.value[0])
+const heroIsMark = computed(() => Boolean(broken.value.hero) || isKapedokoMark(heroPhoto.value))
+const heroSrc = computed(() => (heroIsMark.value ? KAPEDOKO_MARK_SRC : heroPhoto.value))
+
+const onHeroError = () => {
+  if (!isKapedokoMark(heroPhoto.value)) broken.value.hero = true
+}
 
 const hasWifi = computed(
   () => props.cafe && props.cafe.amenities !== 'none' && props.cafe.amenities.includes('wifi'),
@@ -253,8 +266,7 @@ const hasPlug = computed(
 
 const mapsHref = computed(() => {
   if (!props.cafe) return '#'
-  const { lat, lng } = props.cafe
-  return `https://www.openstreetmap.org/directions?from=&to=${lat}%2C${lng}#map=18/${lat}/${lng}`
+  return googleMapsDirectionsUrl(props.cafe.lat, props.cafe.lng)
 })
 
 watch(
@@ -262,7 +274,6 @@ watch(
   () => {
     broken.value = {}
     activePhoto.value = 0
-    reviewNotice.value = ''
   },
 )
 
@@ -272,12 +283,14 @@ const selectPhoto = (index: number) => {
 }
 
 const onReview = () => {
-  reviewNotice.value = REVIEW_NOTICE
   emit('review')
 }
 
 const onPresent = () => emit('present')
-const onDismiss = () => emit('update:open', false)
+const onDismiss = () => {
+  emit('update:open', false)
+  emit('dismissed')
+}
 </script>
 
 <style scoped>
@@ -347,7 +360,8 @@ const onDismiss = () => emit('update:open', false)
 }
 
 .cafe-detail__prompt,
-.cafe-detail__amenities-inline {
+.cafe-detail__amenities-inline,
+.cafe-detail__crowd {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -362,6 +376,17 @@ const onDismiss = () => emit('update:open', false)
 .cafe-detail__prompt {
   color: var(--kd-primary);
   font-size: 10px;
+}
+
+.cafe-detail__crowd {
+  margin-top: 8px;
+  color: var(--kd-ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cafe-detail__crowd span {
+  font-weight: 400;
 }
 
 .cafe-detail__amenity {
@@ -449,7 +474,7 @@ const onDismiss = () => emit('update:open', false)
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 0 20px 16px;
+  padding: 0 20px calc(16px + env(safe-area-inset-bottom));
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: var(--kd-ink-25) transparent;
@@ -468,6 +493,21 @@ const onDismiss = () => emit('update:open', false)
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.cafe-detail__hero.is-mark {
+  background:
+    radial-gradient(
+      circle at 50% 38%,
+      color-mix(in srgb, var(--kd-white) 78%, transparent) 0%,
+      transparent 62%
+    ),
+    var(--kd-secondary);
+}
+
+.cafe-detail__hero.is-mark img {
+  object-fit: contain;
+  padding: 36px 48px;
 }
 
 .cafe-detail__hero.is-broken,
@@ -538,26 +578,22 @@ const onDismiss = () => emit('update:open', false)
   margin-top: 22px;
 }
 
-.cafe-detail__leave,
-.cafe-detail__review-cta {
+.cafe-detail__leave {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
   min-height: 45px;
+  margin: 0;
   padding: 0 20px;
+  border: 1px solid var(--kd-primary);
   border-radius: 8px;
+  background: var(--kd-white);
+  color: var(--kd-primary);
   font-size: 16px;
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
-}
-
-.cafe-detail__leave {
-  margin: 0;
-  border: 1px solid var(--kd-primary);
-  background: var(--kd-white);
-  color: var(--kd-primary);
 }
 
 .cafe-detail__notice {
@@ -653,27 +689,13 @@ const onDismiss = () => emit('update:open', false)
   line-height: 1.4;
 }
 
-.cafe-detail__footer {
-  flex-shrink: 0;
-  padding: 8px 20px calc(12px + env(safe-area-inset-bottom));
-}
-
-.cafe-detail__review-cta {
-  margin: 0;
-  border: 0;
-  background: var(--kd-primary);
-  color: var(--kd-white);
-}
-
-:root.is-android .cafe-detail__leave,
-:root.is-android .cafe-detail__review-cta {
+:root.is-android .cafe-detail__leave {
   min-height: 48px;
 }
 
 .cafe-detail__navigate:focus-visible,
 .cafe-detail__call:focus-visible,
 .cafe-detail__leave:focus-visible,
-.cafe-detail__review-cta:focus-visible,
 .cafe-detail__thumb:focus-visible {
   outline: 2px solid var(--kd-primary);
   outline-offset: 2px;
@@ -686,7 +708,6 @@ const onDismiss = () => emit('update:open', false)
 .cafe-detail__action-face--primary:active,
 .cafe-detail__action-face--quiet:active,
 .cafe-detail__leave:active,
-.cafe-detail__review-cta:active,
 .cafe-detail__thumb:active {
   transform: scale(0.98);
 }
@@ -703,17 +724,12 @@ const onDismiss = () => emit('update:open', false)
   .cafe-detail__leave:hover {
     background: var(--kd-secondary);
   }
-
-  .cafe-detail__review-cta:hover {
-    background: color-mix(in srgb, var(--kd-primary) 88%, var(--kd-white));
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .cafe-detail__action-face--primary:active,
   .cafe-detail__action-face--quiet:active,
   .cafe-detail__leave:active,
-  .cafe-detail__review-cta:active,
   .cafe-detail__thumb:active {
     transform: none;
   }
