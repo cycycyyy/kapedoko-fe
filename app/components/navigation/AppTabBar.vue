@@ -17,9 +17,14 @@
       type="button"
       class="app-tabbar__item"
       :class="{ 'is-active': active === 'saved' }"
+      :aria-current="active === 'saved' ? 'page' : undefined"
       aria-label="Saved cafes"
+      @click="go('/app/favorites')"
     >
-      <Heart :size="24" :stroke-width="2" />
+      <span v-if="active === 'saved'" class="app-tabbar__icon">
+        <Heart :size="18" :stroke-width="2" />
+      </span>
+      <Heart v-else :size="24" :stroke-width="2" />
     </button>
     <button
       type="button"
@@ -59,6 +64,7 @@ const route = useRoute()
 const active = computed<TabId>(() => {
   if (props.active) return props.active
   if (route.path.includes('/map')) return 'map'
+  if (route.path.includes('/favorites')) return 'saved'
   return 'home'
 })
 
