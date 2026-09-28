@@ -19,7 +19,7 @@ import {
 } from './hours'
 import { isValidPhone, optionalPhone } from './phone'
 import { cafeNameError, isValidAddress, isValidCafeName } from './identity'
-import { amenitiesFromStats, mapShopToCafe, shopImageUrl, shopLogoUrl } from './shop-mapper'
+import { amenitiesFromStats, amenityGapCopy, mapShopToCafe, shopImageUrl, shopLogoUrl, UNKNOWN_WORK, workFactsFromStats } from './shop-mapper'
 import { KAPEDOKO_MARK_SRC, logoFileError } from './logo'
 import { formatShopStreet } from './geocode'
 import { authUserId } from './auth'
@@ -154,6 +154,27 @@ describe('amenities from reviews', () => {
     })).toEqual([])
   })
 
+  test('says when amenities are still unconfirmed', () => {
+    expect(workFactsFromStats({
+      shop_id: '1',
+      total_reviews: 2,
+      wifi_yes_count: 2,
+      wifi_available_pct: 100,
+      wifi_speed_mode: 'fast',
+      wifi_time_limit_mode: 'unlimited',
+      power_yes_count: 2,
+      power_available_pct: 100,
+      recommend_pct: 100,
+    }).known).toBe(false)
+    expect(amenityGapCopy(UNKNOWN_WORK, [])).toBe('WiFi and outlets not confirmed yet')
+    expect(amenityGapCopy({
+      ...UNKNOWN_WORK,
+      known: true,
+      wifi: false,
+      plug: false,
+    }, 'none')).toBe('No WiFi or power outlets')
+  })
+
   test('requires enough reviews before claiming no amenities', () => {
     expect(amenitiesFromStats({
       shop_id: '1',
@@ -250,6 +271,7 @@ describe('cafe search suggestions', () => {
     status: 'Open',
     hoursHint: '',
     amenities: [],
+    work: { ...UNKNOWN_WORK },
     popular: false,
     rating: 0,
     ratingLabel: 'New',

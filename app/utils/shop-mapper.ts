@@ -1,5 +1,14 @@
 import type { Amenity, Cafe, CafeReview } from '../types/cafe'
-import type { MarkerTier, ShopBusynessNowRow, ShopReviewStatsRow, ShopRow } from '../types/shop'
+import type {
+  CafeWorkFacts,
+  MarkerTier,
+  PowerAccess,
+  ShopBusynessNowRow,
+  ShopReviewStatsRow,
+  ShopRow,
+  WifiSpeed,
+  WifiTimeLimit,
+} from '../types/shop'
 import {
   busynessLabel,
   isValidBusynessLevel,
@@ -12,6 +21,56 @@ import { isKapedokoMark, KAPEDOKO_MARK_SRC } from './logo'
 
 const REVIEW_THRESHOLD = 3
 const AMENITY_YES_PCT = 50
+
+export const UNKNOWN_WORK: CafeWorkFacts = {
+  known: false,
+  wifi: null,
+  longStay: null,
+  wifiSpeed: null,
+  wifiTimeLimit: null,
+  plug: null,
+  outletReliability: null,
+}
+
+function asWifiSpeed(value: string | null | undefined): WifiSpeed | null {
+  if (value === 'slow' || value === 'okay' || value === 'fast') return value
+  return null
+}
+
+function asWifiCap(value: string | null | undefined): WifiTimeLimit | null {
+  if (value === 'unlimited' || value === 'voucher' || value === 'purchase' || value === 'unsure') return value
+  return null
+}
+
+function asPowerAccess(value: string | null | undefined): PowerAccess | null {
+  if (value === 'easy' || value === 'limited' || value === 'scarce') return value
+  return null
+}
+
+export function workFactsFromStats(stats?: ShopReviewStatsRow | null): CafeWorkFacts {
+  if (!stats || stats.total_reviews < REVIEW_THRESHOLD) return { ...UNKNOWN_WORK }
+
+  const wifi = (stats.wifi_available_pct ?? 0) >= AMENITY_YES_PCT
+  const plug = (stats.power_available_pct ?? 0) >= AMENITY_YES_PCT
+  const wifiSpeed = wifi ? asWifiSpeed(stats.wifi_speed_mode) : null
+  const wifiTimeLimit = wifi ? asWifiCap(stats.wifi_time_limit_mode) : null
+
+  return {
+    known: true,
+    wifi,
+    longStay: wifi && wifiTimeLimit === 'unlimited',
+    wifiSpeed,
+    wifiTimeLimit,
+    plug,
+    outletReliability: plug ? asPowerAccess(stats.power_access_mode) : null,
+  }
+}
+
+export function amenityGapCopy(work: CafeWorkFacts, amenities: Amenity[] | 'none'): string | null {
+  if (!work.known) return 'WiFi and outlets not confirmed yet'
+  if (amenities === 'none') return 'No WiFi or power outlets'
+  return null
+}
 
 export function shopImageUrl(shop: Pick<ShopRow, 'logo_object_key' | 'cover_photo_url'>, publicBase?: string): string {
   const key = shop.logo_object_key?.replace(/^\/+/, '')
@@ -82,6 +141,7 @@ export function mapShopToCafe(
   const hoursHint = formatHoursHint(shop.hours)
   const { rating, label } = ratingFromStats(stats)
   const amenities = amenitiesFromStats(stats)
+  const work = workFactsFromStats(stats)
 
   return {
     id: shop.id,
@@ -94,6 +154,7 @@ export function mapShopToCafe(
     hoursHint,
     phone: shop.contact_number ?? undefined,
     amenities,
+    work,
     popular: (stats?.total_reviews ?? 0) >= REVIEW_THRESHOLD && (stats?.recommend_pct ?? 0) >= 70,
     rating,
     ratingLabel: label,

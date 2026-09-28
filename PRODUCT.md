@@ -20,17 +20,17 @@ KapeDoko is a Philippines-specific cafe guide whose job is work-readiness, not g
 
 ## Operating Context
 
-Used on a phone, often while already out or about to leave: search a shop by name or area, filter by Near You / Popular / WiFi / Plugs, scan a list of cards (photo, rating, open/closed, address, amenity icons), and use maps for the exact location. Cafe submissions and public listings currently cover Metro Manila (NCR) only; pins outside that boundary are blocked. First-run onboarding teaches the WiFi and plug icons, then maps. A bottom bar previews Home, saved cafes, Map, and Profile. Accounts exist in the current app (Supabase email/password login; registration is still incomplete). The same UI ships as a web app and as Capacitor iOS/Android shells.
+Used on a phone, often while already out or about to leave: search a shop by name or area, filter by Near You / Popular / WiFi / Plugs, scan a list of cards (photo, rating, open/closed, address, amenity icons), and use maps for the exact location. Cafe submissions and public listings currently cover Metro Manila (NCR) only; pins outside that boundary are blocked. First-run onboarding teaches the WiFi and plug icons, then maps. A bottom bar opens Home, saved cafes, Map, and Profile. Accounts use Supabase email and password, including registration, password reset, and sign-out. Guests can browse and save cafes on the device; signing in syncs those saves to the account. The same UI ships as a web app and as Capacitor iOS/Android shells.
 
 ## Capabilities and Constraints
 
-- Confirmed in product intent: cafe search, amenity-aware listing (WiFi, power outlets), open/closed status, featured cafes, filters, maps for location, saved cafes, profile, notifications entry, first-run onboarding.
+- Confirmed in product intent: cafe search, amenity-aware listing (WiFi, power outlets), open/closed status, filters, maps for location, saved cafes, profile, first-run onboarding.
 - One shared UI across web and Capacitor iOS/Android. Do not split into separate iOS vs Android design languages.
 - Current coverage is Metro Manila (NCR). Expansion outside Metro Manila is later work; do not pretend nationwide coverage.
 - Cafe submissions outside Metro Manila are blocked until a later region is activated.
-- Home cafe lists, ratings, and Unsplash photos in the current app are placeholders. Do not treat sample shop names, ratings, or stock images as real product evidence.
+- Home and Search list approved shops. WiFi and outlet claims appear only after enough reviews; until then the app says they are not confirmed. Do not treat sample shop names, ratings, or stock images as real product evidence.
 - Auth implementation (Supabase) is present in the repo; keeping that vendor is not a confirmed product commitment.
-- Tab destinations besides Home, map, saved lists, notifications, and profile are sketched in the shell, not fully built.
+- Push notifications are not part of the current app. Featured placements are later work and are not shown as live cafes.
 
 ## Brand Commitments
 

@@ -10,6 +10,8 @@ bun install
 
 Create a `.env` file from `.env.example` and set the Supabase project URL and publishable key.
 
+Apply the SQL files in `db/` in filename order in the Supabase SQL editor. The latest migration adds profiles, favorites, and content reports. In Supabase Auth, allow redirects to `/confirm` and `/reset-password` on each origin you use. Mobile builds store the session in local storage (`NUXT_PUBLIC_AUTH_STORAGE=local` via `bun run build:mobile`) because Capacitor WebViews do not keep the web cookie session.
+
 ## Development
 
 ```bash

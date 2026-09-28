@@ -1,4 +1,4 @@
-import type { MarkerTier, ShopPlacementRow, ShopRow, ShopStatus } from '~/types/shop'
+import type { ContentReportRow, MarkerTier, ShopPlacementRow, ShopRow, ShopStatus } from '~/types/shop'
 import { authUserId } from '~/utils/auth'
 import { effectiveMarkerTier, markerTierToKind } from '~/utils/marker-tier'
 
@@ -8,9 +8,11 @@ export function useAdminShops() {
   const session = useSupabaseSession()
   const shops = ref<ShopRow[]>([])
   const placements = ref<ShopPlacementRow[]>([])
+  const reports = ref<ContentReportRow[]>([])
   const isAdmin = ref(false)
   const status = ref<'idle' | 'loading' | 'ready' | 'forbidden' | 'error'>('idle')
   const error = ref('')
+  const reportsError = ref('')
   const savingId = ref<string | null>(null)
 
   const placementsByShop = computed(() => {
@@ -38,11 +40,28 @@ export function useAdminShops() {
     placements.value = (data ?? []) as ShopPlacementRow[]
   }
 
+  const loadReports = async () => {
+    reportsError.value = ''
+    const { data, error: reportError } = await supabase
+      .from('content_reports')
+      .select('*')
+      .eq('status', 'open')
+      .order('created_at', { ascending: false })
+
+    if (reportError) {
+      reports.value = []
+      reportsError.value = 'Could not load flagged reviews and photos. Run the latest moderation migration, then try again.'
+      return
+    }
+    reports.value = (data ?? []) as ContentReportRow[]
+  }
+
   const load = async () => {
     status.value = 'loading'
     error.value = ''
 
-    const userId = session.value?.user?.id ?? authUserId(user.value)
+    const { data: liveSession } = await supabase.auth.getSession()
+    const userId = liveSession.session?.user?.id ?? session.value?.user?.id ?? authUserId(user.value)
     if (!userId) {
       status.value = 'forbidden'
       return
@@ -73,6 +92,7 @@ export function useAdminShops() {
       if (shopsError) throw shopsError
       shops.value = (data ?? []) as ShopRow[]
       await loadPlacements(shops.value.map((shop) => shop.id))
+      await loadReports()
       status.value = 'ready'
     } catch (err) {
       status.value = 'error'
@@ -88,11 +108,15 @@ export function useAdminShops() {
     savingId.value = shop.id
     error.value = ''
     try {
+      const { data: liveSession } = await supabase.auth.getSession()
+      const reviewerId = liveSession.session?.user?.id ?? session.value?.user?.id ?? authUserId(user.value)
       const { data, error: updateError } = await supabase
         .from('shops')
         .update({
           status: next,
           rejection_reason: next === 'rejected' ? rejectionReason.trim() || 'Does not meet listing standards' : null,
+          reviewed_by: reviewerId,
+          reviewed_at: new Date().toISOString(),
         })
         .eq('id', shop.id)
         .select()
@@ -179,6 +203,24 @@ export function useAdminShops() {
     }
   }
 
+  const resolveReport = async (reportId: string, outcome: 'hidden' | 'dismissed') => {
+    savingId.value = reportId
+    reportsError.value = ''
+    try {
+      const { error: rpcError } = await supabase.rpc('moderate_report', {
+        p_report_id: reportId,
+        p_outcome: outcome,
+      })
+      if (rpcError) throw rpcError
+      reports.value = reports.value.filter((report) => report.id !== reportId)
+    } catch (err) {
+      reportsError.value = err instanceof Error ? err.message : 'Could not update this report.'
+      throw err
+    } finally {
+      savingId.value = null
+    }
+  }
+
   onMounted(() => {
     void load()
   })
@@ -187,13 +229,16 @@ export function useAdminShops() {
     shops,
     placements,
     placementsByShop,
+    reports,
     isAdmin,
     status,
     error,
+    reportsError,
     savingId,
     load,
     moderate,
     markerTierFor,
     savePlacement,
+    resolveReport,
   }
 }

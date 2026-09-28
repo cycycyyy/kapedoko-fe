@@ -1,80 +1,105 @@
 <template>
-  <div class="flex flex-col items-center justify-center min-h-screen bg-background">
-    <div class="w-full max-w-md p-6 rounded-lg shadow-md bg-secondary">
-      <h1 class="text-2xl font-bold text-center mb-6 text-foreground">Create Account</h1>
-      
-      <form @submit.prevent="handleRegister" class="space-y-4">
-        <div>
-          <label for="name" class="block text-sm font-medium text-foreground mb-1">Full Name</label>
+  <AuthShell
+    title="Create account"
+    lede="Your name is what other KapéBeans see on a review."
+  >
+    <p v-if="confirmation" class="auth-note" role="status">
+      Check {{ email }} for a confirmation link. After you confirm, sign in and we will bring you back.
+    </p>
+    <template v-else>
+      <p v-if="error" class="auth-error" role="alert">{{ error }}</p>
+      <form class="auth-form" @submit.prevent="onSubmit">
+        <label class="auth-field" for="name">
+          Name
           <input
             id="name"
             v-model="name"
             type="text"
-            class="form-input"
-            placeholder="John Doe"
+            name="name"
+            autocomplete="name"
+            placeholder="Your name"
             required
           />
-        </div>
-        
-        <div>
-          <label for="email" class="block text-sm font-medium text-foreground mb-1">Email</label>
+        </label>
+        <label class="auth-field" for="email">
+          Email
           <input
             id="email"
             v-model="email"
             type="email"
-            class="form-input"
-            placeholder="your@email.com"
+            name="email"
+            autocomplete="email"
+            inputmode="email"
+            placeholder="you@example.com"
             required
           />
-        </div>
-        
-        <div>
-          <label for="password" class="block text-sm font-medium text-foreground mb-1">Password</label>
+        </label>
+        <label class="auth-field" for="password">
+          Password
           <input
             id="password"
             v-model="password"
             type="password"
-            class="form-input"
-            placeholder="••••••••"
+            name="password"
+            autocomplete="new-password"
+            placeholder="At least 8 characters"
+            minlength="8"
             required
           />
-        </div>
-        
-        <div class="pt-4">
-          <button
-            type="submit"
-            class="w-full py-2 px-4 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-md transition-colors"
-          >
-            Create Account
-          </button>
-        </div>
+        </label>
+        <button type="submit" class="auth-submit" :disabled="loading">
+          {{ loading ? 'Creating account…' : 'Create account' }}
+        </button>
       </form>
-      
-      <div class="mt-4 text-center">
-        <p class="text-sm text-foreground">
-          Already have an account? 
-          <NuxtLink to="/login" class="text-primary hover:underline">
-            Login
-          </NuxtLink>
-        </p>
-      </div>
+    </template>
+    <div class="auth-links">
+      <p>
+        Already have an account?
+        <NuxtLink :to="{ path: '/login', query }">Sign in</NuxtLink>
+      </p>
     </div>
-  </div>
+  </AuthShell>
 </template>
 
 <script setup lang="ts">
+import AuthShell from '~/components/auth/AuthShell.vue'
+import { safeRedirectPath } from '~/utils/auth'
+
 definePageMeta({
-  layout: 'default' // Using default layout
-});
+  middleware: 'guest',
+})
 
-const name = ref('');
-const email = ref('');
-const password = ref('');
+const route = useRoute()
+const { signUp } = useAuth()
+const name = ref('')
+const email = ref('')
+const password = ref('')
+const loading = ref(false)
+const error = ref('')
+const confirmation = ref(false)
 
-const handleRegister = () => {
-  // TODO: Implement actual registration logic
-  console.log('Registration attempt with:', { name: name.value, email: email.value, password: password.value });
-  // Redirect to dashboard or home after successful registration
-  // await navigateTo('/dashboard');
-};
+const query = computed(() => {
+  const redirect = route.query.redirect
+  return typeof redirect === 'string' ? { redirect } : {}
+})
+
+const onSubmit = async () => {
+  if (loading.value) return
+  loading.value = true
+  error.value = ''
+  try {
+    const result = await signUp(name.value, email.value, password.value)
+    if (result.needsConfirmation) {
+      confirmation.value = true
+      password.value = ''
+      return
+    }
+    const requested = Array.isArray(route.query.redirect) ? route.query.redirect[0] : route.query.redirect
+    await navigateTo(safeRedirectPath(requested))
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Could not create this account.'
+  } finally {
+    loading.value = false
+  }
+}
 </script>

@@ -97,6 +97,47 @@ export async function fetchApprovedCafes(
   )
 }
 
+export async function fetchApprovedCafesByIds(
+  supabase: { from: (relation: string) => any },
+  publicBase: string,
+  shopIds: string[],
+): Promise<Cafe[]> {
+  const ids = [...new Set(shopIds.filter((id) => isShopId(id)))]
+  if (!ids.length) return []
+
+  const { data: shops, error } = await supabase
+    .from('shops')
+    .select(APPROVED_SHOP_COLUMNS)
+    .eq('status', 'approved')
+    .in('id', ids)
+
+  if (error) throw error
+  const approved = ((shops ?? []) as ShopRow[]).filter((shop) => shop.status === 'approved')
+  if (!approved.length) return []
+
+  const [{ data: stats }, { data: tiers }] = await Promise.all([
+    supabase.from('shop_review_stats').select('*').in('shop_id', ids),
+    supabase.from('shop_marker_tiers').select('shop_id, marker_tier').in('shop_id', ids),
+  ])
+  const statsById = new Map(
+    ((stats ?? []) as ShopReviewStatsRow[]).map((row) => [row.shop_id, row]),
+  )
+  const tierById = new Map(
+    ((tiers ?? []) as ShopMarkerTierRow[]).map((row) => [row.shop_id, row.marker_tier as MarkerTier]),
+  )
+  const byId = new Map(
+    approved.map((shop) => [
+      shop.id,
+      mapShopToCafe(shop, statsById.get(shop.id), publicBase, tierById.get(shop.id) ?? 'standard'),
+    ]),
+  )
+
+  return ids.flatMap((id) => {
+    const cafe = byId.get(id)
+    return cafe ? [cafe] : []
+  })
+}
+
 export async function fetchApprovedCafeById(
   supabase: { from: (relation: string) => any },
   publicBase: string,

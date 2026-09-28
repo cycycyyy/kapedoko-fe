@@ -2,6 +2,7 @@
   <IonPage>
     <IonContent :scroll-y="false" class="onboarding-content">
       <div class="onboarding">
+        <button type="button" class="onboarding__skip" @click="finish">Skip</button>
         <div
           ref="trackRef"
           class="onboarding__track"
@@ -38,6 +39,7 @@
 import OnboardingStep1 from '~/components/onboarding/OnboardingStep1.vue'
 import OnboardingStep2 from '~/components/onboarding/OnboardingStep2.vue'
 import OnboardingStep3 from '~/components/onboarding/OnboardingStep3.vue'
+import { markOnboardingDone } from '~/utils/onboarding'
 
 const STEP_COUNT = 3
 
@@ -82,6 +84,7 @@ const onKeydown = (event: KeyboardEvent) => {
 }
 
 const finish = async () => {
+  markOnboardingDone()
   await navigateTo('/app')
 }
 </script>
@@ -102,9 +105,34 @@ const finish = async () => {
 }
 
 .onboarding {
+  position: relative;
   height: 100%;
   min-height: 100%;
   background: var(--kd-white);
+}
+
+.onboarding__skip {
+  position: absolute;
+  z-index: 2;
+  top: max(0.75rem, env(safe-area-inset-top));
+  right: 12px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--kd-white);
+  color: var(--kd-primary);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.onboarding__skip:focus-visible {
+  outline: 2px solid var(--kd-primary);
+  outline-offset: 2px;
+  border-radius: 8px;
 }
 
 .onboarding__track {

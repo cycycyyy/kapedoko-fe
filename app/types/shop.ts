@@ -53,6 +53,16 @@ export type ReviewTriState = 'yes' | 'no' | 'unsure'
 export type WifiSpeed = 'slow' | 'okay' | 'fast'
 export type WifiTimeLimit = 'unlimited' | 'voucher' | 'purchase' | 'unsure'
 export type PowerAccess = 'easy' | 'limited' | 'scarce'
+
+export interface CafeWorkFacts {
+  known: boolean
+  wifi: boolean | null
+  longStay: boolean | null
+  wifiSpeed: WifiSpeed | null
+  wifiTimeLimit: WifiTimeLimit | null
+  plug: boolean | null
+  outletReliability: PowerAccess | null
+}
 export type NoiseLevel = 'quiet' | 'mixed' | 'loud'
 export type StayFit = 'long' | 'short' | 'unsure'
 export type BusynessLevel = 'quiet' | 'comfortable' | 'busy' | 'full'
@@ -141,6 +151,38 @@ export interface ShopBusynessInsert {
   shop_id: string
   user_id: string
   level: BusynessLevel
+}
+
+export type ProfileRole = 'user' | 'admin'
+
+export interface ProfileRow {
+  id: string
+  display_name: string | null
+  role: ProfileRole
+  created_at: string
+  updated_at: string
+}
+
+export interface FavoriteRow {
+  user_id: string
+  shop_id: string
+  created_at: string
+}
+
+export type ContentReportTarget = 'review' | 'shop_photo'
+export type ContentReportStatus = 'open' | 'hidden' | 'dismissed'
+
+export interface ContentReportRow {
+  id: string
+  reporter_id: string
+  target_type: ContentReportTarget
+  review_id: string | null
+  shop_id: string | null
+  reason: string | null
+  status: ContentReportStatus
+  created_at: string
+  resolved_at: string | null
+  resolved_by: string | null
 }
 
 export interface ShopInsert {

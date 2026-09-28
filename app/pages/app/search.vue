@@ -46,67 +46,22 @@
 
         <Transition name="search-list" mode="out-in">
           <section :key="listKey" class="search-results" aria-label="Search results">
-            <article
+            <p v-if="status === 'idle' || status === 'loading'" class="search-end">Loading coffee shops…</p>
+            <p v-else-if="status === 'error'" class="search-end">
+              {{ error || 'Could not load coffee shops.' }}
+              <button type="button" class="search-retry" @click="refresh">Try again</button>
+            </p>
+            <CafeCard
               v-for="cafe in visibleCafes"
+              v-else
               :key="cafe.id"
-              class="cafe-card"
-            >
-              <div
-                class="cafe-card__photo"
-                :class="{ 'is-broken': brokenImages.has(cafe.id) }"
-              >
-                <img
-                  :src="cafe.image"
-                  :alt="cafe.name"
-                  width="90"
-                  height="100"
-                  @error="markBroken(cafe.id)"
-                />
-              </div>
-
-              <div class="cafe-card__body">
-                <div class="cafe-card__meta">
-                  <div class="cafe-card__stars" aria-hidden="true">
-                    <Star
-                      v-for="n in 4"
-                      :key="n"
-                      :size="12"
-                      :stroke-width="1.75"
-                    />
-                  </div>
-                  <p
-                    class="cafe-card__status"
-                    :class="cafe.open ? 'is-open' : 'is-closed'"
-                  >
-                    {{ cafe.status }}
-                  </p>
-                </div>
-
-                <h2>{{ cafe.name }}</h2>
-                <p class="cafe-card__address">{{ cafe.address }}</p>
-
-                <p v-if="cafe.amenities === 'none'" class="cafe-card__none">
-                  <Ban :size="14" :stroke-width="2" aria-hidden="true" />
-                  No WiFi or Power Outlets
-                </p>
-                <p v-else class="cafe-card__amenities">
-                  <Wifi
-                    v-if="cafe.amenities.includes('wifi')"
-                    :size="14"
-                    :stroke-width="2"
-                    aria-label="WiFi"
-                  />
-                  <Plug
-                    v-if="cafe.amenities.includes('plug')"
-                    :size="14"
-                    :stroke-width="2"
-                    aria-label="Power outlets"
-                  />
-                </p>
-              </div>
-            </article>
+              :cafe="cafe"
+              :distance-label="distanceLabel(cafe)"
+              @select="openCafe"
+            />
 
             <div
+              v-if="status === 'ready'"
               class="search-end"
               :class="{ 'is-empty': visibleCafes.length === 0 }"
             >
@@ -122,64 +77,19 @@
 
 <script lang="ts" setup>
 import { onIonViewWillEnter } from '@ionic/vue'
-import { Ban, ChevronLeft, Coffee, Plug, Search, Star, Wifi } from 'lucide-vue-next'
+import { ChevronLeft, Coffee, Search } from 'lucide-vue-next'
+import CafeCard from '~/components/cafe/CafeCard.vue'
+import type { Cafe } from '~/types/cafe'
+import { filterCafes } from '~/utils/cafe-filters'
+import { distanceMeters, formatDistance } from '~/utils/geo'
 
-type Amenity = 'wifi' | 'plug'
-
-interface Cafe {
-  id: string
-  name: string
-  address: string
-  image: string
-  open: boolean
-  status: string
-  amenities: Amenity[] | 'none'
-}
-
-const cafes: Cafe[] = [
-  {
-    id: 'c1',
-    name: 'Toby’s Estate',
-    address: 'BGC High Street, Taguig City',
-    image: '/assets/cafes/tobys.jpg',
-    open: true,
-    status: 'Open',
-    amenities: ['wifi', 'plug'],
-  },
-  {
-    id: 'c2',
-    name: 'Commune Cafe + Bar',
-    address: 'Poblacion, Makati City',
-    image: '/assets/cafes/commune.jpg',
-    open: true,
-    status: 'Open',
-    amenities: ['plug'],
-  },
-  {
-    id: 'c3',
-    name: 'Single Origin',
-    address: 'Salcedo Village, Makati City',
-    image: '/assets/cafes/single-origin.jpg',
-    open: false,
-    status: 'Closed, opens at 9:00am',
-    amenities: ['wifi', 'plug'],
-  },
-  {
-    id: 'c4',
-    name: 'KapeTayo',
-    address: 'Katipunan Ave, Quezon City',
-    image: '/assets/cafes/kapetayo.jpg',
-    open: true,
-    status: 'Open',
-    amenities: 'none',
-  },
-]
+const { cafes, status, error, refresh } = useApprovedShops()
+const { status: locationStatus, location, usingFallback, requestLocation } = useDeviceLocation()
 
 const route = useRoute()
 const requestURL = useRequestURL()
 const query = ref('')
 const submittedQuery = ref('')
-const brokenImages = ref<Set<string>>(new Set())
 
 const readQueryParam = (value: unknown) => {
   if (typeof value === 'string') return value
@@ -217,18 +127,25 @@ onMounted(syncFromRoute)
 
 const listKey = computed(() => submittedQuery.value.trim().toLowerCase())
 
-const visibleCafes = computed(() => {
-  const term = submittedQuery.value.trim().toLowerCase()
+const origin = computed(() => (
+  locationStatus.value === 'granted' && location.value && !usingFallback.value
+    ? location.value
+    : null
+))
 
-  return cafes.filter((cafe) => {
-    if (!term) return true
+const visibleCafes = computed(() => filterCafes(cafes.value, {
+  query: submittedQuery.value,
+  origin: origin.value,
+}))
 
-    return (
-      cafe.name.toLowerCase().includes(term) ||
-      cafe.address.toLowerCase().includes(term)
-    )
-  })
-})
+const distanceLabel = (cafe: Cafe) => {
+  if (!origin.value) return undefined
+  return formatDistance(distanceMeters(origin.value, cafe))
+}
+
+const openCafe = async (id: string) => {
+  await navigateTo(`/app/cafes/${id}`)
+}
 
 const resultAnnouncement = computed(() => {
   const count = visibleCafes.value.length
@@ -251,11 +168,9 @@ const goBack = async () => {
   await navigateTo('/app')
 }
 
-const markBroken = (id: string) => {
-  const next = new Set(brokenImages.value)
-  next.add(id)
-  brokenImages.value = next
-}
+onMounted(() => {
+  void requestLocation()
+})
 </script>
 
 <style scoped>
@@ -545,6 +460,23 @@ const markBroken = (id: string) => {
   flex: 1 1 auto;
   justify-content: center;
   padding: 12px;
+}
+
+.search-retry {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin-top: 8px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--kd-primary);
+  color: var(--kd-white);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
 }
 
 .search-end p {

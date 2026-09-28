@@ -1,32 +1,41 @@
 <template>
   <IonApp>
     <NuxtRouteAnnouncer />
-    <!-- Show LoadingScreen if still loading, otherwise show main content -->
     <LoadingScreen v-if="isLoading" />
     <IonRouterOutlet v-else />
   </IonApp>
 </template>
 
 <script setup lang="ts">
-import { IonApp, IonRouterOutlet } from '@ionic/vue';
-import LoadingScreen from '~/components/LoadingScreen.vue';
-import { useSupabaseClient, useSupabaseUser } from '#imports'; // Import Supabase composables
+import { IonApp, IonRouterOutlet } from '@ionic/vue'
+import LoadingScreen from '~/components/LoadingScreen.vue'
+import { shouldShowOnboarding } from '~/utils/onboarding'
 
-const supabase = useSupabaseClient(); // Get the Supabase client instance
-const user = useSupabaseUser();       // Get the reactive user object
+const supabase = useSupabaseClient()
+const route = useRoute()
+const isLoading = ref(true)
 
-const isLoading = ref(true);
+useFavorites()
+
+const maybeOnboard = async () => {
+  if (shouldShowOnboarding(route.path)) {
+    await navigateTo('/app/onboarding')
+  }
+}
 
 onMounted(async () => {
-  // Simulate a loading process (e.g., fetching initial data, initializing services)
-  // Replace this timeout with actual logic if needed.
-  setTimeout(() => {
-    isLoading.value = false;
-  }, 2000); // Simulate 2 seconds of loading
+  const timeout = new Promise((resolve) => {
+    window.setTimeout(resolve, 4000)
+  })
+  await Promise.race([supabase.auth.getSession(), timeout])
+  isLoading.value = false
+  await maybeOnboard()
+})
 
-  // Log the current user state on app load
-  console.log("Current User on App Load:", user.value);
-  // The user object will automatically update when sessions change (login/logout)
-  // You could perform checks here or in a watcher/computed property based on user.value
-});
+watch(
+  () => route.path,
+  () => {
+    if (!isLoading.value) void maybeOnboard()
+  },
+)
 </script>

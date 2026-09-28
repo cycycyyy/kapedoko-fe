@@ -1,94 +1,83 @@
 <template>
-  <div class="flex flex-col items-center justify-center min-h-screen bg-background">
-    <div class="w-full max-w-md p-6 rounded-lg shadow-md bg-secondary">
-      <h1 class="text-2xl font-bold text-center mb-6 text-foreground">Login</h1>
-      
-      <div v-if="error" class="mb-4 p-3 rounded-md bg-destructive/20 text-destructive">
-        {{ error }}
-      </div>
-
-      <form @submit.prevent="handleLogin" class="space-y-4">
-        <div>
-          <label for="email" class="block text-sm font-medium text-foreground mb-1">Email</label>
-          <input
-            id="email"
-            v-model="email"
-            type="email"
-            class="form-input"
-            placeholder="your@email.com"
-            required
-          />
-        </div>
-        
-        <div>
-          <label for="password" class="block text-sm font-medium text-foreground mb-1">Password</label>
-          <input
-            id="password"
-            v-model="password"
-            type="password"
-            class="form-input"
-            placeholder="••••••••"
-            required
-          />
-        </div>
-        
-        <div class="pt-4">
-          <button
-            type="submit"
-            :disabled="loading"
-            class="w-full py-2 px-4 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-md transition-colors disabled:opacity-50"
-          >
-            {{ loading ? 'Signing In...' : 'Sign In' }}
-          </button>
-        </div>
-      </form>
-      
-      <div class="mt-4 text-center">
-        <p class="text-sm text-foreground">
-          Don't have an account? 
-          <NuxtLink to="/register" class="text-primary hover:underline">
-            Register
-          </NuxtLink>
-        </p>
-      </div>
+  <AuthShell
+    title="Sign in"
+    lede="Sign in to keep saved cafes, reviews, and cafe submissions with this account."
+  >
+    <p v-if="error" class="auth-error" role="alert">{{ error }}</p>
+    <form class="auth-form" @submit.prevent="onSubmit">
+      <label class="auth-field" for="email">
+        Email
+        <input
+          id="email"
+          v-model="email"
+          type="email"
+          name="email"
+          autocomplete="username"
+          inputmode="email"
+          placeholder="you@example.com"
+          :aria-invalid="Boolean(error)"
+          required
+        />
+      </label>
+      <label class="auth-field" for="password">
+        Password
+        <input
+          id="password"
+          v-model="password"
+          type="password"
+          name="password"
+          autocomplete="current-password"
+          placeholder="Your password"
+          :aria-invalid="Boolean(error)"
+          required
+        />
+      </label>
+      <button type="submit" class="auth-submit" :disabled="loading">
+        {{ loading ? 'Signing in…' : 'Sign in' }}
+      </button>
+    </form>
+    <div class="auth-links">
+      <NuxtLink :to="{ path: '/forgot-password', query }">Forgot password?</NuxtLink>
+      <p>
+        New here?
+        <NuxtLink :to="{ path: '/register', query }">Create an account</NuxtLink>
+      </p>
     </div>
-  </div>
+  </AuthShell>
 </template>
 
 <script setup lang="ts">
+import AuthShell from '~/components/auth/AuthShell.vue'
+import { safeRedirectPath } from '~/utils/auth'
+
 definePageMeta({
-  layout: 'default' // Using default layout
-});
+  middleware: 'guest',
+})
 
-const supabase = useSupabaseClient();
-const redirect = useSupabaseCookieRedirect();
+const route = useRoute()
+const { signIn } = useAuth()
+const email = ref('')
+const password = ref('')
+const loading = ref(false)
+const error = ref('')
 
-const email = ref('');
-const password = ref('');
-const loading = ref(false);
-const error = ref('');
+const query = computed(() => {
+  const redirect = route.query.redirect
+  return typeof redirect === 'string' ? { redirect } : {}
+})
 
-const handleLogin = async () => {
-  loading.value = true;
-  error.value = '';
-
+const onSubmit = async () => {
+  if (loading.value) return
+  loading.value = true
+  error.value = ''
   try {
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: email.value,
-      password: password.value,
-    });
-
-    if (signInError) {
-      error.value = signInError.message;
-      return;
-    }
-
-    const path = redirect.pluck()
-    await navigateTo(path || '/app');
-  } catch (err: unknown) {
-    error.value = err instanceof Error ? err.message : 'Unable to sign in.';
+    await signIn(email.value, password.value)
+    const requested = Array.isArray(route.query.redirect) ? route.query.redirect[0] : route.query.redirect
+    await navigateTo(safeRedirectPath(requested))
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Could not sign in.'
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-};
+}
 </script>

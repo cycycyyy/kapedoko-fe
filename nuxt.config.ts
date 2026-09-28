@@ -27,23 +27,27 @@ export default defineNuxtConfig({
   supabase: {
     url: process.env.NUXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL,
     key: process.env.NUXT_PUBLIC_SUPABASE_KEY || process.env.SUPABASE_KEY,
+    redirect: false,
+    useSsrCookies: process.env.NUXT_PUBLIC_AUTH_STORAGE !== "local",
     cookieOptions: {
+      maxAge: 60 * 60 * 24 * 400,
+      sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
+      path: "/",
+    },
+    clientOptions: {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        flowType: "pkce",
+      },
     },
     redirectOptions: {
       login: "/login",
       callback: "/confirm",
-      include: undefined, // protect all routes by default...
-      exclude: [
-        "/app",
-        "/app/onboarding",
-        "/app/search",
-        "/app/favorites",
-        "/app/map",
-        "/app/submit-cafe",
-        "/register",
-      ], // ...except these
-      saveRedirectToCookie: true, // remember where user was headed
+      exclude: ["/**"],
+      saveRedirectToCookie: false,
     },
   },
   runtimeConfig: {

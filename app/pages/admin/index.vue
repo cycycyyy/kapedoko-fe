@@ -29,6 +29,37 @@
             </button>
           </div>
 
+          <section class="admin__reports" aria-labelledby="reports-title">
+            <h2 id="reports-title">Flagged content</h2>
+            <p v-if="reportsError" class="admin__state admin__state--error">{{ reportsError }}</p>
+            <p v-else-if="reports.length === 0" class="admin__state">No open reports.</p>
+            <article v-for="report in reports" :key="report.id" class="admin__card">
+              <h2>{{ report.target_type === 'review' ? 'Review report' : 'Photo report' }}</h2>
+              <p>{{ report.reason || 'No note from the reporter.' }}</p>
+              <p class="admin__meta">
+                {{ report.review_id ? `Review ${report.review_id}` : `Cafe ${report.shop_id}` }}
+              </p>
+              <div class="admin__actions">
+                <button
+                  type="button"
+                  class="admin__reject"
+                  :disabled="savingId === report.id"
+                  @click="resolveReport(report.id, 'hidden')"
+                >
+                  Keep hidden
+                </button>
+                <button
+                  type="button"
+                  class="admin__approve"
+                  :disabled="savingId === report.id"
+                  @click="resolveReport(report.id, 'dismissed')"
+                >
+                  Restore
+                </button>
+              </div>
+            </article>
+          </section>
+
           <p v-if="visible.length === 0" class="admin__state">No {{ activeFilter }} submissions.</p>
 
           <article v-for="shop in visible" :key="shop.id" class="admin__card">
@@ -125,7 +156,11 @@ interface PlacementDraft {
   endsAt: string
 }
 
-const { shops, status, error, savingId, moderate, markerTierFor, savePlacement, placementsByShop } =
+definePageMeta({
+  middleware: ['auth', 'admin'],
+})
+
+const { shops, status, error, reports, reportsError, savingId, moderate, markerTierFor, savePlacement, placementsByShop, resolveReport } =
   useAdminShops()
 const config = useRuntimeConfig()
 const publicBase = String(config.public.r2PublicBaseUrl || '')
@@ -213,10 +248,19 @@ const onSavePin = async (shop: ShopRow) => {
   color: var(--kd-primary);
 }
 
-.admin__hero h1 {
+.admin__hero h1,
+.admin__reports h2 {
   margin: 0;
   font-size: 20px;
   font-weight: 700;
+}
+
+.admin__reports {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0 0 22px;
+  color: var(--kd-primary);
 }
 
 .admin__hero p,

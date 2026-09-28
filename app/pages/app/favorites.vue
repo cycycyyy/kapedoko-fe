@@ -58,11 +58,24 @@
           </div>
         </div>
 
+        <p v-if="!signedIn && savedCafes.length > 0" class="favorites-sync">
+          These saves stay on this device.
+          <button type="button" @click="goLogin">Sign in</button>
+          to keep them on your other devices.
+        </p>
+
         <p class="sr-only" aria-live="polite">{{ statusAnnouncement }}</p>
 
         <Transition name="favorites-view" mode="out-in">
+          <section v-if="listStatus === 'loading'" key="loading" class="favorites-empty">
+            <p>Loading saved cafes…</p>
+          </section>
+          <section v-else-if="listStatus === 'error'" key="error" class="favorites-empty">
+            <p>{{ listError || 'Could not load saved cafes. Check your connection and try again.' }}</p>
+            <button type="button" class="favorites-empty__action" @click="loadSaved">Try again</button>
+          </section>
           <section
-            v-if="savedCafes.length === 0"
+            v-else-if="savedCafes.length === 0"
             key="empty"
             class="favorites-empty"
             aria-label="No saved cafes"
@@ -100,6 +113,9 @@
 
               <h2>{{ activeCafe.name }}</h2>
               <p>{{ activeCafe.address }}</p>
+              <button type="button" class="favorites-card__open" @click="openCafe(activeCafe.id)">
+                See this cafe
+              </button>
 
               <div class="favorites-card__nav">
                 <button
@@ -148,10 +164,10 @@
                 />
               </div>
 
-              <div class="favorites-row__body">
+              <button type="button" class="favorites-row__body" @click="openCafe(cafe.id)">
                 <h2>{{ cafe.name }}</h2>
                 <p>{{ cafe.address }}</p>
-              </div>
+              </button>
 
               <button
                 type="button"
@@ -171,64 +187,53 @@
 
 <script lang="ts" setup>
 import { ArrowLeft, ArrowRight, Columns2, Heart, List } from 'lucide-vue-next'
-
-interface Cafe {
-  id: string
-  name: string
-  address: string
-  image: string
-}
+import type { Cafe } from '~/types/cafe'
+import { fetchApprovedCafesByIds } from '~/utils/approved-shops'
 
 type FavoritesView = 'card' | 'list'
 
-const STORAGE_KEY = 'kapedoko-favorite-ids'
 const VIEW_KEY = 'kapedoko-favorites-view'
-const DEFAULT_IDS = ['bubbalab', 'c1', 'c2', 'c3']
-
-const catalog: Cafe[] = [
-  {
-    id: 'bubbalab',
-    name: 'Bubbalab Cafe',
-    address: 'Gil Fernando Ave Centro de Buenviaje, Marikina City',
-    image: '/assets/cafes/bubbalab.jpg',
-  },
-  {
-    id: 'c1',
-    name: 'Toby’s Estate',
-    address: 'BGC High Street, Taguig City',
-    image: '/assets/cafes/tobys.jpg',
-  },
-  {
-    id: 'c2',
-    name: 'Commune Cafe + Bar',
-    address: 'Poblacion, Makati City',
-    image: '/assets/cafes/yardstick.jpg',
-  },
-  {
-    id: 'c3',
-    name: 'Single Origin',
-    address: 'Salcedo Village, Makati City',
-    image: '/assets/cafes/single-origin.jpg',
-  },
-  {
-    id: 'c4',
-    name: 'KapeTayo',
-    address: 'Katipunan Ave, Quezon City',
-    image: '/assets/cafes/kapetayo.jpg',
-  },
-]
+const favorites = useFavorites()
+const user = useSupabaseUser()
+const supabase = useSupabaseClient()
+const config = useRuntimeConfig()
+const { goToLogin } = useAuth()
 
 const view = ref<FavoritesView>('card')
-const favoriteIds = ref<string[]>([...DEFAULT_IDS])
 const cardIndex = ref(0)
 const brokenImages = ref<Set<string>>(new Set())
 const swipeX = ref<number | null>(null)
+const savedCafes = ref<Cafe[]>([])
+const listStatus = ref<'loading' | 'ready' | 'error'>('loading')
+const listError = ref('')
+const signedIn = computed(() => Boolean(user.value))
 
-const savedCafes = computed(() =>
-  favoriteIds.value
-    .map((id) => catalog.find((cafe) => cafe.id === id))
-    .filter((cafe): cafe is Cafe => Boolean(cafe)),
-)
+let loadSeq = 0
+
+const loadSaved = async () => {
+  const ids = favorites.ids.value
+  if (!ids.length) {
+    savedCafes.value = []
+    listError.value = ''
+    listStatus.value = favorites.status.value === 'idle' || favorites.status.value === 'loading'
+      ? 'loading'
+      : 'ready'
+    return
+  }
+  const seq = ++loadSeq
+  listStatus.value = savedCafes.value.length ? 'ready' : 'loading'
+  listError.value = ''
+  try {
+    const next = await fetchApprovedCafesByIds(supabase, String(config.public.r2PublicBaseUrl || ''), ids)
+    if (seq !== loadSeq) return
+    savedCafes.value = next
+    listStatus.value = 'ready'
+  } catch {
+    if (seq !== loadSeq) return
+    listStatus.value = 'error'
+    listError.value = favorites.error.value || 'Could not load saved cafes.'
+  }
+}
 
 const activeCafe = computed(() => savedCafes.value[cardIndex.value] ?? savedCafes.value[0] ?? null)
 
@@ -247,38 +252,19 @@ const statusAnnouncement = computed(() => {
   return count === 1 ? '1 saved coffee shop.' : `${count} saved coffee shops.`
 })
 
-const persistIds = () => {
-  if (!import.meta.client) return
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(favoriteIds.value))
-}
-
-const readStoredIds = () => {
-  if (!import.meta.client) return [...DEFAULT_IDS]
-  const raw = window.localStorage.getItem(STORAGE_KEY)
-  if (raw === null) return [...DEFAULT_IDS]
-  try {
-    const parsed = JSON.parse(raw)
-    if (Array.isArray(parsed) && parsed.every((id) => typeof id === 'string')) {
-      return parsed
-    }
-  } catch {
-    /* ignore */
-  }
-  return [...DEFAULT_IDS]
-}
-
 const readStoredView = (): FavoritesView => {
   if (!import.meta.client) return 'card'
   return window.localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'card'
 }
 
 onMounted(() => {
-  favoriteIds.value = readStoredIds()
   view.value = readStoredView()
-  if (cardIndex.value >= savedCafes.value.length) cardIndex.value = 0
+  void loadSaved()
 })
 
-watch(favoriteIds, persistIds, { deep: true })
+watch(() => [favorites.ids.value.join(','), favorites.status.value], () => {
+  void loadSaved()
+})
 
 watch(view, (next) => {
   if (import.meta.client) window.localStorage.setItem(VIEW_KEY, next)
@@ -312,8 +298,14 @@ const onPointerUp = (event: PointerEvent) => {
 }
 
 const unfavorite = (id: string) => {
-  favoriteIds.value = favoriteIds.value.filter((saved) => saved !== id)
+  void favorites.toggle(id)
 }
+
+const openCafe = async (id: string) => {
+  await navigateTo(`/app/cafes/${id}`)
+}
+
+const goLogin = () => goToLogin('/app/favorites')
 
 const goBack = async () => {
   await navigateTo('/app')
@@ -539,6 +531,43 @@ const markBroken = (id: string) => {
   line-height: 1.4;
 }
 
+.favorites-sync {
+  position: relative;
+  z-index: 2;
+  margin: 0 20px 12px;
+  color: var(--kd-ink);
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.favorites-sync button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--kd-primary);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.favorites-card__open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin: 14px auto 0;
+  padding: 0 16px;
+  border: 1.5px solid var(--kd-white);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--kd-white);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+
 .favorites-card__nav {
   display: flex;
   justify-content: center;
@@ -611,6 +640,13 @@ const markBroken = (id: string) => {
 .favorites-row__body {
   flex: 1;
   min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 .favorites-row h2 {

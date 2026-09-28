@@ -43,9 +43,14 @@
       type="button"
       class="app-tabbar__item"
       :class="{ 'is-active': active === 'profile' }"
+      :aria-current="active === 'profile' ? 'page' : undefined"
       aria-label="Profile"
+      @click="go('/app/profile')"
     >
-      <UserRoundPen :size="24" :stroke-width="2" />
+      <span v-if="active === 'profile'" class="app-tabbar__icon">
+        <UserRoundPen :size="18" :stroke-width="2" />
+      </span>
+      <UserRoundPen v-else :size="24" :stroke-width="2" />
     </button>
   </nav>
 </template>
@@ -65,6 +70,7 @@ const active = computed<TabId>(() => {
   if (props.active) return props.active
   if (route.path.includes('/map')) return 'map'
   if (route.path.includes('/favorites')) return 'saved'
+  if (route.path.includes('/profile')) return 'profile'
   return 'home'
 })
 

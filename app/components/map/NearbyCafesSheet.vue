@@ -21,22 +21,20 @@
           No coffee shops nearby.
         </p>
 
-        <button
+        <div
           v-for="cafe in cafes"
           :id="`nearby-cafe-${cafe.id}`"
           :key="cafe.id"
-          type="button"
           class="nearby-sheet__item"
           role="listitem"
-          :aria-pressed="cafe.id === selectedId"
-          @click="emit('select', cafe.id)"
         >
           <CafeCard
             :cafe="cafe"
             :selected="cafe.id === selectedId"
             :distance-label="distances[cafe.id]"
+            @select="emit('select', $event)"
           />
-        </button>
+        </div>
       </div>
     </div>
   </IonModal>
@@ -115,18 +113,6 @@ const onDismiss = () => {
 .nearby-sheet__item {
   display: block;
   width: 100%;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.nearby-sheet__item:focus-visible {
-  outline: 2px solid var(--kd-primary);
-  outline-offset: 3px;
-  border-radius: 8px;
 }
 
 .nearby-sheet__empty {

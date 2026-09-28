@@ -138,7 +138,7 @@ components:
 
 **Creative North Star: "The Neighborhood Coffee Counter"**
 
-KapeDoko’s current visual system feels like a dependable neighborhood counter: warm, familiar, and immediately useful. A dark coffee-brown anchor gives the interface a recognizable home, while white content surfaces keep practical cafe information easy to scan. The system is compact and phone-first, with a little editorial warmth in featured cafe imagery and the logo-led onboarding.
+KapeDoko’s current visual system feels like a dependable neighborhood counter: warm, familiar, and immediately useful. A dark coffee-brown anchor gives the interface a recognizable home, while white content surfaces keep practical cafe information easy to scan. The system is compact and phone-first, with a little editorial warmth in cafe imagery and the logo-led onboarding.
 
 Controls are quietly tactile rather than decorative. Small rounded corners, short labels, focused status colors, and restrained card shadows help people make a decision while they are already out in the city. The same counter language continues onto the map: rice-paper-warmed tiles sit under white overlay chrome, cafe markers are coffee-brown circles with a cup mark, and nearby cafes pull into a white peek sheet that reuses Home’s cafe cards. Add a cafe is the same overlay to fill: rice-paper ground, white fade chrome, a floating white sheet, and a sticky coffee-brown Continue — not a coffee-brown campaign hero over a stacked form. The product’s visual language supports the work-readiness mission: amenities, open status, and location remain more actionable than atmosphere.
 
@@ -191,7 +191,7 @@ The palette is material and grounded: coffee-brown establishes identity, rice-pa
 
 ## Layout
 
-The layout is mobile-first and edge-aware. Content uses 20px horizontal gutters, with stacked cafe cards separated by 14px and compact horizontal scrolling for featured content and filters. The home hero owns the top of the screen with a dark branded surface, a watermark, logo bar, search field, and featured carousel. The primary navigation is a four-column bottom bar with safe-area padding for native shells.
+The layout is mobile-first and edge-aware. Content uses 20px horizontal gutters, with stacked cafe cards separated by 14px and compact horizontal scrolling for filters. The home hero owns the top of the screen with a dark branded surface, a watermark, logo bar, and search field. The primary navigation is a four-column bottom bar with safe-area padding for native shells. Profile is an account screen, not a second directory.
 
 Interaction surfaces use 36–50px controls in the home shell, 45px full-width onboarding actions, and a 45px iOS / 48px Android full-width primary CTA on the map overlay and Add a cafe. Horizontal carousels use scroll snapping and hide their scrollbar; reduced-motion users receive immediate rather than smooth scrolling. Expanded web layouts should preserve the compact content rhythm instead of stretching cards into a desktop dashboard; map chrome, map sheets, and Add a cafe cap at 480px from 540px.
 
@@ -235,7 +235,7 @@ The form language is gently rounded and compact. Standard controls use 8px corne
 ### Cards / Containers
 - **Corner Style:** 8px.
 - **Background:** White content surface.
-- **Shadow Strategy:** Graphic shadow on cafe cards; ambient shadow on featured home cards.
+- **Shadow Strategy:** Graphic shadow on cafe cards.
 - **Internal Padding:** Cafe metadata uses approximately 11px top, 13px right, 10px bottom, and 15px left.
 - **Signature treatment:** Cafe cards pair a 90px × 100px cropped image with concise status, name, address, optional distance, and amenity information. Open/closed is 12px bold in forest or brick. WiFi and outlet availability appear as visible text beside their icons, not as icons alone. A selected card uses a rice-paper fill and a stronger graphic lift. The Add a cafe pending preview reuses that 90px × 100px topology without amenities or ratings.
 

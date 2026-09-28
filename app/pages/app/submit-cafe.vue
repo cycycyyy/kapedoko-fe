@@ -34,7 +34,7 @@
           </div>
         </div>
 
-        <form v-else class="submit__form" @submit.prevent="onPrimary">
+        <form v-else-if="allowed" class="submit__form" @submit.prevent="onPrimary">
           <ClientOnly v-if="isMapStep">
             <CafeLocationPicker
               overlay
@@ -130,8 +130,15 @@ import { isValidPhone } from '~/utils/phone'
 import { logoFileError } from '~/utils/logo'
 import type { WeeklyHours } from '~/types/shop'
 
+definePageMeta({
+  middleware: 'auth',
+})
+
 const ionRouter = useIonRouter()
+const route = useRoute()
 const { submitShop, submitting } = useShopSubmission()
+const { currentUserId, goToLogin } = useAuth()
+const allowed = ref(false)
 
 const step = ref(1)
 const reviewing = ref(false)
@@ -325,11 +332,21 @@ onBeforeUnmount(() => {
   document.removeEventListener('ionBackButton', onHardwareBack)
 })
 
+const ensureSignedIn = async () => {
+  const userId = await currentUserId()
+  if (!userId) {
+    await goToLogin(route.fullPath)
+    return
+  }
+  allowed.value = true
+}
+
 onMounted(() => {
   if (Capacitor.getPlatform() === 'android') {
     document.documentElement.classList.add('is-android')
   }
   document.addEventListener('ionBackButton', onHardwareBack)
+  void ensureSignedIn()
 })
 </script>
 

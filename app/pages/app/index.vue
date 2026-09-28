@@ -27,9 +27,6 @@
               />
             </div>
 
-            <button type="button" class="home-hero__bell" aria-label="Notifications">
-              <Bell :size="20" :stroke-width="2" />
-            </button>
           </div>
 
           <form class="home-search" @submit.prevent="submitSearch">
@@ -52,53 +49,6 @@
           </form>
         </header>
 
-        <div
-          ref="featuredTrack"
-          class="home-featured"
-          tabindex="0"
-          role="region"
-          aria-roledescription="carousel"
-          :aria-label="`Featured cafes, slide ${featuredIndex + 1} of ${featured.length}`"
-          @scroll.passive="onFeaturedScroll"
-        >
-          <article
-            v-for="slide in featured"
-            :key="slide.id"
-            class="home-featured__card"
-          >
-            <p class="home-featured__copy">
-              <span>Visit</span>
-              <strong>{{ slide.name }}</strong>
-            </p>
-            <div
-              class="home-featured__media"
-              :class="{ 'is-broken': brokenImages.has(slide.id) }"
-            >
-              <img
-                :src="slide.image"
-                :alt="slide.name"
-                width="171"
-                height="100"
-                @error="markBroken(slide.id)"
-              />
-            </div>
-          </article>
-        </div>
-
-        <div class="home-dots" role="tablist" aria-label="Featured cafes">
-          <button
-            v-for="(slide, index) in featured"
-            :key="slide.id"
-            type="button"
-            role="tab"
-            class="home-dots__dot"
-            :class="{ 'is-active': featuredIndex === index }"
-            :aria-selected="featuredIndex === index"
-            :aria-label="`Show ${slide.name}`"
-            @click="goToFeatured(index)"
-          />
-        </div>
-
         <div class="home-filters" role="tablist" aria-label="Cafe filters">
           <button
             v-for="filter in filters"
@@ -114,16 +64,30 @@
           </button>
         </div>
 
+        <p v-if="activeFilter === 'near' && locationStatus === 'denied'" class="home-note">
+          Location is off, so this list is not sorted by distance.
+        </p>
+        <p v-else-if="activeFilter === 'near' && locationStatus === 'unavailable'" class="home-note">
+          Location is unavailable, so this list is not sorted by distance.
+        </p>
+
         <Transition name="cafe-list" mode="out-in">
           <section :key="listKey" class="home-list" aria-label="Cafes">
-            <p v-if="visibleCafes.length === 0" class="home-empty">
-              {{ cafes.length === 0 ? 'No coffee shops yet.' : 'No coffee shops match that search.' }}
+            <p v-if="status === 'idle' || status === 'loading'" class="home-empty">Loading coffee shops…</p>
+            <p v-else-if="status === 'error'" class="home-empty">
+              {{ error || 'Could not load coffee shops.' }}
+              <button type="button" class="home-retry" @click="refresh">Try again</button>
+            </p>
+            <p v-else-if="visibleCafes.length === 0" class="home-empty">
+              {{ cafes.length === 0 ? 'No coffee shops yet.' : 'No coffee shops match that filter.' }}
             </p>
 
             <CafeCard
               v-for="cafe in visibleCafes"
               :key="cafe.id"
               :cafe="cafe"
+              :distance-label="distanceLabel(cafe)"
+              @select="openCafe"
             />
           </section>
         </Transition>
@@ -161,105 +125,42 @@
 <script lang="ts" setup>
 import { Capacitor } from '@capacitor/core'
 import {
-  Bell,
   Coffee,
   Search,
 } from 'lucide-vue-next'
 import CafeCard from '~/components/cafe/CafeCard.vue'
 import AppTabBar from '~/components/navigation/AppTabBar.vue'
+import type { Cafe } from '~/types/cafe'
+import { CAFE_FILTERS, filterCafes, type CafeFilterId } from '~/utils/cafe-filters'
+import { distanceMeters, formatDistance } from '~/utils/geo'
 
-type FilterId = 'near' | 'popular' | 'wifi' | 'plugs'
+const filters = CAFE_FILTERS
 
-const filters: { id: FilterId; label: string }[] = [
-  { id: 'near', label: 'Near You' },
-  { id: 'popular', label: 'Popular' },
-  { id: 'wifi', label: 'WiFi Access' },
-  { id: 'plugs', label: 'Plugs' },
-]
-
-const featured = [
-  {
-    id: 'f1',
-    name: 'Yardstick Coffee',
-    image: '/assets/cafes/yardstick.jpg',
-  },
-  {
-    id: 'f2',
-    name: 'The Coffee Academics',
-    image: '/assets/cafes/academics.jpg',
-  },
-  {
-    id: 'f3',
-    name: 'Wildflour Cafe + Bakery',
-    image: '/assets/cafes/wildflour.jpg',
-  },
-]
-
-const { cafes: liveCafes } = useApprovedShops()
+const { cafes: liveCafes, status, error, refresh } = useApprovedShops()
+const { status: locationStatus, location, usingFallback, requestLocation } = useDeviceLocation()
 const cafes = computed(() => liveCafes.value)
 
 const query = ref('')
 const submittedQuery = ref('')
-const activeFilter = ref<FilterId>('near')
-const featuredIndex = ref(0)
-const featuredTrack = ref<HTMLElement | null>(null)
-const brokenImages = ref<Set<string>>(new Set())
+const activeFilter = ref<CafeFilterId>('near')
 
-const listKey = computed(() => `${activeFilter.value}|${submittedQuery.value}`)
+const origin = computed(() => (
+  locationStatus.value === 'granted' && location.value && !usingFallback.value
+    ? location.value
+    : null
+))
 
-const visibleCafes = computed(() => {
-  const term = submittedQuery.value.trim().toLowerCase()
+const listKey = computed(() => `${activeFilter.value}|${submittedQuery.value}|${status.value}`)
 
-  return cafes.value.filter((cafe) => {
-    const matchesQuery =
-      !term ||
-      cafe.name.toLowerCase().includes(term) ||
-      cafe.address.toLowerCase().includes(term)
+const visibleCafes = computed(() => filterCafes(cafes.value, {
+  query: submittedQuery.value,
+  filter: activeFilter.value,
+  origin: origin.value,
+}))
 
-    const matchesFilter =
-      activeFilter.value === 'near' ||
-      (activeFilter.value === 'popular' && cafe.popular) ||
-      (activeFilter.value === 'wifi' && cafe.amenities !== 'none' && cafe.amenities.includes('wifi')) ||
-      (activeFilter.value === 'plugs' && cafe.amenities !== 'none' && cafe.amenities.includes('plug'))
-
-    return matchesQuery && matchesFilter
-  })
-})
-
-const prefersReducedMotion = () =>
-  typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-
-const featuredStep = () => {
-  const track = featuredTrack.value
-  const card = track?.querySelector<HTMLElement>('.home-featured__card')
-  if (!track || !card) return 0
-  const styles = getComputedStyle(track)
-  const gap = Number.parseFloat(styles.columnGap || styles.gap) || 20
-  return card.offsetWidth + gap
-}
-
-const goToFeatured = (index: number) => {
-  const track = featuredTrack.value
-  const step = featuredStep()
-  if (!track || !step) return
-
-  const next = Math.max(0, Math.min(featured.length - 1, index))
-  featuredIndex.value = next
-  track.scrollTo({
-    left: next * step,
-    behavior: prefersReducedMotion() ? 'auto' : 'smooth',
-  })
-}
-
-const onFeaturedScroll = () => {
-  const track = featuredTrack.value
-  const step = featuredStep()
-  if (!track || !step) return
-
-  const index = Math.round(track.scrollLeft / step)
-  if (index !== featuredIndex.value) {
-    featuredIndex.value = Math.max(0, Math.min(featured.length - 1, index))
-  }
+const distanceLabel = (cafe: Cafe) => {
+  if (!origin.value) return undefined
+  return formatDistance(distanceMeters(origin.value, cafe))
 }
 
 const submitSearch = async () => {
@@ -269,14 +170,12 @@ const submitSearch = async () => {
   await navigateTo(path)
 }
 
-const setFilter = (id: FilterId) => {
+const setFilter = (id: CafeFilterId) => {
   activeFilter.value = id
 }
 
-const markBroken = (id: string) => {
-  const next = new Set(brokenImages.value)
-  next.add(id)
-  brokenImages.value = next
+const openCafe = async (id: string) => {
+  await navigateTo(`/app/cafes/${id}`)
 }
 
 const addCafe = async () => {
@@ -287,6 +186,7 @@ onMounted(() => {
   if (Capacitor.getPlatform() === 'android') {
     document.documentElement.classList.add('is-android')
   }
+  void requestLocation()
 })
 </script>
 
@@ -312,7 +212,7 @@ onMounted(() => {
   overflow: hidden;
   background: var(--kd-primary);
   color: var(--kd-white);
-  padding: max(2.75rem, calc(env(safe-area-inset-top) + 16px)) 20px 71px;
+  padding: max(2.75rem, calc(env(safe-area-inset-top) + 16px)) 20px 24px;
 }
 
 .home-hero__watermark {
@@ -569,7 +469,7 @@ onMounted(() => {
   gap: 10px;
   overflow-x: auto;
   scrollbar-width: none;
-  padding: 0 20px 14px;
+  padding: 16px 20px 14px;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -578,10 +478,11 @@ onMounted(() => {
 }
 
 .home-filters__chip {
-  flex: 0 0 97px;
-  width: 97px;
-  height: 27px;
-  padding: 0;
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 97px;
+  height: 44px;
+  padding: 0 12px;
   border: 0;
   border-radius: 4px;
   background: var(--kd-ink-10);
@@ -615,11 +516,34 @@ onMounted(() => {
   padding: 0 20px;
 }
 
+.home-note,
 .home-empty {
-  margin: 1.5rem 0 0;
+  margin: 0 20px 14px;
   text-align: center;
   color: var(--kd-ink);
   font-size: 14px;
+  line-height: 1.45;
+}
+
+.home-empty {
+  margin-top: 1.5rem;
+}
+
+.home-retry {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin-left: 8px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--kd-primary);
+  color: var(--kd-white);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
 }
 
 .home-fab {

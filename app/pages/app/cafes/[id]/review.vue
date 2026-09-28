@@ -66,7 +66,17 @@
           </div>
         </div>
 
-        <form v-else-if="cafe" class="review__form" @submit.prevent="onPrimary">
+        <div v-else-if="!allowed" class="review__body">
+          <section class="review__sheet" aria-labelledby="signin-title">
+            <h2 id="signin-title">Sign in to review this cafe</h2>
+            <p>Your notes stay on your account, and we will bring you back here after you sign in.</p>
+          </section>
+          <div class="review__dock">
+            <button type="button" class="review__cta" @click="goToLogin(route.fullPath)">Sign in</button>
+          </div>
+        </div>
+
+        <form v-else-if="cafe && allowed" class="review__form" @submit.prevent="onPrimary">
           <div class="review__note">
             <Info :size="12" :stroke-width="2.5" aria-hidden="true" />
             <p>
@@ -245,8 +255,14 @@ import {
   type ReviewChapter,
 } from '~/utils/cafe-review'
 
+definePageMeta({
+  middleware: 'auth',
+})
+
 const route = useRoute()
 const ionRouter = useIonRouter()
+const { currentUserId, goToLogin } = useAuth()
+const allowed = ref(false)
 const { loadCafe, loadOwnReview, saveReview, reportBusyness, submitting, reporting } = useCafeReview()
 
 const shopId = computed(() => resolveShopId())
@@ -374,7 +390,7 @@ const goToCafe = async () => {
     await goHome()
     return
   }
-  await navigateTo({ path: '/app/map', query: { cafe: shopId.value } })
+  await navigateTo(`/app/cafes/${shopId.value}`)
 }
 
 const setChapter = (next: ReviewChapter) => {
@@ -506,7 +522,18 @@ watch(
   { immediate: true },
 )
 
+const ensureSignedIn = async () => {
+  const userId = await currentUserId()
+  if (!userId) {
+    allowed.value = false
+    await goToLogin(route.fullPath)
+    return
+  }
+  allowed.value = true
+}
+
 onIonViewWillEnter(() => {
+  void ensureSignedIn()
   void bootstrap(resolveShopId())
 })
 
@@ -515,6 +542,7 @@ onMounted(() => {
     document.documentElement.classList.add('is-android')
   }
   document.addEventListener('ionBackButton', onHardwareBack)
+  void ensureSignedIn()
 })
 
 onBeforeUnmount(() => {

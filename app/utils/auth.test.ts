@@ -1,0 +1,48 @@
+import { describe, expect, test } from 'bun:test'
+import {
+  authUserId,
+  displayNameError,
+  emailError,
+  friendlyAuthError,
+  isSafeAppPath,
+  passwordError,
+  safeRedirectPath,
+} from './auth'
+
+describe('auth helpers', () => {
+  test('reads a user id from either claim', () => {
+    expect(authUserId({ id: 'user-1' })).toBe('user-1')
+    expect(authUserId({ sub: 'user-2' })).toBe('user-2')
+    expect(authUserId(null)).toBeNull()
+  })
+
+  test('validates email and password without echoing secrets', () => {
+    expect(emailError('')).toBe('Enter your email.')
+    expect(emailError('not-an-email')).toMatch(/email/)
+    expect(emailError('you@example.com')).toBeNull()
+    expect(passwordError('short')).toMatch(/8/)
+    expect(passwordError('longenough')).toBeNull()
+    expect(displayNameError('   ')).toMatch(/name/)
+    expect(displayNameError('A'.repeat(41))).toMatch(/40/)
+    expect(displayNameError('Cy')).toBeNull()
+  })
+
+  test('allows only in-app return paths', () => {
+    expect(isSafeAppPath('/app/favorites')).toBe(true)
+    expect(isSafeAppPath('//evil.example')).toBe(false)
+    expect(isSafeAppPath('/\\evil')).toBe(false)
+    expect(isSafeAppPath('https://evil.example')).toBe(false)
+    expect(isSafeAppPath('/login')).toBe(false)
+    expect(safeRedirectPath('//evil.example')).toBe('/app')
+    expect(safeRedirectPath('/app/cafes/abc/review')).toBe('/app/cafes/abc/review')
+    expect(safeRedirectPath(undefined, '/app/profile')).toBe('/app/profile')
+  })
+
+  test('maps auth failures to recovery copy', () => {
+    expect(friendlyAuthError('Invalid login credentials')).toMatch(/not right/)
+    expect(friendlyAuthError('Email not confirmed')).toMatch(/Confirm your email/)
+    expect(friendlyAuthError('User already registered')).toMatch(/already exists/)
+    expect(friendlyAuthError('Failed to fetch')).toMatch(/connection/)
+    expect(friendlyAuthError('something unexpected')).not.toMatch(/something unexpected/)
+  })
+})

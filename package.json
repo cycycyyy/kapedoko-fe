@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "nuxt build",
-    "build:mobile": "nuxt generate",
+    "build:mobile": "NUXT_PUBLIC_AUTH_STORAGE=local nuxt generate",
     "cap:sync": "bun run build:mobile && bunx cap sync",
     "cap:android": "bun run cap:sync && bunx cap open android",
     "cap:ios": "bun run cap:sync && bunx cap open ios",

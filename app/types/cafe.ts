@@ -1,4 +1,4 @@
-import type { BusynessLevel, MarkerTier } from './shop'
+import type { BusynessLevel, CafeWorkFacts, MarkerTier } from './shop'
 
 export type Amenity = 'wifi' | 'plug'
 
@@ -32,6 +32,7 @@ export interface Cafe {
   hoursHint: string
   phone?: string
   amenities: Amenity[] | 'none'
+  work: CafeWorkFacts
   popular: boolean
   rating: number
   ratingLabel: string

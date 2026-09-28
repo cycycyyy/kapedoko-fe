@@ -2,12 +2,26 @@
   <article
     class="cafe-card"
     :class="{ 'is-selected': selected }"
-    :aria-current="selected ? 'true' : undefined"
   >
+    <button
+      type="button"
+      class="cafe-card__save"
+      :aria-pressed="saved"
+      :aria-label="saved ? `Remove ${cafe.name} from saved cafes` : `Save ${cafe.name}`"
+      @click="onSave"
+    >
+      <Heart :size="18" :stroke-width="1.75" :fill="saved ? 'currentColor' : 'none'" />
+    </button>
+    <button
+      type="button"
+      class="cafe-card__open"
+      :aria-current="selected ? 'true' : undefined"
+      @click="emit('select', cafe.id)"
+    >
     <div class="cafe-card__photo" :class="{ 'is-mark': useMark }">
       <img
         :src="photoSrc"
-        :alt="useMark ? '' : cafe.name"
+        alt=""
         width="90"
         height="100"
         @error="onPhotoError"
@@ -33,15 +47,15 @@
         </p>
       </div>
 
-      <h3>{{ cafe.name }}</h3>
+      <p class="cafe-card__name">{{ cafe.name }}</p>
       <p class="cafe-card__address">{{ cafe.address }}</p>
       <p v-if="distanceLabel" class="cafe-card__distance">{{ distanceLabel }}</p>
 
-      <p v-if="cafe.amenities === 'none'" class="cafe-card__none">
+      <p v-if="amenityGap" class="cafe-card__none">
         <Ban :size="14" :stroke-width="2" aria-hidden="true" />
-        No WiFi or Power Outlets
+        {{ amenityGap }}
       </p>
-      <p v-else-if="cafe.amenities.length" class="cafe-card__amenities">
+      <p v-else-if="Array.isArray(cafe.amenities) && cafe.amenities.length" class="cafe-card__amenities">
         <span v-if="cafe.amenities.includes('wifi')" class="cafe-card__amenity">
           <Wifi :size="14" :stroke-width="2" aria-hidden="true" />
           WiFi
@@ -52,23 +66,36 @@
         </span>
       </p>
     </div>
+    </button>
   </article>
 </template>
 
 <script lang="ts" setup>
-import { Ban, Plug, Star, Wifi } from 'lucide-vue-next'
+import { Ban, Heart, Plug, Star, Wifi } from 'lucide-vue-next'
 import type { Cafe } from '~/types/cafe'
 import { isKapedokoMark, KAPEDOKO_MARK_SRC } from '~/utils/logo'
+import { amenityGapCopy } from '~/utils/shop-mapper'
 
 const props = defineProps<{
-  cafe: Pick<Cafe, 'name' | 'address' | 'image' | 'open' | 'status' | 'amenities' | 'rating'>
+  cafe: Pick<Cafe, 'id' | 'name' | 'address' | 'image' | 'open' | 'status' | 'amenities' | 'work' | 'rating'>
   selected?: boolean
   distanceLabel?: string
 }>()
 
+const emit = defineEmits<{
+  select: [id: string]
+}>()
+
+const favorites = useFavorites()
 const broken = ref(false)
 const useMark = computed(() => broken.value || isKapedokoMark(props.cafe.image))
 const photoSrc = computed(() => (useMark.value ? KAPEDOKO_MARK_SRC : props.cafe.image))
+const saved = computed(() => favorites.isSaved(props.cafe.id))
+const amenityGap = computed(() => amenityGapCopy(props.cafe.work, props.cafe.amenities))
+
+const onSave = () => {
+  void favorites.toggle(props.cafe.id)
+}
 
 const onPhotoError = () => {
   if (!isKapedokoMark(props.cafe.image)) broken.value = true
@@ -77,14 +104,54 @@ const onPhotoError = () => {
 
 <style scoped>
 .cafe-card {
+  position: relative;
   display: flex;
+  width: 100%;
   min-height: 100px;
   border-radius: 8px;
   background: var(--kd-white);
   box-shadow: 0 2px 8px var(--kd-shadow);
-  transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1),
+  transition: box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1),
     background-color 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cafe-card__open {
+  display: flex;
+  width: 100%;
+  min-height: 100px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cafe-card__save {
+  position: absolute;
+  z-index: 1;
+  top: 4px;
+  left: 4px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--kd-white) 92%, transparent);
+  color: var(--kd-primary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cafe-card__open:focus-visible,
+.cafe-card__save:focus-visible {
+  outline: 2px solid var(--kd-primary);
+  outline-offset: 3px;
 }
 
 .cafe-card.is-selected {
@@ -173,7 +240,7 @@ const onPhotoError = () => {
   color: var(--kd-closed);
 }
 
-.cafe-card h3 {
+.cafe-card__name {
   margin: 3px 0 0;
   color: var(--kd-primary);
   font-size: 16px;
@@ -221,16 +288,20 @@ const onPhotoError = () => {
   font-style: italic;
 }
 
-.cafe-card:active {
-  transform: scale(0.99);
+.cafe-card__open:active,
+.cafe-card__save:active {
+  transform: scale(0.98);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cafe-card {
+  .cafe-card,
+  .cafe-card__open,
+  .cafe-card__save {
     transition-duration: 1ms;
   }
 
-  .cafe-card:active {
+  .cafe-card__open:active,
+  .cafe-card__save:active {
     transform: none;
   }
 }
