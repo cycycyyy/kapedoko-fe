@@ -96,3 +96,24 @@ export async function searchCoverageAddress(query: string): Promise<{ label: str
     })
     .filter((item): item is { label: string; point: LatLng } => Boolean(item))
 }
+
+export async function searchWorldAddress(query: string): Promise<{ label: string; point: LatLng }[]> {
+  const term = query.trim()
+  if (term.length < 3) return []
+
+  const data = await nominatim<NominatimPlace[]>(
+    `/search?q=${encodeURIComponent(term)}&format=jsonv2&limit=5&addressdetails=1`,
+  )
+
+  if (!Array.isArray(data)) return []
+
+  return data
+    .map((place) => {
+      const lat = Number.parseFloat(place.lat ?? '')
+      const lng = Number.parseFloat(place.lon ?? '')
+      if (!Number.isFinite(lat) || !Number.isFinite(lng) || !place.display_name) return null
+      const label = formatShopStreet(place) || place.display_name
+      return { label, point: { lat, lng } }
+    })
+    .filter((item): item is { label: string; point: LatLng } => Boolean(item))
+}

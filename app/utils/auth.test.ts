@@ -32,6 +32,7 @@ describe('auth helpers', () => {
     expect(isSafeAppPath('/app/favorites')).toBe(true)
     expect(isSafeAppPath('/app/cafes/abc/review?from=map')).toBe(true)
     expect(isSafeAppPath('/admin')).toBe(true)
+    expect(isSafeAppPath('/admin/cafes/new')).toBe(true)
     expect(isSafeAppPath('/')).toBe(false)
     expect(isSafeAppPath('/?next=1')).toBe(false)
     expect(isSafeAppPath('/confirm')).toBe(false)

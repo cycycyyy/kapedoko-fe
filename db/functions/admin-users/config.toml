@@ -1,0 +1,3 @@
+# Auth is checked inside the function (admin JWT + profiles.role).
+# Gateway JWT verification blocks CORS/preflight and hides our error JSON.
+verify_jwt = false

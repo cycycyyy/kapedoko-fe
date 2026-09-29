@@ -72,13 +72,17 @@ export function amenityGapCopy(work: CafeWorkFacts, amenities: Amenity[] | 'none
   return null
 }
 
-export function shopImageUrl(shop: Pick<ShopRow, 'logo_object_key' | 'cover_photo_url'>, publicBase?: string): string {
-  const key = shop.logo_object_key?.replace(/^\/+/, '')
+export function publicObjectUrl(objectKey: string | null | undefined, publicBase?: string): string | null {
+  const key = objectKey?.replace(/^\/+/, '')
   const base = usablePublicBase(publicBase)
-  if (key && base) {
-    const path = key.split('/').filter(Boolean).map(encodeURIComponent).join('/')
-    return `${base}/${path}`
-  }
+  if (!key || !base) return null
+  const path = key.split('/').filter(Boolean).map(encodeURIComponent).join('/')
+  return `${base}/${path}`
+}
+
+export function shopImageUrl(shop: Pick<ShopRow, 'logo_object_key' | 'cover_photo_url'>, publicBase?: string): string {
+  const fromKey = publicObjectUrl(shop.logo_object_key, publicBase)
+  if (fromKey) return fromKey
   if (shop.cover_photo_url) return shop.cover_photo_url
   return KAPEDOKO_MARK_SRC
 }

@@ -14,12 +14,12 @@
 
     <div class="picker__search">
       <label class="picker__search-field">
-        <span class="sr-only">Search an address in Metro Manila</span>
+        <span class="sr-only">{{ unrestricted ? 'Search an address' : 'Search an address in Metro Manila' }}</span>
         <input
           v-model="query"
           type="search"
           name="address-search"
-          placeholder="Search an address in Metro Manila"
+          :placeholder="unrestricted ? 'Search an address' : 'Search an address in Metro Manila'"
           autocomplete="off"
           enterkeyhint="search"
           @keydown.enter.prevent="runSearch"
@@ -33,7 +33,7 @@
     <p v-if="searchError" class="picker__banner picker__banner--error" role="alert">
       {{ searchError }}
     </p>
-    <p v-else-if="!inBounds" class="picker__banner picker__banner--error" role="alert">
+    <p v-else-if="!unrestricted && !inBounds" class="picker__banner picker__banner--error" role="alert">
       That pin is outside Metro Manila. Metro Manila only for now.
     </p>
 
@@ -76,7 +76,7 @@ import type { Map as LeafletMap, Marker } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { LocateFixed, Search } from 'lucide-vue-next'
 import type { LatLng } from '~/types/cafe'
-import { reverseGeocode, searchCoverageAddress } from '~/utils/geocode'
+import { reverseGeocode, searchCoverageAddress, searchWorldAddress } from '~/utils/geocode'
 import {
   coverageBounds,
   coverageCenter,
@@ -90,6 +90,7 @@ const props = defineProps<{
   address: string
   addressIssue?: string | null
   overlay?: boolean
+  unrestricted?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -146,9 +147,13 @@ const setPoint = async (next: LatLng, lookup = true) => {
 const runSearch = async () => {
   searchError.value = ''
   results.value = []
-  const found = await searchCoverageAddress(query.value)
+  const found = props.unrestricted
+    ? await searchWorldAddress(query.value)
+    : await searchCoverageAddress(query.value)
   if (!found.length) {
-    searchError.value = 'No Metro Manila addresses matched that search. Move the pin instead.'
+    searchError.value = props.unrestricted
+      ? 'No addresses matched that search. Move the pin instead.'
+      : 'No Metro Manila addresses matched that search. Move the pin instead.'
     return
   }
   results.value = found
@@ -169,7 +174,7 @@ const useMyLocation = async () => {
     locationNote.value = 'Location is off. Drag the pin onto the cafe instead.'
     return
   }
-  if (!isInCoverage(location.value)) {
+  if (!props.unrestricted && !isInCoverage(location.value)) {
     locationNote.value = 'Your location is outside Metro Manila. Metro Manila only for now — pin the cafe on the map instead.'
     return
   }
@@ -193,23 +198,29 @@ const init = () => {
   map = L.map(root.value, {
     zoomControl: false,
     attributionControl: true,
-    maxBounds: regionBounds().pad(0.12),
-    maxBoundsViscosity: 0.85,
+    ...(props.unrestricted
+      ? {}
+      : {
+          maxBounds: regionBounds().pad(0.12),
+          maxBoundsViscosity: 0.85,
+        }),
   })
   map.attributionControl?.setPrefix('')
-  map.setView([point.value.lat, point.value.lng], 13)
+  map.setView([point.value.lat, point.value.lng], props.unrestricted ? 12 : 13)
 
   L.tileLayer(config.public.mapTiles.url, {
     attribution: config.public.mapTiles.attribution,
     maxZoom: 19,
   }).addTo(map)
 
-  L.polygon(regionLatLngs(), {
-    color: '#372d25',
-    weight: 1,
-    fill: false,
-    interactive: false,
-  }).addTo(map)
+  if (!props.unrestricted) {
+    L.polygon(regionLatLngs(), {
+      color: '#1c1917',
+      weight: 1,
+      fill: false,
+      interactive: false,
+    }).addTo(map)
+  }
 
   marker = L.marker([point.value.lat, point.value.lng], {
     icon: makeIcon(),
@@ -275,7 +286,7 @@ onBeforeUnmount(() => {
 .picker__copy h2 {
   margin: 0;
   color: var(--kd-ink);
-  font-size: 16px;
+  font-size: 0.95rem;
   font-weight: 700;
   line-height: 1.2;
 }
@@ -284,12 +295,12 @@ onBeforeUnmount(() => {
 .picker__error {
   margin: 4px 0 0;
   color: var(--kd-ink);
-  font-size: 12px;
-  line-height: 1.35;
+  font-size: 0.7875rem;
+  line-height: 1.3;
 }
 
 .picker__error {
-  color: var(--kd-closed);
+  color: var(--kd-destructive);
   font-weight: 700;
 }
 
@@ -310,12 +321,11 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 50px;
+  height: 46px;
   padding: 0 8px 0 16px;
-  border: 0;
-  border-radius: 8px;
-  background: var(--kd-white);
-  box-shadow: 0 2px 8px var(--kd-shadow);
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 16px;
+  background: #ffffff;
 }
 
 .picker__search-field input,
@@ -325,19 +335,20 @@ onBeforeUnmount(() => {
   border: 0;
   background: transparent;
   color: var(--kd-ink);
-  font-size: 16px;
+  font-size: 0.95rem;
   font-weight: 400;
   font-family: inherit;
   caret-color: var(--kd-primary);
 }
 
 .picker__search-field input {
-  font-size: 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
 }
 
 .picker__field textarea {
-  font-size: 12px;
-  line-height: 1.35;
+  font-size: 0.7875rem;
+  line-height: 1.3;
 }
 
 .picker__search-field input::-webkit-search-decoration,
@@ -347,7 +358,8 @@ onBeforeUnmount(() => {
 
 .picker__search-field input::placeholder,
 .picker__field textarea::placeholder {
-  color: #5c534c;
+  color: color-mix(in srgb, var(--kd-ink) 45%, transparent);
+  font-weight: 400;
 }
 
 .picker__field textarea {
@@ -357,8 +369,9 @@ onBeforeUnmount(() => {
   padding: 12px 16px;
   overflow: auto;
   resize: none;
-  border-radius: 8px;
-  background: var(--kd-secondary);
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 16px;
+  background: #faf8f5;
 }
 
 .picker__search-field input:focus,
@@ -366,13 +379,14 @@ onBeforeUnmount(() => {
   outline: none;
 }
 
-.picker__search-field:focus-within,
-.picker__field textarea:focus {
-  box-shadow: 0 2px 8px var(--kd-shadow), 0 0 0 2px var(--kd-white), 0 0 0 4px var(--kd-primary);
+.picker__search-field:focus-within {
+  border-color: color-mix(in srgb, var(--kd-ink) 34%, transparent);
+  box-shadow: inset 0 -1px 0 var(--kd-primary);
 }
 
 .picker__field textarea:focus {
-  box-shadow: 0 0 0 2px var(--kd-white), 0 0 0 4px var(--kd-primary);
+  outline: 2px solid var(--kd-primary);
+  outline-offset: 2px;
 }
 
 .picker__icon-btn,
@@ -383,7 +397,7 @@ onBeforeUnmount(() => {
   height: 44px;
   padding: 0;
   border: 0;
-  border-radius: 8px;
+  border-radius: 16px;
   background: transparent;
   color: var(--kd-ink);
   cursor: pointer;
@@ -397,8 +411,8 @@ onBeforeUnmount(() => {
   bottom: 16px;
   width: 48px;
   height: 48px;
-  background: var(--kd-white);
-  box-shadow: 0 2px 8px var(--kd-shadow);
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  background: #ffffff;
 }
 
 .picker__banner {
@@ -406,11 +420,12 @@ onBeforeUnmount(() => {
   z-index: 2;
   margin: 0;
   padding: 10px 12px;
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--kd-white) 92%, transparent);
-  box-shadow: 0 2px 8px var(--kd-shadow);
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 16%, transparent);
+  border-radius: 16px;
+  background: #ffffff;
   color: var(--kd-ink);
-  font-size: 12px;
+  font-size: 0.7875rem;
+  line-height: 1.3;
 }
 
 .picker.is-overlay .picker__banner {
@@ -430,7 +445,7 @@ onBeforeUnmount(() => {
 }
 
 .picker__banner--error {
-  color: var(--kd-closed);
+  color: var(--kd-destructive);
   font-weight: 700;
 }
 
@@ -439,10 +454,13 @@ onBeforeUnmount(() => {
   z-index: 2;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
+  gap: 0;
+  margin: 8px 0 0;
+  padding: 6px;
   list-style: none;
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 16px;
+  background: #ffffff;
 }
 
 .picker.is-overlay .picker__results {
@@ -451,6 +469,7 @@ onBeforeUnmount(() => {
   left: 20px;
   right: 20px;
   grid-row: 1;
+  margin: 0;
   max-height: 36vh;
   overflow: auto;
 }
@@ -460,14 +479,18 @@ onBeforeUnmount(() => {
   min-height: 44px;
   padding: 10px 12px;
   border: 0;
-  border-radius: 8px;
-  background: var(--kd-white);
-  box-shadow: 0 2px 8px var(--kd-shadow);
+  border-radius: 16px;
+  background: transparent;
   color: var(--kd-ink);
-  font-size: 12px;
+  font-size: 0.7875rem;
   text-align: left;
   font-family: inherit;
   cursor: pointer;
+}
+
+.picker__results button:hover,
+.picker__results button:active {
+  background: #f2f2f2;
 }
 
 .picker__map {
@@ -475,8 +498,9 @@ onBeforeUnmount(() => {
   flex: 1;
   min-height: 240px;
   overflow: hidden;
-  border-radius: 8px;
-  background: var(--kd-secondary);
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 16px;
+  background: #f2f2f2;
 }
 
 .picker.is-overlay .picker__map {
@@ -486,6 +510,7 @@ onBeforeUnmount(() => {
   flex: none;
   min-height: 0;
   height: 100%;
+  border: 0;
   border-radius: 0;
 }
 
@@ -511,9 +536,9 @@ onBeforeUnmount(() => {
   grid-row: 2;
   margin-top: auto;
   padding: 16px 20px 8px;
-  border-radius: 8px 8px 0 0;
-  background: var(--kd-white);
-  box-shadow: 0 -2px 16px var(--kd-shadow);
+  border-radius: 16px 16px 0 0;
+  border-top: 1px solid color-mix(in srgb, var(--kd-ink) 16%, transparent);
+  background: #f2f2f2;
   animation: submit-peek 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
@@ -531,17 +556,18 @@ onBeforeUnmount(() => {
 .picker__field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   color: var(--kd-ink);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
+  line-height: 1.3;
 }
 
 .picker :deep(.leaflet-container) {
   width: 100%;
   height: 100%;
   font-family: inherit;
-  background: var(--kd-secondary);
+  background: #f2f2f2;
 }
 
 .picker :deep(.leaflet-tile-pane) {
@@ -552,10 +578,10 @@ onBeforeUnmount(() => {
   max-width: min(72vw, 280px);
   margin: 0 12px 10px 0;
   padding: 4px 8px;
-  border-radius: 4px;
-  background: color-mix(in srgb, var(--kd-white) 88%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, #ffffff 88%, transparent);
   color: var(--kd-ink);
-  font-size: 10px;
+  font-size: 0.75rem;
 }
 
 .picker.is-overlay :deep(.leaflet-control-attribution) {
@@ -577,22 +603,15 @@ onBeforeUnmount(() => {
 
 .picker__icon-btn:focus-visible,
 .picker__locate:focus-visible,
-.picker__results button:focus-visible,
-.picker__search-field:focus-within,
-.picker__field textarea:focus-visible {
+.picker__results button:focus-visible {
   outline: 2px solid var(--kd-primary);
   outline-offset: 2px;
-}
-
-.picker__search-field:focus-within,
-.picker__field textarea:focus-visible {
-  outline: none;
 }
 
 .picker__icon-btn:active,
 .picker__locate:active,
 .picker__results button:active {
-  transform: scale(0.96);
+  transform: scale(0.94);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -608,7 +627,7 @@ onBeforeUnmount(() => {
 }
 
 ::selection {
-  background: var(--kd-secondary);
+  background: var(--kd-accent);
   color: var(--kd-ink);
 }
 

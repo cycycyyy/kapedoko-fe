@@ -85,16 +85,16 @@
               <article class="submit__listing">
                 <div class="submit__listing-mark">
                   <img
-                    :src="logoPreview || '/assets/kapedoko-logo_dark.png'"
-                    :alt="logoPreview ? '' : 'KapeDoko mark'"
-                    :class="{ 'is-mark': !logoPreview }"
-                    width="90"
-                    height="100"
+                    v-if="logoPreview"
+                    :src="logoPreview"
+                    alt=""
+                    width="40"
+                    height="40"
                   />
                 </div>
                 <div class="submit__listing-body">
-                  <p class="submit__pending">Pending review</p>
                   <h3>{{ normalizeCafeName(draft.name) }}</h3>
+                  <p class="submit__pending">Pending review</p>
                   <p>{{ normalizeAddress(draft.address) }}</p>
                   <p>{{ summarizeHours(draft.weekly) }}</p>
                   <p>{{ draft.phone.trim() || 'No phone added' }}</p>
@@ -352,7 +352,7 @@ onMounted(() => {
 
 <style scoped>
 .submit-content {
-  --background: var(--kd-secondary);
+  --background: #f2f2f2;
   --padding-start: 0;
   --padding-end: 0;
   --padding-top: 0;
@@ -368,7 +368,9 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  background: var(--kd-secondary);
+  background: #f2f2f2;
+  color: var(--kd-ink);
+  font-family: 'Kumbh Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .submit.is-map {
@@ -382,22 +384,23 @@ onMounted(() => {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 18% 24%, color-mix(in srgb, var(--kd-white) 55%, transparent), transparent 36%),
-    linear-gradient(180deg, var(--kd-white) 0%, var(--kd-secondary) 42%);
+    radial-gradient(circle at 18% 24%, color-mix(in srgb, #ffffff 55%, transparent), transparent 36%),
+    linear-gradient(180deg, #ffffff 0%, #f2f2f2 42%);
 }
 
 .submit__chrome {
   position: relative;
   z-index: 3;
   flex-shrink: 0;
-  padding: max(2.75rem, calc(env(safe-area-inset-top) + 16px)) 20px 18px;
-  background: linear-gradient(180deg, var(--kd-white) 0%, color-mix(in srgb, var(--kd-white) 0%, transparent) 100%);
+  padding: max(2.75rem, calc(env(safe-area-inset-top) + 16px)) 20px 16px;
+  background: #f2f2f2;
 }
 
 .submit.is-map .submit__chrome {
   position: absolute;
   inset: 0 0 auto;
   pointer-events: none;
+  background: linear-gradient(180deg, #f2f2f2 0%, color-mix(in srgb, #f2f2f2 0%, transparent) 100%);
 }
 
 .submit.is-map .submit__back,
@@ -436,7 +439,7 @@ onMounted(() => {
 .submit__heading h1 {
   margin: 0;
   color: var(--kd-ink);
-  font-size: 16px;
+  font-size: 0.95rem;
   font-weight: 700;
   line-height: 1.2;
 }
@@ -444,24 +447,24 @@ onMounted(() => {
 .submit__heading p {
   margin: 4px 0 0;
   color: var(--kd-ink);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 400;
-  line-height: 1.2;
+  line-height: 1.3;
 }
 
 .submit__ticks {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  gap: 5px;
-  width: 64px;
+  gap: 4px;
+  width: 56px;
 }
 
 .submit__ticks span {
   flex: 1;
-  height: 5px;
-  border-radius: 999px;
-  background: var(--kd-placeholder);
+  height: 4px;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--kd-ink) 22%, transparent);
 }
 
 .submit__ticks span.is-on {
@@ -482,50 +485,48 @@ onMounted(() => {
 
 .submit__sheet {
   margin: 0 20px;
-  padding: 20px;
+  padding: 16px;
   overflow: auto;
-  border-radius: 8px;
-  background: var(--kd-white);
-  box-shadow: 0 2px 8px var(--kd-shadow);
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 34%, transparent);
+  border-radius: 16px;
+  background: #faf8f5;
 }
 
 .submit__review h2,
 .submit__sheet h2 {
   margin: 0;
   color: var(--kd-ink);
-  font-size: 20px;
+  font-size: 1.325rem;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
 }
 
 .submit__review p,
 .submit__sheet > p {
   margin: 8px 0 0;
   color: var(--kd-ink);
-  font-size: 12px;
-  line-height: 1.35;
+  font-size: 0.7875rem;
+  line-height: 1.3;
 }
 
 .submit__listing {
   display: flex;
   gap: 12px;
-  min-height: 100px;
   margin-top: 16px;
 }
 
 .submit__listing-mark {
-  flex: 0 0 90px;
-  width: 90px;
-  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
   overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 34%, transparent);
   border-radius: 8px;
-  background:
-    radial-gradient(
-      circle at 50% 32%,
-      color-mix(in srgb, var(--kd-white) 78%, transparent) 0%,
-      transparent 58%
-    ),
-    var(--kd-secondary);
+  background: #faf8f5;
 }
 
 .submit__listing-mark img {
@@ -535,11 +536,6 @@ onMounted(() => {
   object-fit: cover;
 }
 
-.submit__listing-mark img.is-mark {
-  object-fit: contain;
-  padding: 10px;
-}
-
 .submit__listing-body {
   min-width: 0;
   display: flex;
@@ -547,34 +543,36 @@ onMounted(() => {
   gap: 4px;
 }
 
-.submit__pending {
-  margin: 0;
-  color: var(--kd-ink);
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
 .submit__listing-body h3 {
   margin: 0;
   color: var(--kd-ink);
-  font-size: 16px;
+  font-size: 1.325rem;
   font-weight: 700;
-  line-height: 1.375;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.submit__pending {
+  margin: 0;
+  color: var(--kd-destructive);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.3;
 }
 
 .submit__listing-body p {
   margin: 0;
   color: var(--kd-ink);
-  font-size: 12px;
-  line-height: 1.35;
+  font-size: 0.7875rem;
+  line-height: 1.3;
 }
 
 .submit__error {
   margin: 10px 20px 0;
-  color: var(--kd-closed);
-  font-size: 12px;
+  color: var(--kd-destructive);
+  font-size: 0.7875rem;
   font-weight: 700;
+  line-height: 1.35;
 }
 
 .submit.is-map .submit__error {
@@ -593,23 +591,27 @@ onMounted(() => {
   z-index: 3;
   margin-top: 0;
   padding: 4px 20px calc(16px + env(safe-area-inset-bottom));
-  background: var(--kd-white);
+  background: #f2f2f2;
 }
 
 .submit__cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  height: 45px;
-  min-height: 45px;
-  padding: 0 20px;
-  border: 0;
-  border-radius: 8px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--kd-accent);
+  border-radius: 16px;
   background: var(--kd-accent);
   color: var(--kd-ink);
-  font-size: 16px;
+  font-size: 0.95rem;
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  transition: box-shadow 160ms ease, transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .submit__cta:disabled {
@@ -621,17 +623,20 @@ onMounted(() => {
 .submit__cta:focus-visible {
   outline: 2px solid var(--kd-primary);
   outline-offset: 2px;
-  border-radius: 8px;
+  border-radius: 16px;
 }
 
-.submit__cta:focus-visible {
-  outline-color: var(--kd-white);
-  box-shadow: 0 0 0 4px var(--kd-primary);
+.submit__cta:hover:not(:disabled) {
+  box-shadow: inset 0 3px 0 color-mix(in srgb, var(--kd-ink) 22%, transparent);
 }
 
 .submit__back:active,
-.submit__cta:active {
-  transform: scale(0.96);
+.submit__cta:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.submit__cta:active:not(:disabled) {
+  box-shadow: inset 0 3px 0 color-mix(in srgb, var(--kd-ink) 22%, transparent);
 }
 
 :root.is-android .submit__cta {
@@ -646,21 +651,19 @@ onMounted(() => {
   }
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .submit__cta:hover:not(:disabled) {
-    filter: brightness(1.06);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
+  .submit__cta {
+    transition-duration: 1ms;
+  }
+
   .submit__back:active,
-  .submit__cta:active {
+  .submit__cta:active:not(:disabled) {
     transform: none;
   }
 }
 
 ::selection {
-  background: var(--kd-secondary);
+  background: var(--kd-accent);
   color: var(--kd-ink);
 }
 </style>

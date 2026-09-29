@@ -2,11 +2,11 @@
   <section class="identity" aria-labelledby="identity-title">
     <div class="identity__intro">
       <div class="identity__title">
-        <Coffee class="identity__mark" :size="24" :stroke-width="2" aria-hidden="true" />
+        <Coffee class="identity__mark" :size="18" :stroke-width="2.25" aria-hidden="true" />
         <h2 id="identity-title">What’s the cafe called?</h2>
       </div>
       <p class="identity__lede">
-        This listing stays off the map until we review it. WiFi and outlets come from visitor reviews, not this form.
+        {{ lede }}
       </p>
     </div>
 
@@ -47,7 +47,7 @@
             class="identity__preview"
           />
           <span v-else class="identity__logo-empty">
-            <Plus :size="22" :stroke-width="2.25" aria-hidden="true" />
+            <Plus :size="18" :stroke-width="2.25" aria-hidden="true" />
             Add logo
           </span>
         </button>
@@ -86,12 +86,15 @@
 import { Coffee, Plus } from 'lucide-vue-next'
 import { logoFileError } from '~/utils/logo'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   name: string
   logoFile: File | null
   nameIssue?: string | null
   logoIssue?: string | null
-}>()
+  lede?: string
+}>(), {
+  lede: 'This listing stays off the map until we review it. WiFi and outlets come from visitor reviews, not this form.',
+})
 
 const emit = defineEmits<{
   'update:name': [value: string]
@@ -150,7 +153,7 @@ onBeforeUnmount(revoke)
 .identity {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
 .identity__intro {
@@ -162,13 +165,14 @@ onBeforeUnmount(revoke)
 .identity__title {
   display: flex;
   align-items: flex-start;
-  gap: 9px;
+  gap: 8px;
   color: var(--kd-ink);
 }
 
 .identity__mark {
   flex: 0 0 auto;
   margin-top: 2px;
+  color: var(--kd-accent);
   transform-origin: 50% 90%;
   animation: stamp-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -177,9 +181,10 @@ onBeforeUnmount(revoke)
   margin: 0;
   min-width: 0;
   color: var(--kd-ink);
-  font-size: 24px;
+  font-size: 1.325rem;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
 }
 
 @keyframes stamp-in {
@@ -198,74 +203,82 @@ onBeforeUnmount(revoke)
 .identity__lede {
   margin: 0;
   color: var(--kd-ink);
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.35;
+  font-size: 0.7875rem;
+  font-weight: 400;
+  line-height: 1.3;
 }
 
 .identity__hint {
   margin: 0;
   color: var(--kd-ink);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 400;
-  line-height: 1.35;
+  line-height: 1.3;
 }
 
 .identity__field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   color: var(--kd-ink);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
+  line-height: 1.3;
 }
 
 .identity__field input {
-  height: 50px;
+  min-height: 44px;
+  height: 44px;
   padding: 0 16px;
-  border: 0;
-  border-radius: 8px;
-  background: var(--kd-secondary);
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 16px;
+  background: #f2f2f2;
   color: var(--kd-ink);
-  font-size: 16px;
+  font-size: 0.95rem;
   font-weight: 400;
   font-family: inherit;
   caret-color: var(--kd-primary);
 }
 
 .identity__field input::placeholder {
-  color: #5c534c;
+  color: color-mix(in srgb, var(--kd-ink) 45%, transparent);
 }
 
 .identity__field input:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--kd-white), 0 0 0 4px var(--kd-primary);
+  outline: 2px solid var(--kd-primary);
+  outline-offset: 2px;
+}
+
+.identity__field input[aria-invalid='true'] {
+  border-color: var(--kd-destructive);
 }
 
 .identity__error {
   margin: 0;
-  color: var(--kd-closed);
-  font-size: 12px;
+  color: var(--kd-destructive);
+  font-size: 0.7875rem;
   font-weight: 700;
+  line-height: 1.35;
 }
 
 .identity__logo {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .identity__logo-label {
   margin: 0;
   color: var(--kd-ink);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
+  line-height: 1.3;
 }
 
 .identity__logo-row {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   margin-top: 2px;
 }
 
@@ -276,24 +289,25 @@ onBeforeUnmount(revoke)
   height: 96px;
   padding: 0;
   overflow: hidden;
-  border: 0;
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 34%, transparent);
   border-radius: 8px;
-  background: var(--kd-secondary);
+  background: #f2f2f2;
   color: var(--kd-ink);
   cursor: pointer;
   transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .identity__logo-btn:active {
-  transform: scale(0.96);
+  transform: scale(0.94);
 }
 
 .identity__logo-empty {
   display: grid;
   justify-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
+  line-height: 1.3;
 }
 
 .identity__preview {
@@ -306,7 +320,7 @@ onBeforeUnmount(revoke)
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 8px;
+  gap: 4px;
 }
 
 .identity__text-btn {
@@ -314,14 +328,15 @@ onBeforeUnmount(revoke)
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--kd-ink);
-  font-size: 12px;
+  color: var(--kd-primary);
+  font-size: 0.7875rem;
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
 }
 
 .identity__text-btn--quiet {
+  color: var(--kd-ink);
   font-weight: 400;
 }
 
@@ -329,19 +344,21 @@ onBeforeUnmount(revoke)
 .identity__text-btn:focus-visible {
   outline: 2px solid var(--kd-primary);
   outline-offset: 2px;
+  border-radius: 8px;
+}
+
+.identity__text-btn:focus-visible {
+  border-radius: 8px;
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .identity__field:hover input:not(:focus) {
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--kd-primary) 18%, transparent);
-  }
-
   .identity__logo-btn:hover {
-    filter: brightness(0.98);
+    background: color-mix(in srgb, var(--kd-ink) 4%, #f2f2f2);
   }
 
   .identity__text-btn:hover {
-    opacity: 0.88;
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
 }
 
@@ -368,6 +385,11 @@ onBeforeUnmount(revoke)
   }
 }
 
+:root.is-android .identity__field input {
+  min-height: 48px;
+  height: 48px;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -378,5 +400,10 @@ onBeforeUnmount(revoke)
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+::selection {
+  background: var(--kd-accent);
+  color: var(--kd-ink);
 }
 </style>

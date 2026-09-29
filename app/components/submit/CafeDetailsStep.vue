@@ -1,9 +1,11 @@
 <template>
   <section class="details" aria-labelledby="details-title">
-    <h2 id="details-title">Hours and a number to call</h2>
-    <p class="details__lede">
-      Hours are required. A phone number is optional.
-    </p>
+    <div class="details__intro">
+      <h2 id="details-title">Hours and a number to call</h2>
+      <p class="details__lede">
+        Hours are required. A phone number is optional.
+      </p>
+    </div>
 
     <label class="details__field">
       <span>Calling number</span>
@@ -183,45 +185,55 @@ watch(
 .details {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
+}
+
+.details__intro {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .details h2 {
-  margin: 0 0 8px;
+  margin: 0;
   color: var(--kd-ink);
-  font-size: 20px;
+  font-size: 1.325rem;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
 }
 
 .details__lede {
   margin: 0;
   color: var(--kd-ink);
-  font-size: 12px;
-  line-height: 1.35;
+  font-size: 0.7875rem;
+  font-weight: 400;
+  line-height: 1.3;
 }
 
 .details__field,
 .details__time {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   color: var(--kd-ink);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
+  line-height: 1.3;
 }
 
 .details__field input,
 .details__time input,
 .details__day select,
 .details__day input {
-  height: 50px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 8px;
-  background: var(--kd-secondary);
+  min-height: 44px;
+  height: 44px;
+  padding: 0 16px;
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 16px;
+  background: #f2f2f2;
   color: var(--kd-ink);
-  font-size: 16px;
+  font-size: 0.95rem;
   font-weight: 400;
   font-family: inherit;
   caret-color: var(--kd-primary);
@@ -231,22 +243,28 @@ watch(
 .details__time input:focus,
 .details__day select:focus,
 .details__day input:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--kd-white), 0 0 0 4px var(--kd-primary);
+  outline: 2px solid var(--kd-primary);
+  outline-offset: 2px;
+}
+
+.details__field input[aria-invalid='true'] {
+  border-color: var(--kd-destructive);
 }
 
 .details__error {
   margin: 0;
-  color: var(--kd-closed);
-  font-size: 12px;
+  color: var(--kd-destructive);
+  font-size: 0.7875rem;
   font-weight: 700;
+  line-height: 1.35;
 }
 
 .details__hours-label {
-  margin: 0 0 10px;
+  margin: 0 0 8px;
   color: var(--kd-ink);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
+  line-height: 1.3;
 }
 
 .details__check {
@@ -255,7 +273,7 @@ watch(
   gap: 10px;
   min-height: 44px;
   color: var(--kd-ink);
-  font-size: 12px;
+  font-size: 0.7875rem;
   font-weight: 700;
 }
 
@@ -278,8 +296,8 @@ watch(
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--kd-ink);
-  font-size: 12px;
+  color: var(--kd-primary);
+  font-size: 0.7875rem;
   font-weight: 700;
   font-family: inherit;
   text-align: left;
@@ -296,8 +314,9 @@ watch(
 .details__day-name {
   margin: 0 0 6px;
   color: var(--kd-ink);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
+  line-height: 1.3;
 }
 
 .details__day-controls {
@@ -314,5 +333,26 @@ watch(
 .details__check input:focus-visible {
   outline: 2px solid var(--kd-primary);
   outline-offset: 2px;
+  border-radius: 8px;
+}
+
+:root.is-android .details__field input,
+:root.is-android .details__time input,
+:root.is-android .details__day select,
+:root.is-android .details__day input {
+  min-height: 48px;
+  height: 48px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .details__toggle:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+
+::selection {
+  background: var(--kd-accent);
+  color: var(--kd-ink);
 }
 </style>

@@ -1,12 +1,15 @@
 import { AwsClient } from 'https://esm.sh/aws4fetch@1.0.18'
 
-const ALLOWED_TYPES: Record<string, string> = {
+const LOGO_TYPES: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
   'image/webp': 'webp',
 }
 
-const MAX_BYTES = 2 * 1024 * 1024
+const LOGO_MAX_BYTES = 2 * 1024 * 1024
+const BANNER_MAX_BYTES = 4 * 1024 * 1024
+
+type UploadPurpose = 'shop-logo' | 'ad-banner'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,6 +23,11 @@ interface R2Config {
   accessKeyId: string
   secretAccessKey: string
   publicBase: string
+}
+
+interface AuthUser {
+  id: string
+  jwt: string
 }
 
 function json(status: number, body: Record<string, unknown>): Response {
@@ -62,7 +70,11 @@ function readR2Config(): R2Config | null {
   return { accountId, bucket, accessKeyId, secretAccessKey, publicBase }
 }
 
-async function authenticate(req: Request): Promise<Response | string> {
+function parsePurpose(value: unknown): UploadPurpose {
+  return value === 'ad-banner' ? 'ad-banner' : 'shop-logo'
+}
+
+async function authenticate(req: Request): Promise<Response | AuthUser> {
   const authHeader = req.headers.get('Authorization') ?? ''
   const jwt = authHeader.replace(/^Bearer\s+/i, '')
   if (!jwt) {
@@ -91,41 +103,67 @@ async function authenticate(req: Request): Promise<Response | string> {
     return json(401, { error: 'Sign in to upload a logo.' })
   }
 
-  return user.id
+  return { id: user.id, jwt }
 }
 
-function validateLogoMeta(
+async function isAdmin(auth: AuthUser): Promise<boolean> {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const supabaseAnon = Deno.env.get('SUPABASE_ANON_KEY')
+  if (!supabaseUrl || !supabaseAnon) return false
+  const res = await fetch(
+    `${supabaseUrl}/rest/v1/profiles?id=eq.${auth.id}&select=role`,
+    {
+      headers: {
+        Authorization: `Bearer ${auth.jwt}`,
+        apikey: supabaseAnon,
+        Accept: 'application/json',
+      },
+    },
+  )
+  if (!res.ok) return false
+  const rows = (await res.json()) as Array<{ role?: string }>
+  return rows[0]?.role === 'admin'
+}
+
+function validateImageMeta(
+  purpose: UploadPurpose,
   contentType: string,
   size: number,
 ): { ext: string } | { error: string } {
-  const ext = ALLOWED_TYPES[contentType]
+  const ext = LOGO_TYPES[contentType]
   if (!ext) {
     return { error: 'Use a JPG, PNG, or WebP image.' }
   }
-  if (!Number.isFinite(size) || size <= 0 || size > MAX_BYTES) {
-    return { error: 'Keep the logo under 2 MB.' }
+  const max = purpose === 'ad-banner' ? BANNER_MAX_BYTES : LOGO_MAX_BYTES
+  if (!Number.isFinite(size) || size <= 0 || size > max) {
+    return {
+      error: purpose === 'ad-banner' ? 'Keep the banner under 4 MB.' : 'Keep the logo under 2 MB.',
+    }
   }
   return { ext }
 }
 
-function r2UploadError(status: number): string {
+function r2UploadError(status: number, purpose: UploadPurpose): string {
+  const noun = purpose === 'ad-banner' ? 'Banner' : 'Logo'
   if (status === 403) {
-    return 'Logo upload credentials are invalid. Check R2 secrets on presign-upload.'
+    return `${noun} upload credentials are invalid. Check R2 secrets on presign-upload.`
   }
   if (status === 404) {
-    return 'Logo upload bucket was not found. Check the R2_BUCKET secret.'
+    return `${noun} upload bucket was not found. Check the R2_BUCKET secret.`
   }
-  return 'The logo didn’t upload. Try again later.'
+  return `The ${noun.toLowerCase()} didn’t upload. Try again later.`
 }
 
 async function uploadToR2(
   config: R2Config,
   userId: string,
+  purpose: UploadPurpose,
   contentType: string,
   ext: string,
   body: ArrayBuffer,
 ): Promise<Response> {
-  const objectKey = `shop-logos/${userId}/${crypto.randomUUID()}.${ext}`
+  const folder = purpose === 'ad-banner' ? 'ad-banners' : 'shop-logos'
+  const objectKey = `${folder}/${userId}/${crypto.randomUUID()}.${ext}`
   const endpoint = r2Endpoint(config, objectKey)
   const client = r2Client(config)
 
@@ -146,7 +184,7 @@ async function uploadToR2(
   if (!upload.ok) {
     const detail = await upload.text().catch(() => '')
     console.error('R2 upload failed', upload.status, detail)
-    return json(502, { error: r2UploadError(upload.status) })
+    return json(502, { error: r2UploadError(upload.status, purpose) })
   }
 
   return json(200, { objectKey, publicUrl: publicUrl(config, objectKey) })
@@ -154,7 +192,7 @@ async function uploadToR2(
 
 async function handleMultipartUpload(
   req: Request,
-  userId: string,
+  auth: AuthUser,
   config: R2Config,
 ): Promise<Response> {
   let form: FormData
@@ -164,40 +202,51 @@ async function handleMultipartUpload(
     return json(400, { error: 'Expected multipart form with a file field.' })
   }
 
-  const file = form.get('file')
-  if (!(file instanceof File)) {
-    return json(400, { error: 'Attach a logo image to upload.' })
+  const purpose = parsePurpose(form.get('purpose'))
+  if (purpose === 'ad-banner' && !(await isAdmin(auth))) {
+    return json(403, { error: 'Admin only' })
   }
 
-  const validation = validateLogoMeta(file.type, file.size)
+  const file = form.get('file')
+  if (!(file instanceof File)) {
+    return json(400, { error: purpose === 'ad-banner' ? 'Attach a banner image to upload.' : 'Attach a logo image to upload.' })
+  }
+
+  const validation = validateImageMeta(purpose, file.type, file.size)
   if ('error' in validation) {
     return json(400, { error: validation.error })
   }
 
   const body = await file.arrayBuffer()
-  return uploadToR2(config, userId, file.type, validation.ext, body)
+  return uploadToR2(config, auth.id, purpose, file.type, validation.ext, body)
 }
 
 async function handlePresignRequest(
   req: Request,
-  userId: string,
+  auth: AuthUser,
   config: R2Config,
 ): Promise<Response> {
-  let payload: { contentType?: string; size?: number }
+  let payload: { contentType?: string; size?: number; purpose?: string }
   try {
     payload = await req.json()
   } catch {
     return json(400, { error: 'Expected JSON with contentType and size.' })
   }
 
+  const purpose = parsePurpose(payload.purpose)
+  if (purpose === 'ad-banner' && !(await isAdmin(auth))) {
+    return json(403, { error: 'Admin only' })
+  }
+
   const contentType = String(payload.contentType ?? '')
   const size = Number(payload.size ?? 0)
-  const validation = validateLogoMeta(contentType, size)
+  const validation = validateImageMeta(purpose, contentType, size)
   if ('error' in validation) {
     return json(400, { error: validation.error })
   }
 
-  const objectKey = `shop-logos/${userId}/${crypto.randomUUID()}.${validation.ext}`
+  const folder = purpose === 'ad-banner' ? 'ad-banners' : 'shop-logos'
+  const objectKey = `${folder}/${auth.id}/${crypto.randomUUID()}.${validation.ext}`
   const endpoint = r2Endpoint(config, objectKey)
   const signed = await r2Client(config).sign(
     new Request(endpoint, {

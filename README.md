@@ -10,7 +10,7 @@ bun install
 
 Create a `.env` file from `.env.example` and set the Supabase project URL and publishable key.
 
-Apply the SQL files in `db/` in filename order in the Supabase SQL editor. The latest migration adds profiles, favorites, and content reports. In Supabase Auth, allow redirects to `/confirm` and `/reset-password` on each origin you use. Mobile builds store the session in local storage (`NUXT_PUBLIC_AUTH_STORAGE=local` via `bun run build:mobile`) because Capacitor WebViews do not keep the web cookie session.
+Apply the SQL files in `db/` in filename order in the Supabase SQL editor, including `20260929_admin_portal.sql` and `20260929_admin_portal_fix.sql`. The portal migration adds audit logging, approved cafe creation, placements RPC, ad campaigns, and role changes. The fix file casts shop status to the live `shop_status` enum and creates `content_reports` if that table is missing. Deploy the Edge Functions from `db/functions/` (`presign-upload` and `admin-users`) so banner uploads and user suspend/reactivate work. Deploy `admin-users` with `--no-verify-jwt` (auth is checked inside the function); include `db/functions/admin-users/config.toml` when copying into `supabase/functions`. Optional RLS checks live in `db/verify/admin_portal_rls.sql`. In Supabase Auth, allow redirects to `/confirm` and `/reset-password` on each origin you use. Mobile builds store the session in local storage (`NUXT_PUBLIC_AUTH_STORAGE=local` via `bun run build:mobile`) because Capacitor WebViews do not keep the web cookie session.
 
 ## Development
 

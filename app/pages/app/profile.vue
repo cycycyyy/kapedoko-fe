@@ -40,6 +40,10 @@
             </button>
           </form>
 
+          <section v-if="isAdmin" class="profile__panel" aria-label="Admin">
+            <NuxtLink class="profile__primary" to="/admin">Admin portal</NuxtLink>
+          </section>
+
           <section class="profile__submissions" aria-labelledby="submissions-title">
             <h2 id="submissions-title">Cafes you submitted</h2>
             <p v-if="shopsStatus === 'loading'">Loading your submissions…</p>
@@ -81,6 +85,7 @@ const signOutError = ref('')
 const shops = ref<Pick<ShopRow, 'id' | 'name' | 'status' | 'rejection_reason'>[]>([])
 const shopsStatus = ref<'idle' | 'loading' | 'ready' | 'error'>('idle')
 const shopsError = ref('')
+const isAdmin = ref(false)
 
 const signedIn = computed(() => Boolean(user.value))
 
@@ -116,10 +121,14 @@ const loadShops = async () => {
 
 const loadAccount = async () => {
   email.value = user.value?.email ?? ''
-  if (!user.value) return
+  if (!user.value) {
+    isAdmin.value = false
+    return
+  }
   try {
     const profile = await loadProfile()
     displayName.value = profile?.display_name || ''
+    isAdmin.value = profile?.role === 'admin'
   } catch (err) {
     nameError.value = err instanceof Error ? err.message : 'Could not load your profile.'
   }
@@ -300,6 +309,7 @@ const goRegister = () => navigateTo({ path: '/register', query: { redirect: '/ap
   font-family: inherit;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  text-decoration: none;
 }
 
 .profile__primary,

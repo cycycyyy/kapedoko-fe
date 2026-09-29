@@ -33,40 +33,40 @@
           </form>
 
         <section
-          v-if="placementCafes.length > 0"
+          v-if="homeAds.length > 0"
           class="home-partners"
-          aria-label="Featured cafes"
+          :aria-label="usingLiveAds ? 'Featured banners' : 'Featured cafes'"
         >
           <div class="home-partners__track" role="list">
             <button
-              v-for="(cafe, index) in placementCafes"
-              :key="cafe.id"
+              v-for="(ad, index) in homeAds"
+              :key="ad.id"
               type="button"
               class="home-partners__card"
-              :class="cafe.markerTier === 'promoted'
+              :class="ad.kind === 'ad'
                 ? 'home-partners__card--sponsored'
-                : 'home-partners__card--partner'"
+                : ad.kind === 'promoted'
+                  ? 'home-partners__card--sponsored'
+                  : 'home-partners__card--partner'"
               role="listitem"
-              :aria-label="placementAriaLabel(cafe, index)"
-              @click="openCafe(cafe.id)"
+              :aria-label="ad.ariaLabel"
+              @click="openCafe(ad.shopId)"
             >
               <span class="home-partners__media">
                 <img
                   class="home-partners__image"
-                  src="/assets/partner-ad-placeholder.svg"
+                  :src="ad.image"
                   alt=""
                   width="108"
                   height="128"
                 />
-                <span class="home-partners__badge">
-                  {{ cafe.markerTier === 'promoted' ? 'Sponsored' : 'Partner' }}
-                </span>
+                <span class="home-partners__badge">{{ ad.badge }}</span>
               </span>
               <span class="home-partners__copy" aria-hidden="true">
-                <span class="home-partners__name">{{ cafe.name }}</span>
-                <span v-if="cafe.address" class="home-partners__place">{{ cafe.address }}</span>
-                <span v-if="placementCafes.length > 1" class="home-partners__index">
-                  {{ index + 1 }} of {{ placementCafes.length }}
+                <span class="home-partners__name">{{ ad.name }}</span>
+                <span v-if="ad.place" class="home-partners__place">{{ ad.place }}</span>
+                <span v-if="homeAds.length > 1" class="home-partners__index">
+                  {{ index + 1 }} of {{ homeAds.length }}
                 </span>
               </span>
             </button>
@@ -167,6 +167,7 @@ const filterIcons: Record<CafeFilterIcon, typeof Navigation> = {
 const filters = CAFE_FILTERS
 
 const { cafes: liveCafes, status, error, refresh } = useApprovedShops()
+const { ads: liveAds } = useActiveAds()
 const { status: locationStatus, location, usingFallback, requestLocation } = useDeviceLocation()
 const { user, loadProfile } = useAuth()
 const cafes = computed(() => liveCafes.value)
@@ -183,11 +184,35 @@ const placementCafes = computed(() => {
   return [...promoted, ...partners]
 })
 
-const placementAriaLabel = (cafe: Cafe, index: number): string => {
-  const tier = cafe.markerTier === 'promoted' ? 'Sponsored' : 'Partner'
-  const total = placementCafes.value.length
-  return `${tier}: ${cafe.name}, ${index + 1} of ${total}`
-}
+const usingLiveAds = computed(() => liveAds.value.length > 0)
+
+const homeAds = computed(() => {
+  if (usingLiveAds.value) {
+    return liveAds.value.map((ad, index) => ({
+      id: ad.id,
+      shopId: ad.shopId,
+      name: ad.name,
+      place: '',
+      image: ad.image,
+      badge: 'Ad',
+      kind: 'ad' as const,
+      ariaLabel: `Ad: ${ad.name}, ${index + 1} of ${liveAds.value.length}`,
+    }))
+  }
+  return placementCafes.value.map((cafe, index) => {
+    const badge = cafe.markerTier === 'promoted' ? 'Sponsored' : 'Partner'
+    return {
+      id: cafe.id,
+      shopId: cafe.id,
+      name: cafe.name,
+      place: cafe.address,
+      image: '/assets/partner-ad-placeholder.svg',
+      badge,
+      kind: cafe.markerTier,
+      ariaLabel: `${badge}: ${cafe.name}, ${index + 1} of ${placementCafes.value.length}`,
+    }
+  })
+})
 
 const firstNameFrom = (value: unknown): string => {
   if (typeof value !== 'string') return ''
