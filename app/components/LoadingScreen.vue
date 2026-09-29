@@ -54,7 +54,7 @@ import logo from '~/assets/css/logos/kapedoko-logo-typography.svg'
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background-color: var(--kd-primary); /* Dark brown color */
+  background-color: var(--kd-accent); /* Brand accent pulse */
   animation: pulse 1.5s infinite ease-in-out;
 }
 

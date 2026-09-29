@@ -10,14 +10,23 @@ export type CafeFilterId =
   | 'fast-wifi'
   | 'reliable-outlets'
 
-export const CAFE_FILTERS: { id: CafeFilterId; label: string }[] = [
-  { id: 'near', label: 'Near You' },
-  { id: 'popular', label: 'Popular' },
-  { id: 'wifi', label: 'WiFi' },
-  { id: 'plugs', label: 'Plugs' },
-  { id: 'long-stay', label: 'Long-stay WiFi' },
-  { id: 'fast-wifi', label: 'Fast WiFi' },
-  { id: 'reliable-outlets', label: 'Reliable outlets' },
+export type CafeFilterIcon =
+  | 'navigation'
+  | 'flame'
+  | 'wifi'
+  | 'plug'
+  | 'hourglass'
+  | 'zap'
+  | 'battery-charging'
+
+export const CAFE_FILTERS: { id: CafeFilterId; label: string; icon: CafeFilterIcon }[] = [
+  { id: 'near', label: 'Near You', icon: 'navigation' },
+  { id: 'popular', label: 'Popular', icon: 'flame' },
+  { id: 'wifi', label: 'WiFi', icon: 'wifi' },
+  { id: 'plugs', label: 'Plugs', icon: 'plug' },
+  { id: 'long-stay', label: 'Long-stay WiFi', icon: 'hourglass' },
+  { id: 'fast-wifi', label: 'Fast WiFi', icon: 'zap' },
+  { id: 'reliable-outlets', label: 'Reliable outlets', icon: 'battery-charging' },
 ]
 
 export function cafeMatchesFilter(cafe: Cafe, filter: CafeFilterId): boolean {

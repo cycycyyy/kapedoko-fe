@@ -188,7 +188,7 @@ watch(
 
 .details h2 {
   margin: 0 0 8px;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   font-size: 20px;
   font-weight: 700;
   line-height: 1.2;
@@ -206,7 +206,7 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 8px;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   font-size: 12px;
   font-weight: 700;
 }
@@ -244,7 +244,7 @@ watch(
 
 .details__hours-label {
   margin: 0 0 10px;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   font-size: 12px;
   font-weight: 700;
 }
@@ -278,7 +278,7 @@ watch(
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   font-size: 12px;
   font-weight: 700;
   font-family: inherit;

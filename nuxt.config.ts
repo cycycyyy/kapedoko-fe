@@ -2,6 +2,22 @@
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: false },
+  app: {
+    head: {
+      link: [
+        { rel: "preconnect", href: "https://fonts.googleapis.com" },
+        {
+          rel: "preconnect",
+          href: "https://fonts.gstatic.com",
+          crossorigin: "",
+        },
+        {
+          rel: "stylesheet",
+          href: "https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght,YOPQ@100..900,300&display=swap",
+        },
+      ],
+    },
+  },
   modules: [
     "@nuxtjs/ionic",
     "@nuxtjs/tailwindcss",

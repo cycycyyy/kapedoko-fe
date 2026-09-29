@@ -24,3 +24,6 @@ logs
 !.env.example
 
 supabase
+.impeccable/decision
+.impeccable/review
+.impeccable/mocks

@@ -78,8 +78,9 @@ const onDismiss = () => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--kd-white);
+  background: #f2f2f2;
   padding: 8px 0 calc(12px + env(safe-area-inset-bottom));
+  font-family: 'Kumbh Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .nearby-sheet__header {
@@ -91,12 +92,16 @@ const onDismiss = () => {
   color: var(--kd-ink);
 }
 
+.nearby-sheet__header :deep(svg) {
+  color: var(--kd-accent);
+}
+
 .nearby-sheet__header h2 {
   margin: 0;
-  color: var(--kd-primary);
-  font-size: 20px;
+  color: var(--kd-ink);
+  font-size: 1.05rem;
   font-weight: 700;
-  line-height: 1.35;
+  line-height: 1.2;
 }
 
 .nearby-sheet__list {
@@ -105,8 +110,8 @@ const onDismiss = () => {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 0 20px 8px;
+  gap: 0;
+  padding: 0 0 8px;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -119,7 +124,7 @@ const onDismiss = () => {
   margin: 1.5rem 0 0;
   text-align: center;
   color: var(--kd-ink);
-  font-size: 14px;
+  font-size: 0.7875rem;
 }
 </style>
 
@@ -128,9 +133,9 @@ ion-modal.nearby-modal {
   contain: none;
   pointer-events: none;
   --height: 78%;
-  --border-radius: 8px;
-  --background: var(--kd-white);
-  --box-shadow: 0 -2px 16px var(--kd-shadow);
+  --border-radius: 16px;
+  --background: #f2f2f2;
+  --box-shadow: 0 -4px 20px color-mix(in srgb, #1c1917 12%, transparent);
   --backdrop-opacity: 0;
 }
 
@@ -145,9 +150,9 @@ ion-modal.nearby-modal::part(content) {
 
 ion-modal.nearby-modal::part(handle) {
   width: 50px;
-  height: 8px;
-  margin-top: 18px;
-  border-radius: 5px;
-  background: var(--kd-ink-25);
+  height: 5px;
+  margin-top: 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, #1c1917 25%, transparent);
 }
 </style>

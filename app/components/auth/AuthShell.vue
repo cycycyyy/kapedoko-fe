@@ -51,7 +51,7 @@ defineProps<{
   align-items: flex-start;
   gap: 8px;
   margin-bottom: 24px;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
 }
 
 .auth__mark {
@@ -88,7 +88,7 @@ defineProps<{
   display: flex;
   flex-direction: column;
   gap: 6px;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   font-size: 12px;
   font-weight: 700;
 }
@@ -134,8 +134,8 @@ defineProps<{
   padding: 0 20px;
   border: 0;
   border-radius: 8px;
-  background: var(--kd-primary);
-  color: var(--kd-white);
+  background: var(--kd-accent);
+  color: var(--kd-ink);
   font-size: 16px;
   font-weight: 700;
   font-family: inherit;
@@ -165,7 +165,7 @@ defineProps<{
 }
 
 .auth-links a {
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   font-weight: 700;
 }
 

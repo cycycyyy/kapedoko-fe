@@ -1,382 +1,341 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-07T10:12:00.000Z",
+  "generatedAt": "2026-09-28T07:39:00.000Z",
   "title": "Design System: KapeDoko",
   "extensions": {
     "colorMeta": {
-      "coffee-brown": {
-        "role": "primary",
-        "displayName": "Coffee Brown",
-        "canonical": "#372d25",
-        "tonalRamp": ["#1a1511", "#241d18", "#2d251e", "#372d25", "#5d5147", "#887e73", "#b7afa6", "#ece9e6"]
+      "shelf-field": {
+        "role": "neutral",
+        "displayName": "Shelf Field",
+        "canonical": "#F2F2F2",
+        "tonalRamp": [
+          "#2a2a2a",
+          "#4a4a4a",
+          "#6e6e6e",
+          "#929292",
+          "#b6b6b6",
+          "#d0d0d0",
+          "#e4e4e4",
+          "#F2F2F2"
+        ]
       },
-      "rice-paper": {
-        "role": "secondary",
-        "displayName": "Rice Paper",
-        "canonical": "#ece6db",
-        "tonalRamp": ["#292722", "#514d45", "#777168", "#a29c91", "#c2bbae", "#d8d2c7", "#e7e2d9", "#f7f5f1"]
-      },
-      "forest-open": {
-        "role": "tertiary",
-        "displayName": "Forest Open",
-        "canonical": "#3f6a50",
-        "tonalRamp": ["#1a2c22", "#244033", "#2f5341", "#3f6a50", "#5a8a6a", "#82ad90", "#b5d0be", "#e5f0e8"]
-      },
-      "brick-closed": {
-        "role": "tertiary",
-        "displayName": "Brick Closed",
-        "canonical": "#a45d5d",
-        "tonalRamp": ["#3a1c1c", "#5c2e2e", "#7a4040", "#a45d5d", "#c07d7d", "#d4a3a3", "#e8c9c9", "#f7eaea"]
+      "matte-stock": {
+        "role": "neutral",
+        "displayName": "Matte Stock",
+        "canonical": "#FAF8F5",
+        "tonalRamp": [
+          "#2c2926",
+          "#524d48",
+          "#7a736c",
+          "#a39b93",
+          "#c4bcb4",
+          "#ddd6cf",
+          "#ebe5e0",
+          "#FAF8F5"
+        ]
       },
       "ink": {
         "role": "neutral",
         "displayName": "Ink",
-        "canonical": "#1e1e1e",
-        "tonalRamp": ["#1e1e1e", "#2f2f2f", "#414141", "#5c5c5c", "#777777", "#999999", "#bdbdbd", "#e8e8e8"]
+        "canonical": "#1c1917",
+        "tonalRamp": [
+          "#1c1917",
+          "#2e2a27",
+          "#45403c",
+          "#625b55",
+          "#827970",
+          "#a8a099",
+          "#d0cbc5",
+          "#efece8"
+        ]
+      },
+      "brick-closed": {
+        "role": "tertiary",
+        "displayName": "Brick Closed",
+        "canonical": "#8c3a2f",
+        "tonalRamp": [
+          "#3a1511",
+          "#5a221b",
+          "#742e25",
+          "#8c3a2f",
+          "#a85a4f",
+          "#c4867c",
+          "#e0b8b2",
+          "#f6e8e5"
+        ]
       },
       "white": {
         "role": "neutral",
         "displayName": "White",
         "canonical": "#ffffff",
-        "tonalRamp": ["#1f1f1f", "#3b3b3b", "#595959", "#777777", "#999999", "#b8b8b8", "#d7d7d7", "#ffffff"]
+        "tonalRamp": [
+          "#1f1f1f",
+          "#3b3b3b",
+          "#595959",
+          "#777777",
+          "#999999",
+          "#b8b8b8",
+          "#d7d7d7",
+          "#ffffff"
+        ]
       },
-      "black": {
-        "role": "neutral",
-        "displayName": "Black",
-        "canonical": "#000000",
-        "tonalRamp": ["#000000", "#1a1a1a", "#333333", "#4d4d4d", "#808080", "#b3b3b3", "#d9d9d9", "#f2f2f2"]
+      "primary-teal": {
+        "role": "primary",
+        "displayName": "Teal",
+        "canonical": "#1F6F6B",
+        "tonalRamp": [
+          "#0d2f2d",
+          "#144542",
+          "#1a5a56",
+          "#1F6F6B",
+          "#3a8a86",
+          "#5ea6a2",
+          "#9ac9c6",
+          "#d5ebe9"
+        ]
       },
-      "soft-gray": {
-        "role": "neutral",
-        "displayName": "Soft Gray",
-        "canonical": "#cccccc",
-        "tonalRamp": ["#2a2a2a", "#4a4a4a", "#6e6e6e", "#999999", "#b5b5b5", "#cccccc", "#e0e0e0", "#f4f4f4"]
-      },
-      "placeholder-gray": {
-        "role": "neutral",
-        "displayName": "Placeholder Gray",
-        "canonical": "#d9d9d9",
-        "tonalRamp": ["#2e2e2e", "#525252", "#7a7a7a", "#a3a3a3", "#bfbfbf", "#d9d9d9", "#ebebeb", "#f7f7f7"]
+      "accent-orange": {
+        "role": "accent",
+        "displayName": "Orange",
+        "canonical": "#D9793B",
+        "tonalRamp": [
+          "#5c2e10",
+          "#8a4518",
+          "#b35c28",
+          "#D9793B",
+          "#e2955f",
+          "#ebb48a",
+          "#f3d2b8",
+          "#faf0e6"
+        ]
       }
     },
     "typographyMeta": {
       "display": {
-        "displayName": "Completion Display",
-        "purpose": "Short onboarding completion moments and prominent statements."
-      },
-      "headline": {
-        "displayName": "Sheet Headline",
-        "purpose": "Sheet titles on nearby cafes, cafe detail, and Add a cafe questions."
+        "displayName": "Display",
+        "purpose": "Cafe name on each bag label — bold Kumbh Sans, tight tracking."
       },
       "title": {
-        "displayName": "Cafe Title",
-        "purpose": "Cafe names, key copy, prominent controls, the map CTA, and the Add a cafe header."
+        "displayName": "Title",
+        "purpose": "Search field, Add a cafe, and other primary interactive copy."
       },
       "body": {
-        "displayName": "Cafe Metadata",
-        "purpose": "Addresses, search text, distances, amenity labels, supporting details, and submit step labels."
+        "displayName": "Body",
+        "purpose": "Fact keys and values, outline buttons, general reading in Kumbh Sans."
       },
       "label": {
-        "displayName": "Tiny Annotation",
-        "purpose": "Map attribution, compact sheet actions, and 12px bold forest/brick status."
+        "displayName": "Label",
+        "purpose": "Filter tags, Closed, origin, tab words, quiet meta."
       }
     },
     "shadows": [
       {
-        "name": "ambient-card",
-        "value": "0 0 8px var(--kd-shadow)",
-        "purpose": "Separate featured home cards from the white content surface."
+        "name": "press-ink",
+        "value": "inset 0 3px 0 color-mix(in srgb, #1c1917 35%, transparent)",
+        "purpose": "Stamp press on inactive filter chips."
       },
       {
-        "name": "graphic-lift",
-        "value": "0 2px 8px var(--kd-shadow)",
-        "purpose": "Lift cafe cards, floating map chrome, the Add a cafe sheet, and the onboarding illustration."
+        "name": "press-accent",
+        "value": "inset 0 3px 0 color-mix(in srgb, #1c1917 22%, transparent)",
+        "purpose": "Stamp press on active orange chips and filled buttons."
       },
       {
-        "name": "sheet-lift",
-        "value": "0 -2px 16px var(--kd-shadow)",
-        "purpose": "Lift nearby cafes, cafe-detail sheets, and the Add a cafe pin peek over the map."
-      },
-      {
-        "name": "pin-drop",
-        "value": "drop-shadow(0 3px 5px var(--kd-shadow))",
-        "purpose": "Lift cafe pins off rice-paper tiles; selected uses drop-shadow(0 4px 8px var(--kd-shadow))."
-      },
-      {
-        "name": "selected-card-lift",
-        "value": "0 4px 12px var(--kd-shadow)",
-        "purpose": "Lift a selected cafe card in the nearby list; pair with rice-paper fill, not a coffee-brown ring."
-      },
-      {
-        "name": "focus-ring",
-        "value": "0 0 0 2px var(--kd-white), 0 0 0 4px var(--kd-primary)",
-        "purpose": "Search focus, rice-paper submit fields, and selected cafe-detail thumbs against dark hero or map tiles."
+        "name": "search-focus",
+        "value": "inset 0 -1px 0 #1F6F6B",
+        "purpose": "Search underline thickens to teal on focus."
       }
     ],
     "motion": [
       {
-        "name": "control-transition",
-        "value": "160ms ease",
-        "purpose": "Opacity and press feedback on controls."
-      },
-      {
-        "name": "enter-ease",
+        "name": "ease-paper",
         "value": "cubic-bezier(0.16, 1, 0.3, 1)",
-        "purpose": "Map overlay rise, pin entrance, Add a cafe peek, tab bar, and cafe card press."
+        "purpose": "Settle, reprint, and list swap easing."
       },
       {
-        "name": "progress-transition",
-        "value": "180ms ease",
-        "purpose": "Onboarding and carousel indicator changes."
+        "name": "bag-settle",
+        "value": "460ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Label enters with a slight drop and paper tilt."
       },
       {
-        "name": "reduced-motion",
-        "value": "none",
-        "purpose": "Disable transitions and smooth scrolling when prefers-reduced-motion is enabled."
+        "name": "bag-reprint",
+        "value": "520ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Fact lines reappear with a vertical clip when filters change."
+      },
+      {
+        "name": "list-swap",
+        "value": "220ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Filter list fade and 8px vertical slide."
+      },
+      {
+        "name": "tab-mark",
+        "value": "220ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Orange accent mark slides to the selected menu tab."
+      },
+      {
+        "name": "save-fill",
+        "value": "280ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Save spine fills orange when a cafe is saved."
       }
     ],
     "breakpoints": [
       {
-        "name": "compact",
-        "value": "0px",
-        "purpose": "Phone-first layout with horizontal scrolling and bottom navigation."
+        "name": "phone-column",
+        "value": "540px",
+        "purpose": "Home and tab bar lock to a centered 480px column."
+      }
+    ],
+    "assets": [
+      {
+        "name": "bag-stock",
+        "path": "public/assets/bag-stock.png",
+        "purpose": "Legacy shipping-tooth PNG kept on disk; not used on bag-label faces (flat #FAF8F5)."
       },
       {
-        "name": "map-cap",
-        "value": "540px",
-        "purpose": "Cap map chrome, map sheets, and Add a cafe at 480px on wider viewports."
+        "name": "wordmark-dark",
+        "path": "public/assets/kapedoko-horizontal-text_dark.png",
+        "purpose": "kapé DOKO horizontal lockup for Home chrome (greeting left, wordmark right)."
       }
     ]
   },
   "components": [
     {
-      "name": "Primary Button",
+      "name": "Print Filled Button",
       "kind": "button",
-      "refersTo": "button-primary",
-      "description": "The main action on onboarding, map overlay, and Add a cafe: 45px on iOS, 48px on Android.",
-      "html": "<button class=\"ds-btn-primary\">Show cafes near me</button>",
-      "css": ".ds-btn-primary { width: 100%; max-width: 350px; height: 45px; border: 0; border-radius: 8px; background: var(--kd-primary); color: var(--kd-white); padding: 0 20px; font: 700 16px/1.2 Satoshi, sans-serif; cursor: pointer; transition: opacity 160ms ease, transform 140ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-primary.is-android { height: 48px; } .ds-btn-primary:hover { opacity: .92; } .ds-btn-primary:active { transform: scale(.96); } .ds-btn-primary:focus-visible { outline: 2px solid var(--kd-primary); outline-offset: 3px; }"
+      "refersTo": "button-print",
+      "description": "Orange fill with ink type for Add a cafe and primary print actions.",
+      "html": "<button class=\"ds-btn-print\" type=\"button\">Add a cafe</button>",
+      "css": ".ds-btn-print { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px; border: 1px solid var(--kd-accent, #D9793B); border-radius: 16px; background: var(--kd-accent, #D9793B); color: var(--kd-ink, #1c1917); font-family: 'Kumbh Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: box-shadow 160ms ease; } .ds-btn-print:hover { box-shadow: inset 0 3px 0 color-mix(in srgb, #1c1917 22%, transparent); } .ds-btn-print:active { box-shadow: inset 0 3px 0 color-mix(in srgb, #1c1917 22%, transparent); } .ds-btn-print:focus-visible { outline: 2px solid var(--kd-primary, #1F6F6B); outline-offset: 3px; }"
     },
     {
-      "name": "Secondary Button",
-      "kind": "button",
-      "refersTo": "button-secondary",
-      "description": "A reversed action on a coffee-brown branded surface.",
-      "html": "<button class=\"ds-btn-secondary\">Let’s go!</button>",
-      "css": ".ds-btn-secondary { width: 100%; max-width: 350px; height: 45px; border: 0; border-radius: 8px; background: var(--kd-white); color: var(--kd-primary); padding: 0 20px; font: 700 16px/1.2 Satoshi, sans-serif; cursor: pointer; transition: opacity 160ms ease, transform 160ms ease; } .ds-btn-secondary:hover { opacity: .94; } .ds-btn-secondary:active { transform: scale(.985); } .ds-btn-secondary:focus-visible { outline: 2px solid var(--kd-white); outline-offset: 3px; }"
+      "name": "Filter Tag",
+      "kind": "chip",
+      "refersTo": "chip-filter",
+      "description": "Printed filter tag at rest — ink stroke on transparent shelf field.",
+      "html": "<button class=\"ds-chip-filter\" type=\"button\">Popular</button>",
+      "css": ".ds-chip-filter { display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 12px; border: 1px solid color-mix(in srgb, #1c1917 22%, transparent); border-radius: 16px; background: transparent; color: var(--kd-ink, #1c1917); font-family: 'Kumbh Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 0.75rem; font-weight: 400; letter-spacing: 0; white-space: nowrap; cursor: pointer; } .ds-chip-filter:hover { border-color: color-mix(in srgb, #1c1917 34%, transparent); } .ds-chip-filter:active { box-shadow: inset 0 3px 0 color-mix(in srgb, #1c1917 35%, transparent); } .ds-chip-filter:focus-visible { outline: 2px solid var(--kd-primary, #1F6F6B); outline-offset: -4px; }"
     },
     {
-      "name": "Outline Button",
-      "kind": "button",
-      "refersTo": "button-outline",
-      "description": "Cafe-detail review action: white fill, coffee-brown stroke, 45px (48px on Android).",
-      "html": "<button class=\"ds-btn-outline\">Leave a review</button>",
-      "css": ".ds-btn-outline { width: 100%; min-height: 45px; border: 1px solid var(--kd-primary); border-radius: 8px; background: var(--kd-white); color: var(--kd-primary); padding: 0 20px; font: 700 16px/1.2 Satoshi, sans-serif; cursor: pointer; transition: background-color 160ms ease, transform 140ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-outline:hover { background: var(--kd-secondary); } .ds-btn-outline:active { transform: scale(.98); } .ds-btn-outline:focus-visible { outline: 2px solid var(--kd-primary); outline-offset: 2px; }"
+      "name": "Filter Tag Active",
+      "kind": "chip",
+      "refersTo": "chip-filter-active",
+      "description": "Active printed filter — orange fill, ink type.",
+      "html": "<button class=\"ds-chip-filter-active\" type=\"button\" aria-selected=\"true\">Near You</button>",
+      "css": ".ds-chip-filter-active { display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 12px; border: 1px solid var(--kd-accent, #D9793B); border-radius: 16px; background: var(--kd-accent, #D9793B); color: var(--kd-ink, #1c1917); font-family: 'Kumbh Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 0.75rem; font-weight: 700; letter-spacing: 0; white-space: nowrap; cursor: pointer; } .ds-chip-filter-active:active { box-shadow: inset 0 3px 0 color-mix(in srgb, #1c1917 22%, transparent); } .ds-chip-filter-active:focus-visible { outline: 2px solid var(--kd-primary, #1F6F6B); outline-offset: -4px; }"
     },
     {
-      "name": "Search Field",
+      "name": "Search Underline",
       "kind": "input",
       "refersTo": "input-search",
-      "description": "A white 50px search field used over the dark home hero.",
-      "html": "<label class=\"ds-search\"><svg viewBox=\"0 0 24 24\" width=\"19\" height=\"19\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"7\"/><path d=\"M20 20l-3.5-3.5\"/></svg><input placeholder=\"Search a coffee shop\" /></label>",
-      "css": ".ds-search { display: flex; align-items: center; gap: 11px; height: 50px; padding: 0 16px; border-radius: 8px; background: var(--kd-white); color: var(--kd-primary); } .ds-search input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--kd-ink); font: 400 12px/1.35 Satoshi, sans-serif; caret-color: var(--kd-primary); } .ds-search input::placeholder { color: var(--kd-ink-50); } .ds-search:hover { box-shadow: 0 0 0 1px color-mix(in srgb, var(--kd-primary) 18%, transparent); } .ds-search:focus-within { box-shadow: 0 0 0 2px var(--kd-white), 0 0 0 4px var(--kd-primary); }"
+      "description": "Full-width underline search on the cool shelf field.",
+      "html": "<label class=\"ds-input-search\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"7\"/><path d=\"M20 20l-3.5-3.5\"/></svg><input type=\"search\" placeholder=\"Search a coffee shop\" /></label>",
+      "css": ".ds-input-search { display: flex; align-items: center; gap: 8px; width: 100%; padding: 0 12px; border-bottom: 1px solid color-mix(in srgb, #1c1917 28%, transparent); color: var(--kd-ink, #1c1917); } .ds-input-search input { width: 100%; height: 46px; padding: 0; border: 0; background: transparent; color: var(--kd-ink, #1c1917); font-family: 'Kumbh Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 0.95rem; font-weight: 700; caret-color: var(--kd-primary, #1F6F6B); } .ds-input-search input::placeholder { color: color-mix(in srgb, #1c1917 50%, transparent); opacity: 1; } .ds-input-search:focus-within { box-shadow: inset 0 -1px 0 var(--kd-primary, #1F6F6B); } .ds-input-search input:focus { outline: none; }"
     },
     {
-      "name": "Overlay Search",
-      "kind": "input",
-      "refersTo": "input-search",
-      "description": "The same 50px search field floating over map tiles with graphic lift, including the Add a cafe pin step.",
-      "html": "<label class=\"ds-search-overlay\"><input placeholder=\"Search a coffee shop\" /><button type=\"button\" class=\"ds-search-overlay-go\" aria-label=\"Search\"><svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"7\"/><path d=\"M20 20l-3.5-3.5\"/></svg></button></label>",
-      "css": ".ds-search-overlay { display: flex; align-items: center; gap: 8px; height: 50px; padding: 0 8px 0 16px; border-radius: 8px; background: var(--kd-white); box-shadow: 0 2px 8px var(--kd-shadow); } .ds-search-overlay input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--kd-ink); font: 400 12px/1.35 Satoshi, sans-serif; caret-color: var(--kd-primary); } .ds-search-overlay input::placeholder { color: var(--kd-ink-50); } .ds-search-overlay-go { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; background: transparent; color: var(--kd-primary); cursor: pointer; } .ds-search-overlay:hover { box-shadow: 0 3px 10px var(--kd-shadow); } .ds-search-overlay:focus-within { box-shadow: 0 2px 8px var(--kd-shadow), 0 0 0 2px var(--kd-white), 0 0 0 4px var(--kd-primary); }"
-    },
-    {
-      "name": "Sheet Field",
-      "kind": "input",
-      "refersTo": "input-sheet-field",
-      "description": "Rice-paper 50px field inside the white Add a cafe sheet: no stroke, 8px corners.",
-      "html": "<label class=\"ds-sheet-field\"><span>Cafe name</span><input placeholder=\"e.g. Lamp Quarters Cafe\" /></label>",
-      "css": ".ds-sheet-field { display: flex; flex-direction: column; gap: 8px; color: var(--kd-primary); font: 700 12px/1.2 Satoshi, sans-serif; } .ds-sheet-field input { height: 50px; padding: 0 16px; border: 0; border-radius: 8px; background: var(--kd-secondary); color: var(--kd-ink); font: 400 16px/1.2 Satoshi, sans-serif; caret-color: var(--kd-primary); } .ds-sheet-field input::placeholder { color: #5c534c; } .ds-sheet-field:hover input { box-shadow: 0 0 0 1px color-mix(in srgb, var(--kd-primary) 18%, transparent); } .ds-sheet-field input:focus { outline: none; box-shadow: 0 0 0 2px var(--kd-white), 0 0 0 4px var(--kd-primary); }"
-    },
-    {
-      "name": "Logo Stamp",
-      "kind": "custom",
-      "refersTo": "logo-stamp",
-      "description": "Optional 96px rice-paper square for a cafe logo beside 12px coffee-brown text actions.",
-      "html": "<button type=\"button\" class=\"ds-logo-stamp\"><span class=\"ds-logo-stamp__empty\">Add logo</span></button>",
-      "css": ".ds-logo-stamp { display: grid; place-items: center; width: 96px; height: 96px; padding: 0; overflow: hidden; border: 0; border-radius: 8px; background: var(--kd-secondary); color: var(--kd-primary); cursor: pointer; transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-logo-stamp__empty { font: 700 12px/1.2 Satoshi, sans-serif; } .ds-logo-stamp:hover { filter: brightness(0.98); } .ds-logo-stamp:active { transform: scale(.96); } .ds-logo-stamp:focus-visible { outline: 2px solid var(--kd-primary); outline-offset: 2px; }"
-    },
-    {
-      "name": "Submit Step Ticks",
-      "kind": "custom",
-      "refersTo": "submit-ticks",
-      "description": "Three 5px pill ticks in a 64px row: placeholder-gray at rest, coffee-brown when on.",
-      "html": "<div class=\"ds-ticks\" aria-hidden=\"true\"><span class=\"is-on\"></span><span></span><span></span></div>",
-      "css": ".ds-ticks { display: flex; align-items: center; gap: 5px; width: 64px; } .ds-ticks span { flex: 1; height: 5px; border-radius: 999px; background: var(--kd-placeholder); transition: background-color 180ms ease; } .ds-ticks span.is-on { background: var(--kd-primary); }"
-    },
-    {
-      "name": "Pending Listing",
+      "name": "Bag Label",
       "kind": "card",
-      "refersTo": "card-cafe",
-      "description": "Cafe-card topology for a pending submit preview: 90×100 mark, no amenities or ratings.",
-      "html": "<article class=\"ds-pending-listing\"><div class=\"ds-pending-mark\"></div><div class=\"ds-pending-body\"><p class=\"ds-pending-status\">Pending review</p><h3>Lamp Quarters Cafe</h3><p>BGC High Street, Taguig City</p><p>8:00am–8:00pm</p><p>No phone added</p></div></article>",
-      "css": ".ds-pending-listing { display: flex; gap: 12px; min-height: 100px; } .ds-pending-mark { flex: 0 0 90px; width: 90px; height: 100px; overflow: hidden; border-radius: 8px; background: var(--kd-secondary); } .ds-pending-body { min-width: 0; display: flex; flex-direction: column; gap: 4px; color: var(--kd-ink); font: 400 12px/1.35 Satoshi, sans-serif; } .ds-pending-status { margin: 0; color: var(--kd-primary); font: 700 12px/1.2 Satoshi, sans-serif; } .ds-pending-body h3 { margin: 0; color: var(--kd-primary); font: 700 16px/1.375 Satoshi, sans-serif; } .ds-pending-body p { margin: 0; }"
+      "refersTo": "bag-label",
+      "description": "Cafe as a printed bag label — logo slot, name, Closed in brick, origin, then Hours / WiFi / Outlets as icon-plus-words; right save spine fills orange when saved.",
+      "html": "<article class=\"ds-bag is-saved\"><button class=\"ds-bag__open\" type=\"button\"><span class=\"ds-bag__mast\"><span class=\"ds-bag__logo\" aria-hidden=\"true\"></span><span class=\"ds-bag__copy\"><span class=\"ds-bag__name\">Yardstick Coffee</span><span class=\"ds-bag__closed\">Closed</span><span class=\"ds-bag__origin\">BGC, Taguig</span></span></span><span class=\"ds-bag__lines\"><span class=\"ds-bag__line\"><span class=\"ds-bag__key\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 7v5l3 2\"/></svg><span>Hours</span></span><span>7am–10pm</span></span><span class=\"ds-bag__line\"><span class=\"ds-bag__key\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" aria-hidden=\"true\"><path d=\"M5 12.5c1.5-2 3.5-3 7-3s5.5 1 7 3\"/><path d=\"M8.5 15.5a6 6 0 0 1 7 0\"/><circle cx=\"12\" cy=\"18\" r=\"1\"/></svg><span>WiFi</span></span><span>Not confirmed</span></span><span class=\"ds-bag__line\"><span class=\"ds-bag__key\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" aria-hidden=\"true\"><path d=\"M12 2v6\"/><path d=\"M8 8h8v4a4 4 0 0 1-8 0V8z\"/><path d=\"M10 22h4\"/><path d=\"M12 18v4\"/></svg><span>Outlets</span></span><span>Not confirmed</span></span></span></button><button class=\"ds-bag__save\" type=\"button\" aria-pressed=\"true\" aria-label=\"Remove cafe from saved\"><span class=\"ds-bag__save-fill\" aria-hidden=\"true\"></span><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"currentColor\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"M12 21s-7-4.6-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 11c0 5.4-7 10-7 10z\"/></svg></button></article>",
+      "css": ".ds-bag { position: relative; margin: 0; padding: 16px 40px 12px 16px; background-color: #FAF8F5; color: #1c1917; border: 1px solid rgba(28, 25, 23, 0.34); border-radius: 16px; font-family: 'Kumbh Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; overflow: hidden; } .ds-bag__open { display: flex; flex-direction: column; gap: 8px; width: 100%; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; } .ds-bag__mast { display: flex; align-items: flex-start; gap: 10px; min-width: 0; } .ds-bag__logo { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; flex: 0 0 auto; overflow: hidden; background-color: #FAF8F5; border: 1px solid rgba(28, 25, 23, 0.34); border-radius: 8px; } .ds-bag__copy { display: flex; flex-direction: column; gap: 1px; min-width: 0; } .ds-bag__name { color: #1c1917; font-size: 1.325rem; font-weight: 700; line-height: 1.05; letter-spacing: -0.03em; } .ds-bag__closed { color: #8c3a2f; font-size: 0.75rem; font-weight: 700; line-height: 1.2; } .ds-bag__origin { color: #1c1917; font-size: 0.75rem; line-height: 1.2; } .ds-bag__lines { display: flex; flex-direction: column; gap: 4px; margin: 0; padding-top: 8px; border-top: 1px solid color-mix(in srgb, #1c1917 12%, transparent); } .ds-bag__line { display: grid; grid-template-columns: 7rem max-content; column-gap: 8px; align-items: baseline; justify-content: start; width: max-content; max-width: 100%; font-size: 0.7875rem; line-height: 1.3; } .ds-bag__key { display: inline-flex; align-items: center; gap: 6px; color: #1c1917; } .ds-bag__key svg { color: #D9793B; } .ds-bag__line > span:last-child { font-weight: 700; text-align: left; } .ds-bag__save { position: absolute; top: 0; right: 0; bottom: 0; display: flex; align-items: flex-start; justify-content: flex-end; width: 44px; min-height: 44px; padding: 14px 5px 0 0; border: 0; background: transparent; color: #D9793B; cursor: pointer; overflow: hidden; } .ds-bag.is-saved .ds-bag__save { color: #1c1917; } .ds-bag__save-fill { position: absolute; top: 0; right: 0; bottom: 0; width: 28px; background: #D9793B; clip-path: inset(0 0 100% 0); transition: clip-path 280ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-bag.is-saved .ds-bag__save-fill { clip-path: inset(0 0 0 0); box-shadow: inset 1px 0 0 color-mix(in srgb, #1c1917 18%, transparent); } .ds-bag__open:hover { opacity: 0.88; } .ds-bag__open:active { opacity: 0.72; } .ds-bag__open:focus-visible, .ds-bag__save:focus-visible { outline: 2px solid #1F6F6B; outline-offset: 2px; }"
     },
     {
-      "name": "Submit Pin Peek",
-      "kind": "custom",
-      "refersTo": "input-sheet-field",
-      "description": "White Map-style peek on the pin step: 8px top corners, sheet-lift shadow, rice-paper street line.",
-      "html": "<section class=\"ds-pin-peek\"><h2>Pin the cafe</h2><p>Drag the pin or search so the marker sits on the shop, not the next street.</p><label class=\"ds-pin-address\"><span>Address</span><textarea rows=\"2\" placeholder=\"Street, barangay, city\">BGC High Street, Taguig City</textarea></label></section>",
-      "css": ".ds-pin-peek { padding: 16px 20px 8px; border-radius: 8px 8px 0 0; background: var(--kd-white); box-shadow: 0 -2px 16px var(--kd-shadow); } .ds-pin-peek h2 { margin: 0; color: var(--kd-primary); font: 700 16px/1.2 Satoshi, sans-serif; } .ds-pin-peek p { margin: 4px 0 0; color: var(--kd-ink); font: 400 12px/1.35 Satoshi, sans-serif; } .ds-pin-address { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; color: var(--kd-primary); font: 700 12px/1.2 Satoshi, sans-serif; } .ds-pin-address textarea { min-height: 64px; max-height: 88px; padding: 12px 16px; border: 0; border-radius: 8px; background: var(--kd-secondary); color: var(--kd-ink); font: 400 12px/1.35 Satoshi, sans-serif; resize: none; caret-color: var(--kd-primary); } .ds-pin-address textarea::placeholder { color: #5c534c; } .ds-pin-address textarea:focus { outline: none; box-shadow: 0 0 0 2px var(--kd-white), 0 0 0 4px var(--kd-primary); }"
-    },
-    {
-      "name": "Cafe Card",
-      "kind": "card",
-      "refersTo": "card-cafe",
-      "description": "A compact result card pairing a 90px photo with work-readiness metadata and amenity text.",
-      "html": "<article class=\"ds-cafe-card\" tabindex=\"0\"><div class=\"ds-cafe-photo\"></div><div class=\"ds-cafe-body\"><div class=\"ds-cafe-status\">Open</div><h3>Toby’s Estate</h3><p>BGC High Street, Taguig City</p><small class=\"ds-cafe-amenity\"><svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"M5 13a7 7 0 0 1 14 0\"/><path d=\"M8.5 16a4 4 0 0 1 7 0\"/><circle cx=\"12\" cy=\"19\" r=\"1\" fill=\"currentColor\" stroke=\"none\"/></svg> WiFi</small></div></article>",
-      "css": ".ds-cafe-card { display: flex; min-height: 100px; overflow: hidden; border-radius: 8px; background: var(--kd-white); box-shadow: 0 2px 8px var(--kd-shadow); cursor: pointer; transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1), background-color 180ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-cafe-card.is-selected { background: var(--kd-secondary); box-shadow: 0 4px 12px var(--kd-shadow); } .ds-cafe-card:active { transform: scale(.99); } .ds-cafe-card:focus-visible { outline: 2px solid var(--kd-primary); outline-offset: 3px; } .ds-cafe-photo { width: 90px; height: 100px; flex: 0 0 90px; background: var(--kd-secondary); } .ds-cafe-body { min-width: 0; padding: 11px 13px 10px 15px; color: var(--kd-ink); font: 400 12px/1.35 Satoshi, sans-serif; } .ds-cafe-status { color: var(--kd-open); font: 700 12px/1.2 Satoshi, sans-serif; text-align: right; } .ds-cafe-body h3 { margin: 3px 0 0; color: var(--kd-primary); font: 700 16px/1.375 Satoshi, sans-serif; } .ds-cafe-body p { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ds-cafe-amenity { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; color: var(--kd-ink); }"
-    },
-    {
-      "name": "Status Chip",
-      "kind": "chip",
-      "refersTo": "status-chip-open",
-      "description": "Cafe-detail open/closed chip: forest or brick fill with white 12px bold text.",
-      "html": "<p class=\"ds-status-chip\">Open</p>",
-      "css": ".ds-status-chip { display: inline-flex; align-items: center; margin: 0; padding: 6px 10px; border-radius: 4px; background: var(--kd-open); color: var(--kd-white); font: 700 12px/1.2 Satoshi, sans-serif; } .ds-status-chip.is-closed { background: var(--kd-closed); }"
-    },
-    {
-      "name": "Filter Chip",
-      "kind": "chip",
-      "refersTo": "filter-chip-active",
-      "description": "A compact horizontally scrolling filter with an unmistakable active state.",
-      "html": "<button class=\"ds-chip-active\">WiFi Access</button>",
-      "css": ".ds-chip-active { width: 97px; height: 27px; padding: 0; border: 0; border-radius: 4px; background: var(--kd-primary); color: var(--kd-white); font: 700 12px/1.2 Satoshi, sans-serif; white-space: nowrap; cursor: pointer; transition: opacity 160ms ease, transform 140ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-chip-active:hover { opacity: .92; } .ds-chip-active:active { transform: scale(.94); } .ds-chip-active:focus-visible { outline: 2px solid var(--kd-primary); outline-offset: 2px; }"
-    },
-    {
-      "name": "Compact Sheet Action",
-      "kind": "button",
-      "refersTo": "button-primary",
-      "description": "Cafe-detail Navigate/Call: 10px bold on a 28px painted face inside a 44px hit area.",
-      "html": "<a class=\"ds-compact-action\" href=\"#\"><span class=\"ds-compact-action__face\"><svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" aria-hidden=\"true\"><polygon points=\"3 11 22 3 14 21 11 13 3 11\"/></svg> Navigate to this Cafe</span></a>",
-      "css": ".ds-compact-action { display: inline-flex; align-items: center; min-height: 44px; text-decoration: none; } .ds-compact-action__face { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 10px; border-radius: 4px; background: var(--kd-primary); color: var(--kd-white); font: 700 10px/1.2 Satoshi, sans-serif; white-space: nowrap; } .ds-compact-action:hover .ds-compact-action__face { background: color-mix(in srgb, var(--kd-primary) 88%, var(--kd-white)); } .ds-compact-action:active .ds-compact-action__face { transform: scale(.98); } .ds-compact-action:focus-visible { outline: 2px solid var(--kd-primary); outline-offset: 2px; }"
-    },
-    {
-      "name": "Bottom Navigation",
+      "name": "Tab Destination",
       "kind": "nav",
-      "refersTo": "navigation-bottom",
-      "description": "The four-destination mobile shell navigation.",
-      "html": "<nav class=\"ds-tabbar\" aria-label=\"Primary\"><button class=\"ds-tabbar-item ds-tabbar-item-active\" aria-label=\"Home\"><svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"M4 11 12 4l8 7\"/><path d=\"M6 10.5V20h12v-9.5\"/></svg></button><button class=\"ds-tabbar-item\" aria-label=\"Saved cafes\"><svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"M12 20s-7-4.4-7-10a4 4 0 0 1 7-2 4 4 0 0 1 7 2c0 5.6-7 10-7 10Z\"/></svg></button><button class=\"ds-tabbar-item\" aria-label=\"Map\"><svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"M9 4 4 6v14l5-2 6 2 5-2V4l-5 2-6-2Z\"/><path d=\"M9 4v14M15 6v14\"/></svg></button><button class=\"ds-tabbar-item\" aria-label=\"Profile\"><svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"8\" r=\"3\"/><path d=\"M5 20a7 7 0 0 1 14 0\"/></svg></button></nav>",
-      "css": ".ds-tabbar { display: grid; grid-template-columns: repeat(4, 1fr); align-items: center; height: 100px; padding: 0 12px; background: var(--kd-white-80); backdrop-filter: blur(4px); } .ds-tabbar-item { position: relative; display: grid; place-items: center; height: 48px; border: 0; background: transparent; color: var(--kd-primary-25); cursor: pointer; transition: color 180ms cubic-bezier(0.16, 1, 0.3, 1), transform 140ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-tabbar-item:hover { color: var(--kd-primary); } .ds-tabbar-item-active { color: var(--kd-white); } .ds-tabbar-item-active::before { content: ''; position: absolute; width: 30px; height: 30px; border-radius: 5px; background: var(--kd-primary); z-index: -1; } .ds-tabbar-item:active { transform: scale(.94); } .ds-tabbar-item:focus-visible { outline: 2px solid var(--kd-primary); outline-offset: 3px; border-radius: 8px; }"
+      "refersTo": "nav-tab",
+      "description": "Quiet Lucide icon plus word in ink on the cool shelf field.",
+      "html": "<button class=\"ds-nav-tab\" type=\"button\" aria-label=\"Saved cafes\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" aria-hidden=\"true\"><path d=\"M12 21s-7-4.6-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 11c0 5.4-7 10-7 10z\"/></svg><span>Saved</span></button>",
+      "css": ".ds-nav-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 48px; min-height: 44px; border: 0; background: transparent; color: var(--kd-ink, #1c1917); font-family: 'Kumbh Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 0.6875rem; font-weight: 400; line-height: 1; cursor: pointer; } .ds-nav-tab:active { transform: translateY(1px) scaleY(0.94); box-shadow: inset 0 3px 0 color-mix(in srgb, #D9793B 22%, transparent); } .ds-nav-tab:focus-visible { outline: 2px solid var(--kd-primary, #1F6F6B); outline-offset: -4px; }"
     },
     {
-      "name": "Map Overlay CTA",
-      "kind": "button",
-      "refersTo": "button-primary",
-      "description": "Coffee-brown full-width action sitting above the home indicator on the map and Add a cafe.",
-      "html": "<button class=\"ds-map-cta\"><svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"M4 10h12v7a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3v-7Z\"/><path d=\"M16 11h2.5a2.5 2.5 0 0 1 0 5H16\"/><path d=\"M8 7v3\"/><path d=\"M12 7v3\"/></svg> Show cafes near me</button>",
-      "css": ".ds-map-cta { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; height: 45px; border: 0; border-radius: 8px; background: var(--kd-primary); color: var(--kd-white); padding: 0 20px; font: 700 16px/1.2 Satoshi, sans-serif; cursor: pointer; box-shadow: 0 2px 8px var(--kd-shadow); transition: opacity 160ms ease, transform 140ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-map-cta.is-android { height: 48px; } .ds-map-cta:hover { opacity: .92; } .ds-map-cta:active { transform: scale(.96); } .ds-map-cta:focus-visible { outline: 2px solid var(--kd-primary); outline-offset: 2px; }"
+      "name": "Tab Destination Active",
+      "kind": "nav",
+      "refersTo": "nav-tab-active",
+      "description": "Active tab — teal icon and bold word under the sliding orange mark.",
+      "html": "<button class=\"ds-nav-tab-active\" type=\"button\" aria-current=\"page\" aria-label=\"Home\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" aria-hidden=\"true\"><path d=\"M3 10.5 12 3l9 7.5\"/><path d=\"M5 9.5V21h14V9.5\"/></svg><span>Home</span></button>",
+      "css": ".ds-nav-tab-active { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 48px; min-height: 44px; border: 0; background: transparent; color: var(--kd-primary, #1F6F6B); font-family: 'Kumbh Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 0.6875rem; font-weight: 700; line-height: 1; cursor: pointer; } .ds-nav-tab-active:active { transform: translateY(1px) scaleY(0.94); box-shadow: inset 0 3px 0 color-mix(in srgb, #D9793B 22%, transparent); } .ds-nav-tab-active:focus-visible { outline: 2px solid var(--kd-primary, #1F6F6B); outline-offset: -4px; }"
     },
     {
-      "name": "Cafe Marker",
-      "kind": "custom",
-      "refersTo": "cafe-pin",
-      "description": "Coffee-brown circle marker with a white halo and a side-view cup + handle + steam.",
-      "html": "<button type=\"button\" class=\"ds-cafe-pin\" aria-label=\"Toby’s Estate\"><svg viewBox=\"0 0 40 40\" fill=\"none\" aria-hidden=\"true\"><circle cx=\"20\" cy=\"20\" r=\"16.2\" fill=\"currentColor\" stroke=\"var(--kd-white)\" stroke-width=\"3.2\" paint-order=\"stroke fill\"/><path d=\"M15.6 10.8v3.8M21.4 10.3v4.2\" stroke=\"var(--kd-white)\" stroke-width=\"2.2\" stroke-linecap=\"round\"/><path d=\"M11.4 16.4h14.4v7.4a3.7 3.7 0 0 1-3.7 3.7h-7a3.7 3.7 0 0 1-3.7-3.7z\" fill=\"var(--kd-white)\"/><path d=\"M25.8 18.1c3.6.15 4.4 2.55 4.4 4s-1 3.9-4.45 4.05\" stroke=\"var(--kd-white)\" stroke-width=\"2.5\" stroke-linecap=\"round\"/></svg></button>",
-      "css": ".ds-cafe-pin { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; background: transparent; color: var(--kd-primary); cursor: pointer; filter: drop-shadow(0 3px 5px var(--kd-shadow)); transform-origin: center center; transition: filter 180ms cubic-bezier(0.16, 1, 0.3, 1), transform 140ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-cafe-pin svg { display: block; width: 100%; height: 100%; } .ds-cafe-pin:hover, .ds-cafe-pin.is-selected { width: 44px; height: 44px; filter: drop-shadow(0 4px 8px var(--kd-shadow)); } .ds-cafe-pin:active { transform: scale(.96); } .ds-cafe-pin:focus-visible { outline: 2px solid var(--kd-white); outline-offset: 2px; border-radius: 999px; }"
-    },
-    {
-      "name": "User Location Dot",
-      "kind": "custom",
-      "refersTo": "cafe-pin",
-      "description": "White-ringed coffee-brown user mark on the map.",
-      "html": "<button type=\"button\" class=\"ds-user-dot\" aria-label=\"Your location\"><span class=\"ds-user-dot__core\"></span></button>",
-      "css": ".ds-user-dot { display: grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 0; background: transparent; cursor: pointer; } .ds-user-dot__core { width: 14px; height: 14px; border-radius: 999px; background: var(--kd-primary); border: 2px solid var(--kd-white); box-shadow: 0 2px 6px var(--kd-shadow); transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-user-dot:hover .ds-user-dot__core { transform: scale(1.08); } .ds-user-dot:focus-visible { outline: 2px solid var(--kd-primary); outline-offset: 3px; border-radius: 999px; }"
+      "name": "Primary Menu",
+      "kind": "nav",
+      "refersTo": "nav-tab-active",
+      "description": "Bottom menu of Lucide icon plus word on flat shelf field #F2F2F2; an orange mark slides to the active tab; active label is teal.",
+      "html": "<nav class=\"ds-tabbar\" aria-label=\"Primary\" style=\"--tab-index:0\"><span class=\"ds-tabbar__mark\" aria-hidden=\"true\"></span><button class=\"ds-nav-tab-active\" type=\"button\" aria-current=\"page\" aria-label=\"Home\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" aria-hidden=\"true\"><path d=\"M3 10.5 12 3l9 7.5\"/><path d=\"M5 9.5V21h14V9.5\"/></svg><span>Home</span></button><button class=\"ds-nav-tab\" type=\"button\" aria-label=\"Saved cafes\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" aria-hidden=\"true\"><path d=\"M12 21s-7-4.6-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 11c0 5.4-7 10-7 10z\"/></svg><span>Saved</span></button><button class=\"ds-nav-tab\" type=\"button\" aria-label=\"Map\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" aria-hidden=\"true\"><path d=\"M9 18l-6 3V6l6-3 6 3 6-3v15l-6 3-6-3z\"/><path d=\"M9 3v15\"/><path d=\"M15 6v15\"/></svg><span>Map</span></button><button class=\"ds-nav-tab\" type=\"button\" aria-label=\"Profile\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"8\" r=\"4\"/><path d=\"M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6\"/></svg><span>Profile</span></button></nav>",
+      "css": ".ds-tabbar { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); align-items: stretch; width: 100%; height: 72px; padding: 0 8px; background-color: #F2F2F2; border-top: 1px solid color-mix(in srgb, #1c1917 16%, transparent); } .ds-tabbar__mark { position: absolute; top: 6px; left: 8px; width: calc((100% - 16px) / 4); height: 2px; background: var(--kd-accent, #D9793B); border-radius: 1px; transform: translateX(calc(var(--tab-index, 0) * 100%)); transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1); pointer-events: none; } .ds-nav-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 44px; border: 0; background: transparent; color: var(--kd-ink, #1c1917); font-family: 'Kumbh Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 0.6875rem; font-weight: 400; cursor: pointer; } .ds-nav-tab-active { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 44px; border: 0; background: transparent; color: var(--kd-primary, #1F6F6B); font-family: 'Kumbh Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 0.6875rem; font-weight: 700; cursor: pointer; } .ds-nav-tab:focus-visible, .ds-nav-tab-active:focus-visible { outline: 2px solid var(--kd-primary, #1F6F6B); outline-offset: -4px; } @media (prefers-reduced-motion: reduce) { .ds-tabbar__mark { transition: none; } }"
     }
   ],
   "narrative": {
-    "northStar": "The Neighborhood Coffee Counter",
-    "overview": "KapeDoko’s current visual system feels like a dependable neighborhood counter: warm, familiar, and immediately useful. A dark coffee-brown anchor gives the interface a recognizable home, while white content surfaces keep practical cafe information easy to scan. The system is compact and phone-first, with a little editorial warmth in featured cafe imagery and the logo-led onboarding.\n\nControls are quietly tactile rather than decorative. Small rounded corners, short labels, focused status colors, and restrained card shadows help people make a decision while they are already out in the city. The same counter language continues onto the map: rice-paper-warmed tiles sit under white overlay chrome, cafe markers are coffee-brown circles with a cup mark, and nearby cafes pull into a white peek sheet that reuses Home’s cafe cards. Add a cafe is the same overlay to fill: rice-paper ground, white fade chrome, a floating white sheet, and a sticky coffee-brown Continue — not a coffee-brown campaign hero over a stacked form. The product’s visual language supports the work-readiness mission: amenities, open status, and location remain more actionable than atmosphere.",
+    "northStar": "Coffee Bag Label",
+    "overview": "KapeDoko reads like specialty coffee packaging laid on a cool off-white shelf: dark ink for reading, teal for brand chrome, and orange for actions and highlights. The product name stays kapé DOKO / KapeDoko. Home is a stack of bag labels — shop name with an optional logo slot, a small Closed line when closed, origin, then Hours / WiFi / Outlets as icon-plus-words — not photo cards, not a route plate, not a dashboard of chips and stars.\n\nDensity is quiet and vertical. Shelf, header, filters, and the bottom menu sit on flat cool field #F2F2F2. Each bag-label face (and partner cards) uses a flat warm white #FAF8F5 inside the hairline border — no stipple or shipping-tooth texture. Depth comes from that bordered flat face and ink rules, not lift shadows or textured panels. Map, Saved, and Profile keep their own layouts but inherit this palette and type.\n\nRejected by this system: warm enamel as the full-page field, Satoshi or condensed all-caps UI faces, floating elevated cards, icon-only bottom navigation without words, and a \"Review WiFi and outlets\" control on the bag label. Do not use orange as small body text on stock (≈2.8:1) — put ink on orange fills instead.",
     "keyCharacteristics": [
-      "Coffee-brown brand anchor with warm cream support",
-      "Compact mobile density with generous touch targets",
-      "Rounded 4–8px surfaces and pill-shaped progress indicators",
-      "Tonal depth through white surfaces and subtle ambient shadows",
-      "Logo and amenity iconography used as recognizable product cues",
-      "Full-bleed map overlay: white header fade, floating search, coffee-brown circle markers, coffee-brown CTA, white peek and cafe-detail sheets",
-      "Add a cafe overlay: rice-paper ground, white fade chrome with three ticks, floating 8px white sheet, rice-paper 50px fields, sticky 45/48px Continue; pin step is full-bleed warmed OSM with a sheet-lift peek"
+      "Cool shelf field #F2F2F2; flat warm-white label faces #FAF8F5",
+      "Teal brand chrome, orange action accent, ink reading",
+      "Kumbh Sans only — variable Google Font, regular and bold, sentence case",
+      "Bag labels: 16px corners, logo slot left of name, Closed in brick under the name, facts as icon plus words",
+      "Menu is Lucide icon plus word; an orange mark slides to the active tab; active label is teal"
     ],
     "rules": [
       {
-        "name": "The Coffee-Brown Anchor Rule",
-        "body": "Coffee-brown anchors primary actions and major branded surfaces; status colors communicate state rather than replacing the brand color.",
+        "name": "The Stock Reading Rule",
+        "body": "Body copy and cafe names stay ink #1c1917. Teal and orange are roles, not a whole-page tint.",
         "section": "colors"
       },
       {
-        "name": "The Status Contrast Rule",
-        "body": "Cafe open/closed uses forest and brick only: 12px bold text on white cards, or a filled chip with white text on the cafe-detail sheet. Do not restyle status with unused paler Brand Guide greens and pinks.",
+        "name": "The Accent Contrast Rule",
+        "body": "Orange is for fills, marks, and amenity icons. Put ink on orange fills. Do not put orange text on cream stock.",
         "section": "colors"
       },
       {
-        "name": "The Overlay Chrome Rule",
-        "body": "A full-bleed map keeps rice-paper-warmed tiles under a white header fade, a floating 50px search field, and a coffee-brown bottom CTA above the home indicator. Nearby results and cafe detail open as white Ionic peek sheets; the nearby sheet reuses Home’s cafe cards.",
+        "name": "The Shelf Field Rule",
+        "body": "Shelf, header, filters hinterland, and the bottom menu sit on flat #F2F2F2. Bag-label faces use flat warm white #FAF8F5 — no bag-stock.png tile, no stipple. Do not paint texture across chrome.",
+        "section": "colors"
+      },
+      {
+        "name": "The Kumbh Sans-Only Rule",
+        "body": "UI type is Kumbh Sans regular or bold. Do not introduce Satoshi, condensed caps faces, serif display for body UI, or a second UI family.",
+        "section": "typography"
+      },
+      {
+        "name": "The Words-With-Icons Rule",
+        "body": "Hours, WiFi, outlets, and distance keep readable words; Lucide icons (~15px, orange) sit beside the keys. Closed stays a small brick text line under the name. The bottom menu pairs each Lucide icon with its word — never icon-only destinations.",
+        "section": "typography"
+      },
+      {
+        "name": "The Shelf Rule",
+        "body": "Home is one stacked column of labels under greeting + wordmark → search → optional partner placement → filters. Do not introduce photo grids, map-first chrome, or side-by-side cafe cards on this identity.",
         "section": "layout"
       },
       {
-        "name": "The Submit Overlay Rule",
-        "body": "Add a cafe sits on rice-paper under a white fade that holds back, title, and three ticks. Name, hours, and check float in an 8px white sheet; Continue stays sticky at 45px (48px on Android) above the home indicator. The pin step collapses the sheet to a 50px search strip over full-bleed warmed OSM, with a Map sheet-lift peek holding the shop street line.",
-        "section": "layout"
-      },
-      {
-        "name": "The Quiet Depth Rule",
-        "body": "Use tonal contrast and small ambient or graphic shadows to separate surfaces. Overlay chrome and map sheets may lift slightly; do not add heavy dashboard panels.",
+        "name": "The Flat Print Rule",
+        "body": "No floating card shadows. Depth is border + flat label face only.",
         "section": "elevation"
       },
       {
-        "name": "The Rice-Paper Field Rule",
-        "body": "Fields inside the white submit sheet fill with rice-paper (50px, 8px, no stroke). Do not stack white fields on the white sheet.",
-        "section": "components"
-      },
-      {
-        "name": "The Pending Card Rule",
-        "body": "The review listing reuses cafe-card topology without amenities or ratings. Pending status is coffee-brown, not forest or brick.",
-        "section": "components"
-      },
-      {
-        "name": "The Cafe Marker Rule",
-        "body": "Unselected cafe markers are coffee-brown circles with a white halo and a side-view cup. The selected marker uses the KapeDoko lockup icon. The user mark stays a smaller white-ringed coffee-brown dot. Leaflet must own an inner canvas node so Vue class updates cannot strip `leaflet-container`.",
-        "section": "components"
-      },
-      {
-        "name": "The Demo Fixture Rule",
-        "body": "Sample cafe names, ratings, and photography stay labeled as demo whenever they appear; they are scaffolding, not proof of coverage.",
-        "section": "components"
+        "name": "The Label Corner Rule",
+        "body": "Interactive print pieces use 16px corners or a straight underline — not nearly-square corners or pill chips. Logo slots use 8px.",
+        "section": "shapes"
       }
     ],
     "dos": [
-      "Do use coffee-brown as the visual anchor for branded surfaces, active states, and primary actions.",
-      "Do keep cafe metadata short, legible, and easy to scan on a phone.",
-      "Do preserve the existing KapeDoko logo, wordmark, watermark, and onboarding graphic assets.",
-      "Do expose WiFi, power outlet, hours, and location information as visible text or accessible names alongside icons.",
-      "Do respect safe-area insets and reduced-motion preferences across web and native shells.",
-      "Do use 45px primary CTAs on iOS and 48px on Android for full-width overlay actions.",
-      "Do keep Add a cafe on rice-paper with a floating white sheet and a sticky coffee-brown Continue.",
-      "Do collapse the pin step to a 50px search over full-bleed warmed OSM, with a sheet-lift peek for the street line.",
-      "Do reuse cafe-card topology for the pending preview without amenities or ratings.",
-      "Do label fixture cafe lists as demo when mock data is on screen.",
-      "Do draw unselected cafe markers as coffee-brown circles with a white halo and a side-view cup; the selected marker uses the KapeDoko lockup icon."
+      "Do keep shelf field #F2F2F2, ink #1c1917, teal #1F6F6B, and orange #D9793B as the identity on shared chrome and Home.",
+      "Do put ink on orange fills; use teal for focus, active tab labels, and brand chrome.",
+      "Do keep bag-label faces flat #FAF8F5 with no stipple; keep shelf and menu flat #F2F2F2.",
+      "Do set UI type in Kumbh Sans (400/700) and keep cafe facts as icon-plus-words.",
+      "Do treat each cafe as a bag label: logo slot, name, Closed when closed (brick), origin, then Hours / WiFi / Outlets.",
+      "Do pair each menu destination with a Lucide icon and word; mark the active tab with an orange indicator and teal label.",
+      "Do show partner placement only between search and filters when markerTier === 'partner'."
     ],
     "donts": [
-      "Don't make atmosphere, stock photography, or placeholder cafe data more prominent than work-readiness facts.",
-      "Don't replace the coffee-brown anchor with a new brand color without an explicit identity decision.",
-      "Don't use icons alone to communicate amenities or status.",
-      "Don't introduce heavy borders, dramatic shadows, or dense desktop-only layouts that break the compact mobile rhythm.",
-      "Don't treat sample cafe names, ratings, or Unsplash photography as evidence of real coverage.",
-      "Don't restyle cafe open/closed status with unused paler Brand Guide greens and pinks.",
-      "Don't invent a new red accent for pins.",
-      "Don't put Add a cafe on a coffee-brown campaign hero or stacked form over a branded header.",
-      "Don't put amenities or ratings on the pending listing preview.",
-      "Don't restyle pending status as forest or brick open/closed."
+      "Don't use orange as small text on cream stock (~2.8:1).",
+      "Don't recolor the whole page or cafe names to teal — body reading stays ink.",
+      "Don't use warm enamel #f6f1e8 as the page field or bag-label face — labels use flat #FAF8F5.",
+      "Don't revive Satoshi, condensed all-caps UI faces, white elevated cards, or the jeepney plate composition.",
+      "Don't ship icon-only menu destinations or replace amenity facts with icon-only rows.",
+      "Don't add a \"Review WiFi and outlets\" control on bag labels.",
+      "Don't fill the logo slot with the KapeDoko mark or invent logos.",
+      "Don't add drop shadows or pill chips to this identity.",
+      "Don't rename the product away from kapé DOKO / KapeDoko.",
+      "Don't bring back the bag-stock tooth/stipple on labels, shelf, header, or bottom menu.",
+      "Don't invent prices, ratings, or coverage claims as design system content."
     ]
   }
 }

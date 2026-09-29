@@ -245,7 +245,7 @@ const onSavePin = async (shop: ShopRow) => {
 
 .admin__hero {
   padding: 8px 0 18px;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
 }
 
 .admin__hero h1,
@@ -260,7 +260,7 @@ const onSavePin = async (shop: ShopRow) => {
   flex-direction: column;
   gap: 12px;
   margin: 0 0 22px;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
 }
 
 .admin__hero p,
@@ -292,15 +292,15 @@ const onSavePin = async (shop: ShopRow) => {
   border: 0;
   border-radius: 4px;
   background: var(--kd-ink-10);
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   font-size: 12px;
   font-family: inherit;
   cursor: pointer;
 }
 
 .admin__chip.is-active {
-  background: var(--kd-primary);
-  color: var(--kd-white);
+  background: var(--kd-accent);
+  color: var(--kd-ink);
   font-weight: 700;
 }
 
@@ -338,7 +338,7 @@ const onSavePin = async (shop: ShopRow) => {
 
 .admin__card h2 {
   margin: 0;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   font-size: 16px;
   font-weight: 700;
 }
@@ -348,7 +348,7 @@ const onSavePin = async (shop: ShopRow) => {
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
 }
 
 .admin__actions {
@@ -370,14 +370,14 @@ const onSavePin = async (shop: ShopRow) => {
 
 .admin__approve {
   border: 0;
-  background: var(--kd-primary);
-  color: var(--kd-white);
+  background: var(--kd-accent);
+  color: var(--kd-ink);
 }
 
 .admin__reject {
   border: 1px solid var(--kd-primary);
   background: var(--kd-white);
-  color: var(--kd-primary);
+  color: var(--kd-ink);
 }
 
 .admin__approve:disabled,
@@ -399,7 +399,7 @@ const onSavePin = async (shop: ShopRow) => {
 .admin__field {
   display: grid;
   gap: 4px;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   font-size: 12px;
   font-weight: 700;
 }

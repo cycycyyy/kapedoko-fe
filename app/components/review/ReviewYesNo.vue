@@ -62,7 +62,7 @@ const emit = defineEmits<{
   border: 1px solid var(--kd-primary);
   border-radius: 5px;
   background: var(--kd-white);
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   font-size: 20px;
   font-weight: 700;
   font-family: inherit;
@@ -76,7 +76,7 @@ const emit = defineEmits<{
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: var(--kd-primary);
+  background: var(--kd-accent);
   transform: scale(0.72);
   opacity: 0;
   filter: blur(4px);
@@ -87,8 +87,8 @@ const emit = defineEmits<{
 }
 
 .yesno__card.is-on {
-  color: var(--kd-white);
-  border-color: var(--kd-primary);
+  color: var(--kd-ink);
+  border-color: var(--kd-accent);
 }
 
 .yesno__card.is-on::before {
@@ -103,7 +103,7 @@ const emit = defineEmits<{
 }
 
 .yesno__card.is-on:focus-visible {
-  outline-color: var(--kd-white);
+  outline-color: var(--kd-ink);
   box-shadow: 0 0 0 4px var(--kd-primary);
 }
 

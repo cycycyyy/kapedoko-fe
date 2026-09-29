@@ -423,7 +423,7 @@ onMounted(() => {
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -435,7 +435,7 @@ onMounted(() => {
 
 .submit__heading h1 {
   margin: 0;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   font-size: 16px;
   font-weight: 700;
   line-height: 1.2;
@@ -465,7 +465,7 @@ onMounted(() => {
 }
 
 .submit__ticks span.is-on {
-  background: var(--kd-primary);
+  background: var(--kd-accent);
 }
 
 .submit__form,
@@ -492,7 +492,7 @@ onMounted(() => {
 .submit__review h2,
 .submit__sheet h2 {
   margin: 0;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   font-size: 20px;
   font-weight: 700;
   line-height: 1.2;
@@ -549,7 +549,7 @@ onMounted(() => {
 
 .submit__pending {
   margin: 0;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   font-size: 12px;
   font-weight: 700;
   line-height: 1.2;
@@ -557,7 +557,7 @@ onMounted(() => {
 
 .submit__listing-body h3 {
   margin: 0;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   font-size: 16px;
   font-weight: 700;
   line-height: 1.375;
@@ -603,8 +603,8 @@ onMounted(() => {
   padding: 0 20px;
   border: 0;
   border-radius: 8px;
-  background: var(--kd-primary);
-  color: var(--kd-white);
+  background: var(--kd-accent);
+  color: var(--kd-ink);
   font-size: 16px;
   font-weight: 700;
   font-family: inherit;
@@ -661,6 +661,6 @@ onMounted(() => {
 
 ::selection {
   background: var(--kd-secondary);
-  color: var(--kd-primary);
+  color: var(--kd-ink);
 }
 </style>

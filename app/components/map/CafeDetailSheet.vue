@@ -54,9 +54,9 @@ ion-modal.cafe-detail-modal {
   pointer-events: none;
   --height: 88%;
   --width: 100%;
-  --border-radius: 8px;
-  --background: var(--kd-white);
-  --box-shadow: 0 -2px 16px var(--kd-shadow);
+  --border-radius: 16px;
+  --background: #ffffff;
+  --box-shadow: 0 -4px 20px color-mix(in srgb, #1c1917 12%, transparent);
   --backdrop-opacity: 0;
 }
 
@@ -71,10 +71,10 @@ ion-modal.cafe-detail-modal::part(content) {
 
 ion-modal.cafe-detail-modal::part(handle) {
   width: 50px;
-  height: 8px;
-  margin-top: 18px;
-  border-radius: 5px;
-  background: var(--kd-ink-25);
+  height: 5px;
+  margin-top: 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, #1c1917 25%, transparent);
 }
 
 @media (min-width: 540px) {

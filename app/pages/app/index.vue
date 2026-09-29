@@ -2,36 +2,24 @@
   <IonPage>
     <IonContent class="home-content">
       <div class="home">
-        <header class="home-hero">
-          <img
-            src="/assets/home-watermark.png"
-            alt=""
-            class="home-hero__watermark"
-          />
-
-          <div class="home-hero__bar">
-            <div class="home-hero__brand">
-              <img
-                src="/assets/kapedoko-logo_light.png"
-                alt=""
-                width="23"
-                height="30"
-                class="home-hero__mark"
-              />
-              <img
-                src="/assets/kapedoko-horizontal-text_light.png"
-                alt="kapé DOKO"
-                width="122"
-                height="28"
-                class="home-hero__wordmark"
-              />
-            </div>
-
+        <div class="home-plate">
+        <header class="home-chrome">
+          <div class="home-chrome__greeting">
+            <p class="home-chrome__hello">{{ greeting }}</p>
+            <p v-if="firstName" class="home-chrome__name">{{ firstName }}</p>
           </div>
+          <img
+            src="/assets/kapedoko-horizontal-text_dark.png"
+            alt="kapé DOKO"
+            width="168"
+            height="36"
+            class="home-chrome__wordmark"
+          />
+        </header>
 
           <form class="home-search" @submit.prevent="submitSearch">
             <label class="home-search__field">
-              <Coffee :size="19" :stroke-width="2" aria-hidden="true" />
+              <Search :size="18" :stroke-width="2.25" aria-hidden="true" />
               <span class="sr-only">Search a coffee shop</span>
               <input
                 v-model="query"
@@ -42,12 +30,48 @@
                 enterkeyhint="search"
               />
             </label>
-
-            <button type="submit" class="home-search__submit" aria-label="Search">
-              <Search :size="24" :stroke-width="2" />
-            </button>
           </form>
-        </header>
+
+        <section
+          v-if="placementCafes.length > 0"
+          class="home-partners"
+          aria-label="Featured cafes"
+        >
+          <div class="home-partners__track" role="list">
+            <button
+              v-for="(cafe, index) in placementCafes"
+              :key="cafe.id"
+              type="button"
+              class="home-partners__card"
+              :class="cafe.markerTier === 'promoted'
+                ? 'home-partners__card--sponsored'
+                : 'home-partners__card--partner'"
+              role="listitem"
+              :aria-label="placementAriaLabel(cafe, index)"
+              @click="openCafe(cafe.id)"
+            >
+              <span class="home-partners__media">
+                <img
+                  class="home-partners__image"
+                  src="/assets/partner-ad-placeholder.svg"
+                  alt=""
+                  width="108"
+                  height="128"
+                />
+                <span class="home-partners__badge">
+                  {{ cafe.markerTier === 'promoted' ? 'Sponsored' : 'Partner' }}
+                </span>
+              </span>
+              <span class="home-partners__copy" aria-hidden="true">
+                <span class="home-partners__name">{{ cafe.name }}</span>
+                <span v-if="cafe.address" class="home-partners__place">{{ cafe.address }}</span>
+                <span v-if="placementCafes.length > 1" class="home-partners__index">
+                  {{ index + 1 }} of {{ placementCafes.length }}
+                </span>
+              </span>
+            </button>
+          </div>
+        </section>
 
         <div class="home-filters" role="tablist" aria-label="Cafe filters">
           <button
@@ -60,62 +84,61 @@
             :aria-selected="activeFilter === filter.id"
             @click="setFilter(filter.id)"
           >
+            <component :is="filterIcons[filter.icon]" :size="14" :stroke-width="2.25" aria-hidden="true" />
             {{ filter.label }}
           </button>
         </div>
 
-        <p v-if="activeFilter === 'near' && locationStatus === 'denied'" class="home-note">
-          Location is off, so this list is not sorted by distance.
-        </p>
-        <p v-else-if="activeFilter === 'near' && locationStatus === 'unavailable'" class="home-note">
-          Location is unavailable, so this list is not sorted by distance.
+        <p v-if="status === 'ready'" class="home-state">
+          <component :is="filterIcons[activeFilterMeta.icon]" :size="14" :stroke-width="2.25" aria-hidden="true" />
+          <span>{{ activeFilterMeta.label }}</span>
+          <span aria-hidden="true">·</span>
+          <span>{{ shopCountLabel }}</span>
+          <template v-if="locationNote">
+            <span aria-hidden="true">·</span>
+            <span>{{ locationNote }}</span>
+          </template>
         </p>
 
         <Transition name="cafe-list" mode="out-in">
           <section :key="listKey" class="home-list" aria-label="Cafes">
-            <p v-if="status === 'idle' || status === 'loading'" class="home-empty">Loading coffee shops…</p>
+            <div v-if="status === 'idle' || status === 'loading'" class="home-skeletons" aria-busy="true">
+              <p class="sr-only">Loading coffee shops…</p>
+              <span class="home-skeleton" />
+              <span class="home-skeleton" />
+              <span class="home-skeleton" />
+            </div>
             <p v-else-if="status === 'error'" class="home-empty">
-              {{ error || 'Could not load coffee shops.' }}
-              <button type="button" class="home-retry" @click="refresh">Try again</button>
+              <CircleAlert :size="18" :stroke-width="2.25" aria-hidden="true" />
+              <span>{{ error || 'Could not load coffee shops.' }}</span>
+              <button type="button" class="home-retry" @click="refresh">
+                <RefreshCw :size="16" :stroke-width="2.25" aria-hidden="true" />
+                Try again
+              </button>
             </p>
             <p v-else-if="visibleCafes.length === 0" class="home-empty">
-              {{ cafes.length === 0 ? 'No coffee shops yet.' : 'No coffee shops match that filter.' }}
+              <Coffee :size="18" :stroke-width="2.25" aria-hidden="true" />
+              <span>{{ cafes.length === 0 ? 'No coffee shops yet.' : 'No coffee shops match that filter.' }}</span>
             </p>
 
             <CafeCard
-              v-for="cafe in visibleCafes"
+              v-for="(cafe, index) in pagedCafes"
               :key="cafe.id"
               :cafe="cafe"
               :distance-label="distanceLabel(cafe)"
+              :style="{ '--enter': String(index % 12) }"
               @select="openCafe"
             />
+            <p v-if="hasMoreCafes" ref="moreCafes" class="home-more">Scroll for more</p>
           </section>
         </Transition>
-      </div>
 
-      <button type="button" slot="fixed" class="home-fab" @click="addCafe">
-        <span class="home-fab__mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path
-              d="M8.2 3.2v3.2M13.2 2.8v3.6"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-            />
-            <path
-              d="M4.6 8.2h11.4v6.2a3.1 3.1 0 0 1-3.1 3.1H7.7a3.1 3.1 0 0 1-3.1-3.1z"
-              fill="currentColor"
-            />
-            <path
-              d="M16 9.8c3 .12 3.7 2.1 3.7 3.3s-.8 3.2-3.7 3.35"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-            />
-          </svg>
-        </span>
-        Add a cafe
-      </button>
+        <button type="button" class="home-add" @click="addCafe">
+          <Plus :size="18" :stroke-width="2.25" aria-hidden="true" />
+          Add a cafe
+        </button>
+        </div>
+      </div>
     </IonContent>
 
     <AppTabBar active="home" />
@@ -124,31 +147,75 @@
 
 <script lang="ts" setup>
 import { Capacitor } from '@capacitor/core'
-import {
-  Coffee,
-  Search,
-} from 'lucide-vue-next'
+import { BatteryCharging, CircleAlert, Coffee, Flame, Hourglass, Navigation, Plug, Plus, RefreshCw, Search, Wifi, Zap } from 'lucide-vue-next'
 import CafeCard from '~/components/cafe/CafeCard.vue'
 import AppTabBar from '~/components/navigation/AppTabBar.vue'
 import type { Cafe } from '~/types/cafe'
-import { CAFE_FILTERS, filterCafes, type CafeFilterId } from '~/utils/cafe-filters'
+import { CAFE_FILTERS, filterCafes, type CafeFilterIcon, type CafeFilterId } from '~/utils/cafe-filters'
 import { distanceMeters, formatDistance } from '~/utils/geo'
+
+const filterIcons: Record<CafeFilterIcon, typeof Navigation> = {
+  navigation: Navigation,
+  flame: Flame,
+  wifi: Wifi,
+  plug: Plug,
+  hourglass: Hourglass,
+  zap: Zap,
+  'battery-charging': BatteryCharging,
+}
 
 const filters = CAFE_FILTERS
 
 const { cafes: liveCafes, status, error, refresh } = useApprovedShops()
 const { status: locationStatus, location, usingFallback, requestLocation } = useDeviceLocation()
+const { user, loadProfile } = useAuth()
 const cafes = computed(() => liveCafes.value)
 
 const query = ref('')
 const submittedQuery = ref('')
 const activeFilter = ref<CafeFilterId>('near')
+const greeting = ref('Good morning')
+const firstName = ref('')
+
+const placementCafes = computed(() => {
+  const promoted = cafes.value.filter((cafe) => cafe.markerTier === 'promoted')
+  const partners = cafes.value.filter((cafe) => cafe.markerTier === 'partner')
+  return [...promoted, ...partners]
+})
+
+const placementAriaLabel = (cafe: Cafe, index: number): string => {
+  const tier = cafe.markerTier === 'promoted' ? 'Sponsored' : 'Partner'
+  const total = placementCafes.value.length
+  return `${tier}: ${cafe.name}, ${index + 1} of ${total}`
+}
+
+const firstNameFrom = (value: unknown): string => {
+  if (typeof value !== 'string') return ''
+  const trimmed = value.trim()
+  if (!trimmed) return ''
+  return trimmed.split(/\s+/)[0] ?? ''
+}
+
+const greetingForHour = (hour: number): string => {
+  if (hour < 12) return 'Good morning'
+  if (hour < 17) return 'Good afternoon'
+  return 'Good evening'
+}
 
 const origin = computed(() => (
   locationStatus.value === 'granted' && location.value && !usingFallback.value
     ? location.value
     : null
 ))
+
+const activeFilterMeta = computed(() => filters.find((filter) => filter.id === activeFilter.value) ?? filters[0]!)
+
+const locationNote = computed(() => {
+  if (activeFilter.value !== 'near') return ''
+  if (locationStatus.value === 'denied') return 'Location is off, so this list is not sorted by distance.'
+  if (locationStatus.value === 'unavailable') return 'Location is unavailable, so this list is not sorted by distance.'
+  return ''
+})
 
 const listKey = computed(() => `${activeFilter.value}|${submittedQuery.value}|${status.value}`)
 
@@ -157,6 +224,17 @@ const visibleCafes = computed(() => filterCafes(cafes.value, {
   filter: activeFilter.value,
   origin: origin.value,
 }))
+
+const shopCountLabel = computed(() => {
+  const count = visibleCafes.value.length
+  return `${count} ${count === 1 ? 'shop' : 'shops'}`
+})
+
+const {
+  slice: pagedCafes,
+  hasMore: hasMoreCafes,
+  sentinel: moreCafes,
+} = useInfiniteWindow(visibleCafes, listKey)
 
 const distanceLabel = (cafe: Cafe) => {
   if (!origin.value) return undefined
@@ -186,13 +264,25 @@ onMounted(() => {
   if (Capacitor.getPlatform() === 'android') {
     document.documentElement.classList.add('is-android')
   }
+  greeting.value = greetingForHour(new Date().getHours())
+  firstName.value = firstNameFrom(user.value?.user_metadata?.display_name)
   void requestLocation()
+  void (async () => {
+    if (!user.value) return
+    try {
+      const profile = await loadProfile()
+      const fromProfile = firstNameFrom(profile?.display_name)
+      if (fromProfile) firstName.value = fromProfile
+    } catch {
+      // Keep metadata name when the profile call fails.
+    }
+  })()
 })
 </script>
 
 <style scoped>
 .home-content {
-  --background: var(--kd-white);
+  --background: #f2f2f2;
   --padding-start: 0;
   --padding-end: 0;
   --padding-top: 0;
@@ -201,122 +291,239 @@ onMounted(() => {
 
 .home {
   min-height: 100%;
-  background: var(--kd-white);
-  padding-bottom: calc(11.5rem + env(safe-area-inset-bottom));
-  container-type: inline-size;
-  container-name: home;
+  background-color: #f2f2f2;
+  padding: 0 0 calc(72px + env(safe-area-inset-bottom));
 }
 
-.home-hero {
-  position: relative;
-  overflow: hidden;
-  background: var(--kd-primary);
-  color: var(--kd-white);
-  padding: max(2.75rem, calc(env(safe-area-inset-top) + 16px)) 20px 24px;
+.home-plate {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background: transparent;
+  color: var(--kd-ink);
+  caret-color: var(--kd-primary);
 }
 
-.home-hero__watermark {
-  position: absolute;
-  top: -15px;
-  right: -9px;
-  width: 199px;
-  height: 259px;
-  pointer-events: none;
-  user-select: none;
-}
-
-.home-hero__bar {
-  position: relative;
-  z-index: 1;
+.home-chrome {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 30px;
+  gap: 12px;
+  min-height: 72px;
+  padding: max(16px, env(safe-area-inset-top)) 20px 12px;
+  background: #f2f2f2;
 }
 
-.home-hero__brand {
+.home-chrome__greeting {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+  color: #1c1917;
 }
 
-.home-hero__mark {
+.home-chrome__hello,
+.home-chrome__name {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.home-chrome__hello {
+  font-size: clamp(0.875rem, 3.5vw, 0.975rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.home-chrome__name {
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.home-chrome__wordmark {
   display: block;
-  width: 23px;
-  height: 30px;
+  flex: 0 0 auto;
+  width: min(120px, 34vw);
+  height: 26px;
   object-fit: contain;
-}
-
-.home-hero__wordmark {
-  display: block;
-  width: 122px;
-  height: 28px;
-  object-fit: contain;
-  object-position: left center;
-  mix-blend-mode: lighten;
-}
-
-.home-hero__bell {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  margin-right: -10px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--kd-white);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.home-hero__bell:focus-visible {
-  outline: 2px solid var(--kd-white);
-  outline-offset: 2px;
-  border-radius: 8px;
+  object-position: right center;
 }
 
 .home-search {
-  position: relative;
-  z-index: 1;
+  margin: 0 20px 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--kd-ink) 28%, transparent);
+}
+
+.home-partners {
+  margin: 0 0 4px;
+}
+
+.home-partners__track {
   display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 20px;
+  scrollbar-width: none;
+  padding: 4px 20px 8px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.home-partners__track::-webkit-scrollbar {
+  display: none;
+}
+
+.home-partners__card {
+  display: grid;
+  grid-template-columns: 108px minmax(0, 1fr);
   align-items: stretch;
-  flex-wrap: nowrap;
-  gap: 9px;
-  margin-top: 21px;
+  flex: 0 0 calc(100% - 56px);
+  scroll-snap-align: start;
+  min-width: 0;
+  min-height: 128px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 28%, transparent);
+  border-radius: 16px;
+  background: #faf8f5;
+  color: var(--kd-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.home-partners__card:only-child {
+  flex-basis: 100%;
+}
+
+.home-partners__card:active {
+  background: color-mix(in srgb, var(--kd-ink) 6%, #faf8f5);
+}
+
+.home-partners__card:active .home-partners__image {
+  filter: brightness(0.92);
+}
+
+.home-partners__card:focus-visible {
+  outline: 2px solid var(--kd-primary);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) {
+  .home-partners__card:hover {
+    background: color-mix(in srgb, var(--kd-ink) 4%, #faf8f5);
+  }
+}
+
+.home-partners__media {
+  position: relative;
+  display: block;
+  min-height: 128px;
+  background: var(--kd-primary);
+}
+
+.home-partners__card--sponsored .home-partners__media {
+  background: var(--kd-accent);
+}
+
+.home-partners__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home-partners__badge {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: #faf8f5;
+  color: var(--kd-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.home-partners__card--sponsored .home-partners__badge {
+  color: var(--kd-ink);
+}
+
+.home-partners__copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 12px 14px 12px 12px;
+}
+
+.home-partners__name {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.home-partners__place,
+.home-partners__index {
+  color: color-mix(in srgb, var(--kd-ink) 78%, #faf8f5);
+}
+
+.home-partners__place {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.home-partners__index {
+  margin-top: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.3;
 }
 
 .home-search__field {
   display: flex;
   align-items: center;
-  gap: 11px;
-  flex: 1;
-  min-width: 0;
-  height: 50px;
-  padding: 0 16px;
-  border-radius: 8px;
-  background: var(--kd-white);
-  color: var(--kd-ink-50);
+  gap: 8px;
+  padding: 0 12px;
 }
 
 .home-search__field input {
   width: 100%;
+  height: 46px;
+  padding: 0;
   border: 0;
   background: transparent;
   color: var(--kd-ink);
-  font-size: 12px;
   font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-align: left;
   caret-color: var(--kd-primary);
-}
-
-.home-search__field input::-webkit-search-decoration,
-.home-search__field input::-webkit-search-cancel-button {
-  -webkit-appearance: none;
 }
 
 .home-search__field input::placeholder {
   color: var(--kd-ink-50);
+  opacity: 1;
 }
 
 .home-search__field input:focus {
@@ -324,153 +531,20 @@ onMounted(() => {
 }
 
 .home-search__field:focus-within {
-  box-shadow: 0 0 0 2px var(--kd-white), 0 0 0 4px var(--kd-primary);
+  box-shadow: inset 0 -1px 0 var(--kd-primary);
 }
 
-.home-search__submit {
-  display: grid;
-  place-items: center;
-  flex: 0 0 63px;
-  width: 63px;
-  height: 50px;
-  padding: 0;
-  border: 0;
-  border-radius: 8px;
-  background: var(--kd-white);
-  color: var(--kd-primary);
-  line-height: 0;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: opacity 140ms cubic-bezier(0.16, 1, 0.3, 1),
-    transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.home-search__submit :deep(svg) {
-  display: block;
-}
-
-.home-search__submit:focus-visible {
-  outline: 2px solid var(--kd-white);
-  outline-offset: 2px;
-}
-
-.home-featured {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  gap: 20px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scroll-padding-inline: 20px;
-  scrollbar-width: none;
-  margin: -57px 0 0;
-  padding: 0 20px;
-  outline: none;
-  -webkit-overflow-scrolling: touch;
-}
-
-.home-featured::-webkit-scrollbar {
-  display: none;
-}
-
-.home-featured__card {
-  flex: 0 0 calc(100cqi - 40px);
-  width: calc(100cqi - 40px);
-  height: 100px;
-  display: flex;
-  overflow: hidden;
-  border-radius: 8px;
-  background: var(--kd-white);
-  box-shadow: 0 0 8px var(--kd-shadow);
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
-}
-
-.home-featured__card:focus-visible {
-  outline: 2px solid var(--kd-white);
-  outline-offset: -4px;
-}
-
-.home-featured__copy {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-  padding: 0 22px;
-  color: var(--kd-primary);
-  font-size: 16px;
-  line-height: 1.375;
-}
-
-.home-featured__copy span {
-  font-weight: 400;
-}
-
-.home-featured__copy strong {
-  display: -webkit-box;
-  overflow: hidden;
-  font-weight: 700;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-}
-
-.home-featured__media {
-  flex: 0 0 49%;
-  width: 49%;
-  max-width: 171px;
-  height: 100%;
-  background: var(--kd-secondary);
-}
-
-.home-featured__media img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.home-featured__media.is-broken img {
-  display: none;
-}
-
-.home-dots {
-  display: flex;
-  justify-content: center;
-  gap: 4px;
-  padding: 11px 0 12px;
-}
-
-.home-dots__dot {
-  width: 6.4px;
-  height: 6.4px;
-  padding: 0;
-  border: 0;
-  border-radius: 999px;
-  background: var(--kd-placeholder);
-  cursor: pointer;
-  transition: background-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
-    transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.home-dots__dot.is-active {
-  background: var(--kd-primary);
-  transform: scale(1.12);
-}
-
-.home-dots__dot:focus-visible {
-  outline: 2px solid var(--kd-primary);
-  outline-offset: 3px;
+.home-search__field input::-webkit-search-decoration,
+.home-search__field input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
 }
 
 .home-filters {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   overflow-x: auto;
   scrollbar-width: none;
-  padding: 16px 20px 14px;
-  -webkit-overflow-scrolling: touch;
+  padding: 8px 20px 12px;
 }
 
 .home-filters::-webkit-scrollbar {
@@ -478,147 +552,136 @@ onMounted(() => {
 }
 
 .home-filters__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   flex: 0 0 auto;
-  width: auto;
-  min-width: 97px;
+  min-width: 0;
   height: 44px;
   padding: 0 12px;
-  border: 0;
-  border-radius: 4px;
-  background: var(--kd-ink-10);
-  color: var(--kd-primary);
-  font-size: 12px;
-  font-weight: 400;
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 16px;
+  background: transparent;
+  color: var(--kd-ink);
   font-family: inherit;
-  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: 0;
   white-space: nowrap;
+  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: background-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
-    color 180ms cubic-bezier(0.16, 1, 0.3, 1),
-    transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .home-filters__chip.is-active {
-  background: var(--kd-primary);
-  color: var(--kd-white);
+  background: var(--kd-accent);
+  color: var(--kd-ink);
+  border-color: var(--kd-accent);
   font-weight: 700;
+}
+
+.home-filters__chip:active {
+  box-shadow: inset 0 3px 0 color-mix(in srgb, var(--kd-ink) 35%, transparent);
+}
+
+.home-filters__chip.is-active:active {
+  box-shadow: inset 0 3px 0 color-mix(in srgb, var(--kd-ink) 22%, transparent);
 }
 
 .home-filters__chip:focus-visible {
   outline: 2px solid var(--kd-primary);
-  outline-offset: 2px;
+  outline-offset: -4px;
 }
 
-.home-list {
+.home-state,
+.home-empty {
+  margin: 0;
+  padding: 4px 20px 12px;
+  color: var(--kd-ink);
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.3;
+  text-align: left;
+}
+
+.home-state {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  letter-spacing: 0;
+}
+
+.home-empty {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.home-skeletons {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 0 20px;
 }
 
-.home-note,
-.home-empty {
-  margin: 0 20px 14px;
-  text-align: center;
-  color: var(--kd-ink);
-  font-size: 14px;
-  line-height: 1.45;
+.home-skeleton {
+  display: block;
+  height: 128px;
+  margin: 0 20px 12px;
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 12%, transparent);
+  border-radius: 16px;
+  background: linear-gradient(
+    90deg,
+    var(--kd-white) 0%,
+    color-mix(in srgb, var(--kd-ink) 8%, var(--kd-white)) 50%,
+    var(--kd-white) 100%
+  );
+  background-size: 200% 100%;
+  animation: bag-shimmer 1.1s ease-in-out infinite;
 }
 
-.home-empty {
-  margin-top: 1.5rem;
+.home-skeleton:nth-child(3) {
+  animation-delay: 120ms;
+}
+
+.home-skeleton:nth-child(4) {
+  animation-delay: 240ms;
 }
 
 .home-retry {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   min-height: 44px;
-  margin-left: 8px;
+  margin-left: auto;
   padding: 0 12px;
-  border: 0;
-  border-radius: 8px;
-  background: var(--kd-primary);
-  color: var(--kd-white);
-  font-size: 14px;
-  font-weight: 700;
+  border: 1px solid var(--kd-primary);
+  background: transparent;
+  color: var(--kd-primary);
   font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
   cursor: pointer;
 }
 
-.home-fab {
-  position: fixed;
-  right: 20px;
-  bottom: calc(100px + env(safe-area-inset-bottom) + 12px);
-  z-index: 12;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 45px;
-  min-height: 45px;
-  padding: 0 16px 0 12px;
-  border: 0;
-  border-radius: 8px;
-  background: var(--kd-primary);
-  color: var(--kd-white);
-  box-shadow: 0 4px 12px var(--kd-shadow);
-  font-size: 16px;
-  font-weight: 700;
-  font-family: inherit;
-  line-height: 1;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  animation: home-fab-rise 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.home-fab__mark {
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  flex-shrink: 0;
-}
-
-.home-fab__mark svg {
-  display: block;
-  width: 22px;
-  height: 22px;
-}
-
-.home-fab:focus-visible {
+.home-retry:focus-visible,
+.home-add:focus-visible {
   outline: 2px solid var(--kd-primary);
   outline-offset: 3px;
 }
 
-.home-fab:active {
-  transform: scale(0.96);
+.home-list {
+  display: flex;
+  flex-direction: column;
 }
 
-@keyframes home-fab-rise {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.home-hero__bell:active,
-.home-search__submit:active,
-.home-filters__chip:active {
-  transform: scale(0.94);
-}
-
-.cafe-list-enter-active,
-.cafe-list-leave-active {
-  transition: opacity 160ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.cafe-list-enter-from,
-.cafe-list-leave-to {
-  opacity: 0;
+.home-more {
+  margin: 0;
+  padding: 12px 12px 14px;
+  color: var(--kd-ink);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: center;
 }
 
 .sr-only {
@@ -633,18 +696,49 @@ onMounted(() => {
   border: 0;
 }
 
-@media (hover: hover) {
-  .home-search__submit:hover {
-    opacity: 0.92;
-  }
+.home-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 8px 20px 16px;
+  width: calc(100% - 40px);
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--kd-accent);
+  border-radius: 16px;
+  background: var(--kd-accent);
+  color: var(--kd-ink);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
 
-  .home-filters__chip:hover:not(.is-active) {
-    background: color-mix(in srgb, var(--kd-ink) 16%, transparent);
-  }
+.home-add:active {
+  box-shadow: inset 0 3px 0 color-mix(in srgb, var(--kd-ink) 22%, transparent);
+}
 
-  .home-fab:hover {
-    box-shadow: 0 6px 16px var(--kd-shadow);
-  }
+.cafe-list-enter-active,
+.cafe-list-leave-active {
+  transition: opacity 220ms cubic-bezier(0.16, 1, 0.3, 1), transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cafe-list-enter-from,
+.cafe-list-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+@keyframes bag-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+.home-plate ::selection {
+  background: var(--kd-accent);
+  color: var(--kd-ink);
 }
 
 @media (min-width: 540px) {
@@ -652,45 +746,22 @@ onMounted(() => {
     max-width: 480px;
     margin-inline: auto;
   }
-
-  .home-fab {
-    right: calc(50% - 240px + 20px);
-  }
-}
-
-:root.is-android .home-fab {
-  height: 48px;
-  min-height: 48px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .home-featured {
-    scroll-behavior: auto;
-    scroll-snap-type: x proximity;
-  }
-
-  .home-hero__bell,
-  .home-search__submit,
-  .home-dots__dot,
   .home-filters__chip,
-  .home-fab,
+  .home-add,
+  .home-retry,
   .cafe-list-enter-active,
   .cafe-list-leave-active {
-    animation: none;
-    transition-duration: 1ms;
+    transition: none;
   }
 
-  .home-dots__dot.is-active,
-  .home-hero__bell:active,
-  .home-search__submit:active,
+  .home-skeleton,
   .home-filters__chip:active,
-  .home-fab:active {
-    transform: none;
+  .home-add:active {
+    animation: none;
+    box-shadow: none;
   }
-}
-
-::selection {
-  background: var(--kd-secondary);
-  color: var(--kd-primary);
 }
 </style>

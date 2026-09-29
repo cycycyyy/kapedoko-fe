@@ -101,12 +101,35 @@
                     :class="{ 'is-active': index === activeIndex }"
                     @mousedown.prevent="pickSuggestion(cafe)"
                   >
-                    <span class="map-search__suggestion-name">{{ cafe.name }}</span>
-                    <span class="map-search__suggestion-meta">
-                      {{ cafe.address }}
-                      <template v-if="suggestionDistances[cafe.id]">
-                        · {{ suggestionDistances[cafe.id] }}
-                      </template>
+                    <span class="map-search__suggestion-copy">
+                      <span class="map-search__suggestion-name">{{ cafe.name }}</span>
+                      <span class="map-search__suggestion-meta">
+                        {{ cafe.address }}
+                        <template v-if="suggestionDistances[cafe.id]">
+                          · {{ suggestionDistances[cafe.id] }}
+                        </template>
+                      </span>
+                    </span>
+                    <span
+                      v-if="hasConfirmedWifi(cafe) || hasConfirmedPlug(cafe)"
+                      class="map-search__suggestion-amenities"
+                    >
+                      <span
+                        v-if="hasConfirmedWifi(cafe)"
+                        class="map-search__suggestion-amenity"
+                        aria-label="WiFi"
+                      >
+                        <Wifi :size="14" :stroke-width="2" aria-hidden="true" />
+                        <span class="sr-only">WiFi</span>
+                      </span>
+                      <span
+                        v-if="hasConfirmedPlug(cafe)"
+                        class="map-search__suggestion-amenity"
+                        aria-label="Outlets"
+                      >
+                        <Plug :size="14" :stroke-width="2" aria-hidden="true" />
+                        <span class="sr-only">Outlets</span>
+                      </span>
                     </span>
                   </button>
                 </li>
@@ -206,7 +229,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ChevronLeft, Coffee, LocateFixed, LocateOff, Map as MapIcon, Search } from 'lucide-vue-next'
+import { ChevronLeft, Coffee, LocateFixed, LocateOff, Map as MapIcon, Plug, Search, Wifi } from 'lucide-vue-next'
 import { Capacitor } from '@capacitor/core'
 import { useIonRouter } from '@ionic/vue'
 import KapeMap from '~/components/map/KapeMap.client.vue'
@@ -286,6 +309,15 @@ const suggestionDistances = computed(() => {
     suggestions.value.map((cafe) => [cafe.id, formatDistance(distanceMeters(origin, cafe))]),
   )
 })
+
+function hasConfirmedWifi(cafe: Cafe) {
+  return Boolean(cafe.work?.known && cafe.work.wifi)
+}
+
+function hasConfirmedPlug(cafe: Cafe) {
+  return Boolean(cafe.work?.known && cafe.work.plug)
+}
+
 const selectedCafe = computed(() => cafeById(selectedId.value))
 const lastDetailCafe = ref<Cafe | null>(null)
 const pendingReviewId = ref<string | null>(null)
@@ -547,7 +579,7 @@ onMounted(() => {
 
 <style scoped>
 .map-content {
-  --background: var(--kd-secondary);
+  --background: #f2f2f2;
   --overflow: hidden;
   --padding-start: 0;
   --padding-end: 0;
@@ -560,15 +592,17 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: var(--kd-secondary);
+  background: #f2f2f2;
+  font-family: 'Kumbh Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--kd-ink);
 }
 
 .map-placeholder {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 18% 24%, color-mix(in srgb, var(--kd-white) 55%, transparent), transparent 36%),
-    linear-gradient(180deg, var(--kd-white) 0%, var(--kd-secondary) 42%);
+    radial-gradient(circle at 18% 24%, color-mix(in srgb, #ffffff 55%, transparent), transparent 36%),
+    linear-gradient(180deg, #ffffff 0%, #f2f2f2 42%);
 }
 
 .map-chrome {
@@ -594,7 +628,7 @@ onMounted(() => {
 .map-hero {
   position: relative;
   padding: max(2.75rem, calc(env(safe-area-inset-top) + 16px)) 20px 18px;
-  background: linear-gradient(180deg, var(--kd-white) 0%, color-mix(in srgb, var(--kd-white) 0%, transparent) 100%);
+  background: linear-gradient(180deg, #f2f2f2 0%, color-mix(in srgb, #f2f2f2 0%, transparent) 100%);
 }
 
 .map-hero__bar {
@@ -613,7 +647,7 @@ onMounted(() => {
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -627,7 +661,7 @@ onMounted(() => {
 .map-note__action:focus-visible {
   outline: 2px solid var(--kd-primary);
   outline-offset: 2px;
-  border-radius: 8px;
+  border-radius: 16px;
 }
 
 .map-brand {
@@ -657,8 +691,8 @@ onMounted(() => {
 
 .map-title {
   margin: 0;
-  color: var(--kd-primary);
-  font-size: 12px;
+  color: var(--kd-ink);
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.02em;
 }
@@ -673,11 +707,11 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 50px;
+  height: 46px;
   padding: 0 8px 0 16px;
-  border-radius: 8px;
-  background: var(--kd-white);
-  box-shadow: 0 2px 8px var(--kd-shadow);
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 16px;
+  background: #ffffff;
 }
 
 .map-search__field input {
@@ -686,13 +720,15 @@ onMounted(() => {
   border: 0;
   background: transparent;
   color: var(--kd-ink);
-  font-size: 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
   font-family: inherit;
   caret-color: var(--kd-primary);
 }
 
 .map-search__field input::placeholder {
-  color: #5c534c;
+  color: color-mix(in srgb, var(--kd-ink) 50%, transparent);
+  opacity: 1;
 }
 
 .map-search__field input:focus {
@@ -700,7 +736,8 @@ onMounted(() => {
 }
 
 .map-search__field:focus-within {
-  box-shadow: 0 2px 8px var(--kd-shadow), 0 0 0 2px var(--kd-white), 0 0 0 4px var(--kd-primary);
+  box-shadow: inset 0 -1px 0 var(--kd-primary);
+  border-color: color-mix(in srgb, var(--kd-ink) 34%, transparent);
 }
 
 .map-search__field input::-webkit-search-decoration,
@@ -717,7 +754,7 @@ onMounted(() => {
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -733,27 +770,27 @@ onMounted(() => {
   max-height: min(42vh, 320px);
   overflow-y: auto;
   list-style: none;
-  border-radius: 8px;
-  background: var(--kd-white);
-  box-shadow: 0 8px 24px var(--kd-shadow);
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 16px;
+  background: #ffffff;
 }
 
 .map-search__empty {
   padding: 14px 12px;
   color: var(--kd-ink);
-  font-size: 12px;
+  font-size: 0.7875rem;
 }
 
 .map-search__suggestion {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
   width: 100%;
   min-height: 48px;
   padding: 10px 12px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 16px;
   background: transparent;
   text-align: left;
   font-family: inherit;
@@ -763,20 +800,45 @@ onMounted(() => {
 
 .map-search__suggestion.is-active,
 .map-search__suggestion:hover {
-  background: var(--kd-secondary);
+  background: #f2f2f2;
+}
+
+.map-search__suggestion-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
 }
 
 .map-search__suggestion-name {
-  color: var(--kd-primary);
-  font-size: 14px;
+  color: var(--kd-ink);
+  font-size: 0.95rem;
   font-weight: 700;
   line-height: 1.3;
 }
 
 .map-search__suggestion-meta {
   color: var(--kd-ink);
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.35;
+}
+
+.map-search__suggestion-amenities {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.map-search__suggestion-amenity {
+  display: inline-flex;
+  color: var(--kd-accent, #d9793b);
+}
+
+.map-search__suggestion-amenity :deep(svg) {
+  display: block;
 }
 
 .map-status {
@@ -792,9 +854,9 @@ onMounted(() => {
   gap: 12px;
   margin: 0 20px;
   padding: 8px 8px 8px 12px;
-  border-radius: 8px;
-  background: var(--kd-white);
-  box-shadow: 0 2px 8px var(--kd-shadow);
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 16%, transparent);
+  border-radius: 16px;
+  background: #ffffff;
   color: var(--kd-ink);
 }
 
@@ -815,9 +877,8 @@ onMounted(() => {
   width: 14px;
   height: 14px;
   border-radius: 999px;
-  background: var(--kd-primary);
-  border: 2px solid var(--kd-white);
-  box-shadow: 0 2px 6px var(--kd-shadow);
+  background: var(--kd-accent);
+  border: 2px solid #ffffff;
   z-index: 1;
 }
 
@@ -827,7 +888,7 @@ onMounted(() => {
   height: 14px;
   border-radius: 999px;
   border: 1.5px solid var(--kd-primary);
-  background: color-mix(in srgb, var(--kd-primary) 18%, transparent);
+  background: color-mix(in srgb, var(--kd-accent) 18%, transparent);
   animation: map-note-ping 1.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
 }
 
@@ -842,45 +903,44 @@ onMounted(() => {
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  background: var(--kd-secondary);
-  color: var(--kd-primary);
+  background: #f2f2f2;
+  color: var(--kd-ink);
 }
 
 .map-note--alert .map-note__mark {
-  background: color-mix(in srgb, var(--kd-closed) 16%, var(--kd-white));
-  color: var(--kd-closed);
+  background: color-mix(in srgb, #8c3a2f 16%, #ffffff);
+  color: #8c3a2f;
 }
 
 .map-note__copy {
   flex: 1 1 auto;
   min-width: 0;
   margin: 0;
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.35;
 }
 
 .map-note__action {
   flex-shrink: 0;
   margin-left: auto;
-  height: 45px;
-  min-height: 45px;
+  height: 44px;
+  min-height: 44px;
   min-width: 44px;
   padding: 0 14px;
-  border: 0;
-  border-radius: 8px;
-  background: var(--kd-primary);
-  color: var(--kd-white);
-  font-size: 12px;
+  border: 1px solid var(--kd-accent);
+  border-radius: 16px;
+  background: var(--kd-accent);
+  color: var(--kd-ink);
+  font-size: 0.75rem;
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1),
-    background-color 140ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: box-shadow 140ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .map-note__action:hover {
-  background: color-mix(in srgb, var(--kd-primary) 88%, var(--kd-black));
+  box-shadow: inset 0 3px 0 color-mix(in srgb, var(--kd-ink) 22%, transparent);
 }
 
 :root.is-android .map-note__action {
@@ -916,11 +976,10 @@ onMounted(() => {
   width: 48px;
   height: 48px;
   padding: 0;
-  border: 0;
-  border-radius: 8px;
-  background: var(--kd-white);
-  color: var(--kd-primary);
-  box-shadow: 0 2px 8px var(--kd-shadow);
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 16px;
+  background: #ffffff;
+  color: var(--kd-ink);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   animation: map-rise 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -939,14 +998,14 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  height: 45px;
-  min-height: 45px;
-  padding: 0 20px;
-  border: 0;
-  border-radius: 8px;
-  background: var(--kd-primary);
-  color: var(--kd-white);
-  font-size: 16px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--kd-accent);
+  border-radius: 16px;
+  background: var(--kd-accent);
+  color: var(--kd-ink);
+  font-size: 0.95rem;
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
@@ -1057,7 +1116,7 @@ onMounted(() => {
 }
 
 ::selection {
-  background: var(--kd-secondary);
-  color: var(--kd-primary);
+  background: color-mix(in srgb, var(--kd-accent) 35%, transparent);
+  color: var(--kd-ink);
 }
 </style>

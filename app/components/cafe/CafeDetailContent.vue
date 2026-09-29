@@ -228,7 +228,7 @@
 <script lang="ts" setup>
 import { Coffee, Heart, Leaf, Navigation, Phone, Plug, Star, Wifi } from 'lucide-vue-next'
 import type { Cafe } from '~/types/cafe'
-import { isKapedokoMark, KAPEDOKO_MARK_SRC } from '~/utils/logo'
+import { isKapedokoMark, KAPEDOKO_BEAN_PIN_SRC } from '~/utils/logo'
 import { googleMapsDirectionsUrl } from '~/utils/maps'
 import { amenityGapCopy } from '~/utils/shop-mapper'
 
@@ -284,9 +284,10 @@ const photos = computed(() => {
 
 const heroPhoto = computed(() => photos.value[activePhoto.value] ?? photos.value[0])
 const heroIsMark = computed(() => Boolean(broken.value.hero) || isKapedokoMark(heroPhoto.value))
-const heroSrc = computed(() => (heroIsMark.value ? KAPEDOKO_MARK_SRC : heroPhoto.value))
+const heroSrc = computed(() => (heroIsMark.value ? KAPEDOKO_BEAN_PIN_SRC : heroPhoto.value))
 
 const onHeroError = () => {
+  if (heroPhoto.value === KAPEDOKO_BEAN_PIN_SRC) return
   if (!isKapedokoMark(heroPhoto.value)) broken.value.hero = true
 }
 
@@ -318,14 +319,17 @@ const selectPhoto = (index: number) => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--kd-white);
+  background: #ffffff;
+  color: var(--kd-ink);
   padding: 8px 0 0;
+  font-family: 'Kumbh Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .cafe-detail--page {
   height: auto;
   min-height: 100%;
   padding-top: 0;
+  background: #f2f2f2;
 }
 
 .cafe-detail__header {
@@ -339,19 +343,21 @@ const selectPhoto = (index: number) => {
 
 .cafe-detail__title-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px 12px;
 }
 
 .cafe-detail__header h2 {
   margin: 0;
   min-width: 0;
   flex: 1;
-  color: var(--kd-primary);
-  font-size: 20px;
+  color: var(--kd-ink);
+  font-size: 1.325rem;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
   overflow-wrap: anywhere;
 }
 
@@ -362,12 +368,18 @@ const selectPhoto = (index: number) => {
   width: 44px;
   height: 44px;
   padding: 0;
-  border: 0;
-  border-radius: 8px;
-  background: var(--kd-secondary);
-  color: var(--kd-primary);
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 16px;
+  background: #faf8f5;
+  color: var(--kd-accent);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+}
+
+.cafe-detail__save[aria-pressed='true'] {
+  border-color: var(--kd-accent);
+  background: var(--kd-accent);
+  color: var(--kd-ink);
 }
 
 .cafe-detail__save:focus-visible,
@@ -384,8 +396,8 @@ const selectPhoto = (index: number) => {
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--kd-primary);
-  font-size: 12px;
+  color: var(--kd-ink);
+  font-size: 0.75rem;
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
@@ -406,23 +418,25 @@ const selectPhoto = (index: number) => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  min-height: 28px;
-  padding: 0 10px;
-  border-radius: 4px;
-  font-size: 10px;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 16px;
+  font-size: 0.7875rem;
   font-weight: 700;
   line-height: 1.2;
   white-space: nowrap;
 }
 
 .cafe-detail__action-face--primary {
-  background: var(--kd-primary);
-  color: var(--kd-white);
+  border: 1px solid var(--kd-accent);
+  background: var(--kd-accent);
+  color: var(--kd-ink);
 }
 
 .cafe-detail__action-face--quiet {
-  background: var(--kd-ink-10);
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  background: #faf8f5;
   color: var(--kd-ink);
 }
 
@@ -435,20 +449,21 @@ const selectPhoto = (index: number) => {
   gap: 10px;
   margin: 8px 0 0;
   color: var(--kd-ink);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
   line-height: 1.2;
 }
 
 .cafe-detail__prompt {
-  color: var(--kd-primary);
-  font-size: 10px;
+  color: var(--kd-ink);
+  font-size: 0.75rem;
+  font-weight: 400;
 }
 
 .cafe-detail__crowd {
   margin-top: 8px;
   color: var(--kd-ink);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
 }
 
@@ -460,12 +475,17 @@ const selectPhoto = (index: number) => {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  color: var(--kd-ink);
+}
+
+.cafe-detail__amenity :deep(svg) {
+  color: var(--kd-accent);
 }
 
 .cafe-detail__address {
   margin: 10px 0 0;
   color: var(--kd-ink);
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.35;
 }
 
@@ -479,20 +499,20 @@ const selectPhoto = (index: number) => {
 }
 
 .cafe-detail__score {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
 }
 
 .cafe-detail__stars {
   display: flex;
   gap: 2px;
-  color: var(--kd-black);
+  color: var(--kd-accent);
 }
 
 .cafe-detail__rating-label {
-  color: var(--kd-primary);
-  font-size: 10px;
-  font-weight: 700;
+  color: var(--kd-ink);
+  font-size: 0.75rem;
+  font-weight: 400;
 }
 
 .cafe-detail__actions {
@@ -512,27 +532,27 @@ const selectPhoto = (index: number) => {
 
 .cafe-detail__chip {
   margin: 0;
-  padding: 6px 10px;
-  border-radius: 4px;
-  color: var(--kd-white);
-  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 16px;
+  color: #ffffff;
+  font-size: 0.75rem;
   font-weight: 700;
   line-height: 1.2;
 }
 
 .cafe-detail__chip.is-open {
-  background: var(--kd-open);
+  background: var(--kd-ink);
 }
 
 .cafe-detail__chip.is-closed {
-  background: var(--kd-closed);
+  background: #8c3a2f;
 }
 
 .cafe-detail__hours {
   margin: 0;
   min-width: 0;
   color: var(--kd-ink);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
   line-height: 1.2;
 }
@@ -556,8 +576,9 @@ const selectPhoto = (index: number) => {
 .cafe-detail__hero {
   overflow: hidden;
   height: 175px;
-  border-radius: 5px;
-  background: var(--kd-secondary);
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 16px;
+  background: #f2f2f2;
 }
 
 .cafe-detail__hero img,
@@ -569,23 +590,17 @@ const selectPhoto = (index: number) => {
 }
 
 .cafe-detail__hero.is-mark {
-  background:
-    radial-gradient(
-      circle at 50% 38%,
-      color-mix(in srgb, var(--kd-white) 78%, transparent) 0%,
-      transparent 62%
-    ),
-    var(--kd-secondary);
+  background: #faf8f5;
 }
 
 .cafe-detail__hero.is-mark img {
   object-fit: contain;
-  padding: 36px 48px;
+  padding: 28px 40px;
 }
 
 .cafe-detail__hero.is-broken,
 .cafe-detail__thumb.is-broken {
-  background: #5c534c;
+  background: #f2f2f2;
 }
 
 .cafe-detail__hero.is-broken img,
@@ -604,15 +619,15 @@ const selectPhoto = (index: number) => {
   overflow: hidden;
   height: 71px;
   padding: 0;
-  border: 0;
-  border-radius: 5px;
-  background: var(--kd-secondary);
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 16px;
+  background: #faf8f5;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 
 .cafe-detail__thumb.is-active {
-  box-shadow: 0 0 0 2px var(--kd-white), 0 0 0 4px var(--kd-primary);
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px var(--kd-primary);
 }
 
 .cafe-detail__insight {
@@ -625,11 +640,12 @@ const selectPhoto = (index: number) => {
 .cafe-detail__insight > :first-child {
   flex-shrink: 0;
   margin-top: 2px;
+  color: var(--kd-accent);
 }
 
 .cafe-detail__insight h3 {
   margin: 0;
-  font-size: 12px;
+  font-size: 0.7875rem;
   font-weight: 700;
   line-height: 1.35;
 }
@@ -637,13 +653,13 @@ const selectPhoto = (index: number) => {
 .cafe-detail__said {
   display: block;
   margin-bottom: 2px;
-  font-size: 10px;
+  font-size: 0.75rem;
   font-weight: 400;
 }
 
 .cafe-detail__insight p {
   margin: 6px 0 0;
-  font-size: 12px;
+  font-size: 0.7875rem;
   line-height: 1.35;
 }
 
@@ -656,14 +672,14 @@ const selectPhoto = (index: number) => {
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 45px;
+  min-height: 44px;
   margin: 0;
-  padding: 0 20px;
-  border: 1px solid var(--kd-primary);
-  border-radius: 8px;
-  background: var(--kd-white);
-  color: var(--kd-primary);
-  font-size: 16px;
+  padding: 0 16px;
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 34%, transparent);
+  border-radius: 16px;
+  background: #ffffff;
+  color: var(--kd-ink);
+  font-size: 0.95rem;
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
@@ -672,13 +688,13 @@ const selectPhoto = (index: number) => {
 .cafe-detail__reviews {
   margin-top: 22px;
   padding-top: 18px;
-  border-top: 1px solid var(--kd-primary);
+  border-top: 1px solid color-mix(in srgb, var(--kd-ink) 16%, transparent);
 }
 
 .cafe-detail__reviews h3 {
   margin: 0 0 12px;
   color: var(--kd-ink);
-  font-size: 16px;
+  font-size: 0.95rem;
   font-weight: 700;
 }
 
@@ -688,20 +704,24 @@ const selectPhoto = (index: number) => {
   align-items: center;
   gap: 8px;
   padding: 12px 20px 8px;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   text-align: center;
+}
+
+.cafe-detail__empty :deep(svg) {
+  color: var(--kd-accent);
 }
 
 .cafe-detail__empty p {
   margin: 0;
-  font-size: 12px;
+  font-size: 0.7875rem;
   font-weight: 700;
   line-height: 1.35;
 }
 
 .cafe-review {
   padding: 16px 0;
-  border-bottom: 1px solid var(--kd-primary);
+  border-bottom: 1px solid color-mix(in srgb, var(--kd-ink) 12%, transparent);
   color: var(--kd-ink);
 }
 
@@ -721,17 +741,17 @@ const selectPhoto = (index: number) => {
   place-items: center;
   width: 28px;
   height: 28px;
-  border-radius: 999px;
-  background: var(--kd-primary);
-  color: var(--kd-white);
-  font-size: 12px;
+  border-radius: 8px;
+  background: var(--kd-accent);
+  color: var(--kd-ink);
+  font-size: 0.75rem;
   font-weight: 700;
 }
 
 .cafe-review__name {
   margin: 0;
   flex: 1;
-  font-size: 12px;
+  font-size: 0.7875rem;
   font-weight: 700;
 }
 
@@ -741,16 +761,16 @@ const selectPhoto = (index: number) => {
   gap: 4px;
   min-height: 15px;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: 8px;
   background: var(--kd-ink);
-  color: var(--kd-white);
-  font-size: 10px;
+  color: #ffffff;
+  font-size: 0.6875rem;
   font-weight: 700;
 }
 
 .cafe-review p {
   margin: 0;
-  font-size: 12px;
+  font-size: 0.7875rem;
   line-height: 1.4;
 }
 
@@ -767,27 +787,27 @@ const selectPhoto = (index: number) => {
 }
 
 .cafe-detail__thumb:focus-visible {
-  border-radius: 5px;
+  border-radius: 16px;
 }
 
 .cafe-detail__action-face--primary:active,
 .cafe-detail__action-face--quiet:active,
 .cafe-detail__leave:active,
 .cafe-detail__thumb:active {
-  transform: scale(0.98);
+  box-shadow: inset 0 3px 0 color-mix(in srgb, var(--kd-ink) 22%, transparent);
 }
 
 @media (hover: hover) {
   .cafe-detail__navigate:hover .cafe-detail__action-face--primary {
-    background: color-mix(in srgb, var(--kd-primary) 88%, var(--kd-white));
+    box-shadow: inset 0 3px 0 color-mix(in srgb, var(--kd-ink) 22%, transparent);
   }
 
   .cafe-detail__call:hover .cafe-detail__action-face--quiet {
-    background: var(--kd-ink-25);
+    border-color: color-mix(in srgb, var(--kd-ink) 34%, transparent);
   }
 
   .cafe-detail__leave:hover {
-    background: var(--kd-secondary);
+    background: #faf8f5;
   }
 }
 
@@ -796,7 +816,7 @@ const selectPhoto = (index: number) => {
   .cafe-detail__action-face--quiet:active,
   .cafe-detail__leave:active,
   .cafe-detail__thumb:active {
-    transform: none;
+    box-shadow: none;
   }
 }
 </style>

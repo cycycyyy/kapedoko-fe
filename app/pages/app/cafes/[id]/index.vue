@@ -222,7 +222,7 @@ onBeforeUnmount(() => {
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -292,8 +292,8 @@ onBeforeUnmount(() => {
   padding: 0 20px;
   border: 0;
   border-radius: 8px;
-  background: var(--kd-primary);
-  color: var(--kd-white);
+  background: var(--kd-accent);
+  color: var(--kd-ink);
   font-size: 16px;
   font-weight: 700;
   font-family: inherit;

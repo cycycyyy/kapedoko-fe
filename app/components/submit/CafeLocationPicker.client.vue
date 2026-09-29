@@ -274,7 +274,7 @@ onBeforeUnmount(() => {
 
 .picker__copy h2 {
   margin: 0;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   font-size: 16px;
   font-weight: 700;
   line-height: 1.2;
@@ -385,7 +385,7 @@ onBeforeUnmount(() => {
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -532,7 +532,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   font-size: 12px;
   font-weight: 700;
 }
@@ -609,7 +609,7 @@ onBeforeUnmount(() => {
 
 ::selection {
   background: var(--kd-secondary);
-  color: var(--kd-primary);
+  color: var(--kd-ink);
 }
 
 .sr-only {

@@ -4,10 +4,10 @@
       <div class="profile">
         <header class="profile__hero">
           <img
-            src="/assets/kapedoko-logo_dark.png"
+            src="/assets/bean-pin.png"
             alt=""
-            width="46"
-            height="60"
+            width="40"
+            height="48"
           />
           <h1>{{ signedIn ? 'Your account' : 'Profile' }}</h1>
           <p v-if="!signedIn">
@@ -17,7 +17,7 @@
 
         <section v-if="!signedIn" class="profile__panel" aria-label="Account actions">
           <button type="button" class="profile__primary" @click="goLogin">Sign in</button>
-          <button type="button" class="profile__secondary" @click="goRegister">Create account</button>
+          <button type="button" class="profile__outline" @click="goRegister">Create account</button>
         </section>
 
         <template v-else>
@@ -54,7 +54,7 @@
             </article>
           </section>
 
-          <button type="button" class="profile__secondary" :disabled="signingOut" @click="onSignOut">
+          <button type="button" class="profile__quiet" :disabled="signingOut" @click="onSignOut">
             {{ signingOut ? 'Signing out…' : 'Sign out' }}
           </button>
           <p v-if="signOutError" class="profile__error" role="alert">{{ signOutError }}</p>
@@ -161,7 +161,7 @@ const goRegister = () => navigateTo({ path: '/register', query: { redirect: '/ap
 
 <style scoped>
 .profile-content {
-  --background: var(--kd-white);
+  --background: #f2f2f2;
   --padding-start: 0;
   --padding-end: 0;
   --padding-top: 0;
@@ -171,7 +171,9 @@ const goRegister = () => navigateTo({ path: '/register', query: { redirect: '/ap
 .profile {
   min-height: 100%;
   padding: max(2.75rem, calc(env(safe-area-inset-top) + 16px)) 20px calc(8.5rem + env(safe-area-inset-bottom));
-  background: var(--kd-white);
+  background: #f2f2f2;
+  color: var(--kd-ink);
+  font-family: 'Kumbh Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .profile__hero {
@@ -179,13 +181,13 @@ const goRegister = () => navigateTo({ path: '/register', query: { redirect: '/ap
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
 }
 
 .profile__hero img {
   display: block;
-  width: 46px;
-  height: 60px;
+  width: 40px;
+  height: 48px;
   object-fit: contain;
 }
 
@@ -195,21 +197,28 @@ const goRegister = () => navigateTo({ path: '/register', query: { redirect: '/ap
   margin: 0;
   font-weight: 700;
   line-height: 1.2;
+  letter-spacing: -0.03em;
 }
 
 .profile__hero h1 {
-  margin-top: 8px;
-  font-size: 24px;
+  margin-top: 4px;
+  font-size: 1.325rem;
+  line-height: 1.05;
 }
 
 .profile__hero p,
 .profile__email,
-.profile__submissions p,
+.profile__submissions > p,
 .profile__shop p {
   margin: 0;
   color: var(--kd-ink);
-  font-size: 14px;
-  line-height: 1.45;
+  font-size: 0.7875rem;
+  line-height: 1.3;
+}
+
+.profile__email {
+  font-size: 0.85rem;
+  line-height: 1.35;
 }
 
 .profile__panel,
@@ -220,41 +229,63 @@ const goRegister = () => navigateTo({ path: '/register', query: { redirect: '/ap
   margin-top: 24px;
 }
 
+.profile__submissions {
+  margin-top: 32px;
+}
+
 .profile__submissions h2 {
-  color: var(--kd-primary);
-  font-size: 20px;
+  margin-bottom: 0;
+  color: var(--kd-ink);
+  font-size: 0.95rem;
+  letter-spacing: 0;
+  line-height: 1.2;
 }
 
 .profile__shop {
-  padding-top: 12px;
-  border-top: 1px solid var(--kd-ink-10);
+  padding: 12px 16px;
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 16px;
+  background: #faf8f5;
 }
 
 .profile__shop h3 {
-  color: var(--kd-primary);
-  font-size: 16px;
+  color: var(--kd-ink);
+  font-size: 0.95rem;
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+.profile__shop p {
+  margin-top: 4px;
+  color: color-mix(in srgb, var(--kd-ink) 72%, transparent);
 }
 
 .profile__field {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  color: var(--kd-primary);
-  font-size: 12px;
+  color: var(--kd-ink);
+  font-size: 0.75rem;
   font-weight: 700;
+  line-height: 1.3;
 }
 
 .profile__field input {
-  height: 50px;
+  min-height: 44px;
+  height: 44px;
   padding: 0 16px;
-  border: 0;
-  border-radius: 8px;
-  background: var(--kd-secondary);
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 16px;
+  background: #faf8f5;
   color: var(--kd-ink);
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 400;
   font-family: inherit;
   caret-color: var(--kd-primary);
+}
+
+.profile__field input::placeholder {
+  color: color-mix(in srgb, var(--kd-ink) 45%, transparent);
 }
 
 .profile__field input:focus {
@@ -263,7 +294,8 @@ const goRegister = () => navigateTo({ path: '/register', query: { redirect: '/ap
 }
 
 .profile__primary,
-.profile__secondary,
+.profile__outline,
+.profile__quiet,
 .profile__text {
   font-family: inherit;
   cursor: pointer;
@@ -271,28 +303,48 @@ const goRegister = () => navigateTo({ path: '/register', query: { redirect: '/ap
 }
 
 .profile__primary,
-.profile__secondary {
+.profile__outline,
+.profile__quiet {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 45px;
-  padding: 0 20px;
-  border-radius: 8px;
-  border: 0;
-  font-size: 16px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 16px;
+  font-size: 0.95rem;
   font-weight: 700;
+  line-height: 1.2;
 }
 
 .profile__primary {
-  background: var(--kd-primary);
-  color: var(--kd-white);
+  border: 1px solid var(--kd-accent);
+  background: var(--kd-accent);
+  color: var(--kd-ink);
+  transition: box-shadow 160ms ease,
+    transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.profile__secondary {
-  margin-top: 12px;
-  background: var(--kd-white);
+.profile__primary:hover:not(:disabled) {
+  box-shadow: inset 0 3px 0 color-mix(in srgb, var(--kd-ink) 22%, transparent);
+}
+
+.profile__primary:active:not(:disabled) {
+  box-shadow: inset 0 3px 0 color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  transform: scale(0.94);
+}
+
+.profile__outline {
+  border: 1px solid var(--kd-primary);
+  background: transparent;
   color: var(--kd-primary);
-  box-shadow: inset 0 0 0 1.5px var(--kd-primary);
+}
+
+.profile__quiet {
+  margin-top: 20px;
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  background: transparent;
+  color: var(--kd-ink);
+  font-weight: 400;
 }
 
 .profile__text {
@@ -302,25 +354,31 @@ const goRegister = () => navigateTo({ path: '/register', query: { redirect: '/ap
   border: 0;
   background: transparent;
   color: var(--kd-primary);
-  font-size: 14px;
+  font-size: 0.7875rem;
   font-weight: 700;
 }
 
 .profile__primary:disabled,
-.profile__secondary:disabled {
+.profile__outline:disabled,
+.profile__quiet:disabled {
   opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .profile__primary:focus-visible,
-.profile__secondary:focus-visible,
+.profile__outline:focus-visible,
+.profile__quiet:focus-visible,
 .profile__text:focus-visible {
   outline: 2px solid var(--kd-primary);
   outline-offset: 3px;
 }
 
 .profile__error {
-  color: var(--kd-closed);
+  margin: 0;
+  color: var(--kd-destructive);
+  font-size: 0.7875rem;
   font-weight: 700;
+  line-height: 1.35;
 }
 
 @media (min-width: 540px) {
@@ -330,8 +388,24 @@ const goRegister = () => navigateTo({ path: '/register', query: { redirect: '/ap
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .profile__primary {
+    transition-duration: 1ms;
+  }
+
+  .profile__primary:active:not(:disabled) {
+    transform: none;
+  }
+}
+
 :root.is-android .profile__primary,
-:root.is-android .profile__secondary {
+:root.is-android .profile__outline,
+:root.is-android .profile__quiet {
   min-height: 48px;
+}
+
+::selection {
+  background: var(--kd-accent);
+  color: var(--kd-ink);
 }
 </style>

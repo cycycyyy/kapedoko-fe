@@ -115,7 +115,7 @@ const emit = defineEmits<{
 }
 
 .onboarding-step__dot.is-active {
-  background: var(--kd-primary);
+  background: var(--kd-accent);
   transform: scale(1.08);
 }
 
@@ -130,8 +130,8 @@ const emit = defineEmits<{
   height: 45px;
   border: 0;
   border-radius: 8px;
-  background: var(--kd-primary);
-  color: var(--kd-white);
+  background: var(--kd-accent);
+  color: var(--kd-ink);
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;

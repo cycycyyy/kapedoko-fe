@@ -28,11 +28,18 @@ describe('auth helpers', () => {
   })
 
   test('allows only in-app return paths', () => {
+    expect(isSafeAppPath('/app')).toBe(true)
     expect(isSafeAppPath('/app/favorites')).toBe(true)
+    expect(isSafeAppPath('/app/cafes/abc/review?from=map')).toBe(true)
+    expect(isSafeAppPath('/admin')).toBe(true)
+    expect(isSafeAppPath('/')).toBe(false)
+    expect(isSafeAppPath('/?next=1')).toBe(false)
+    expect(isSafeAppPath('/confirm')).toBe(false)
     expect(isSafeAppPath('//evil.example')).toBe(false)
     expect(isSafeAppPath('/\\evil')).toBe(false)
     expect(isSafeAppPath('https://evil.example')).toBe(false)
     expect(isSafeAppPath('/login')).toBe(false)
+    expect(safeRedirectPath('/')).toBe('/app')
     expect(safeRedirectPath('//evil.example')).toBe('/app')
     expect(safeRedirectPath('/app/cafes/abc/review')).toBe('/app/cafes/abc/review')
     expect(safeRedirectPath(undefined, '/app/profile')).toBe('/app/profile')

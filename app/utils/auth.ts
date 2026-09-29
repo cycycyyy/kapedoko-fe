@@ -31,8 +31,22 @@ export function displayNameError(value: string): string | null {
 export function isSafeAppPath(path: string): boolean {
   if (!path.startsWith('/') || path.startsWith('//') || path.startsWith('/\\')) return false
   if (path.includes('\\') || path.includes('://')) return false
-  if (path.startsWith('/login') || path.startsWith('/register') || path.startsWith('/forgot-password')) return false
-  return true
+  const pathname = path.split(/[?#]/, 1)[0] ?? ''
+  if (pathname === '/') return false
+  if (
+    pathname === '/login' ||
+    pathname.startsWith('/login/') ||
+    pathname === '/register' ||
+    pathname.startsWith('/register/') ||
+    pathname === '/forgot-password' ||
+    pathname.startsWith('/forgot-password/')
+  ) {
+    return false
+  }
+  // Only in-app destinations (plus admin, which already uses redirect= after login).
+  if (pathname === '/app' || pathname.startsWith('/app/')) return true
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) return true
+  return false
 }
 
 export function safeRedirectPath(path: unknown, fallback = '/app'): string {

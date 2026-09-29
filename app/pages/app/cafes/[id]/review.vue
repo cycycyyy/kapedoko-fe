@@ -577,8 +577,8 @@ onBeforeUnmount(() => {
   overflow: hidden;
   min-height: 197px;
   padding: max(2.75rem, calc(env(safe-area-inset-top) + 16px)) 20px 18px;
-  background: var(--kd-primary);
-  color: var(--kd-white);
+  background: var(--kd-accent);
+  color: var(--kd-ink);
 }
 
 .review__photo {
@@ -761,7 +761,7 @@ onBeforeUnmount(() => {
   content: '';
   position: absolute;
   inset: 0;
-  background: var(--kd-primary);
+  background: var(--kd-accent);
   transform: scaleX(0);
   transform-origin: left center;
   transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -875,7 +875,7 @@ onBeforeUnmount(() => {
 }
 
 .review__hint {
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   animation: review-note-in 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
@@ -896,8 +896,8 @@ onBeforeUnmount(() => {
   padding: 0 20px;
   border: 0;
   border-radius: 8px;
-  background: var(--kd-primary);
-  color: var(--kd-white);
+  background: var(--kd-accent);
+  color: var(--kd-ink);
   font-size: 16px;
   font-weight: 700;
   font-family: inherit;
@@ -1081,6 +1081,6 @@ onBeforeUnmount(() => {
 
 ::selection {
   background: var(--kd-secondary);
-  color: var(--kd-primary);
+  color: var(--kd-ink);
 }
 </style>

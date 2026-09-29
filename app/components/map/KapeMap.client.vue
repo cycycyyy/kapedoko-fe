@@ -12,7 +12,7 @@ import type { Cafe, LatLng } from '~/types/cafe'
 import type { MarkerTier } from '~/types/shop'
 import type { GeoBounds } from '~/utils/geography'
 import { destinationPoint, distanceMeters, MAP_VIEW_RADIUS_M, SEARCH_RADIUS_M } from '~/utils/geo'
-import { KAPEDOKO_MARK_SRC, isKapedokoMark } from '~/utils/logo'
+import { KAPEDOKO_BEAN_PIN_SRC, KAPEDOKO_MARK_SRC, isKapedokoMark } from '~/utils/logo'
 import { escapeHtml, pinLabel, standardPinIsDot } from '~/utils/marker-tier'
 
 const COINCIDENT_THRESHOLD_M = 30
@@ -67,7 +67,7 @@ const labeledHtml = (mark: string, name: string) =>
 
 const selectedHtml = () =>
   `<span class="kd-cafe-pin__mark kd-cafe-pin__mark--logo" aria-hidden="true">
-    <img src="${KAPEDOKO_MARK_SRC}" alt="" width="26" height="34" />
+    <img src="${KAPEDOKO_BEAN_PIN_SRC}" alt="" width="32" height="36" />
   </span>`
 
 const cupHtml = () => `<span class="kd-cafe-pin__mark" aria-hidden="true">${CUP_SVG}</span>`
@@ -115,9 +115,9 @@ const makeCafeIcon = (cafe: Cafe, selected: boolean, entering = false) => {
 
   if (selected) {
     html = selectedHtml()
-    width = 32
-    height = 42
-    anchor = [16, 40]
+    width = 40
+    height = 44
+    anchor = [20, 42]
   } else if (tier === 'promoted') {
     html = promotedHtml(cafe)
     width = 96
@@ -488,7 +488,7 @@ defineExpose({
 }
 
 .kape-map :deep(.leaflet-control-attribution a) {
-  color: var(--kd-primary);
+  color: var(--kd-ink);
 }
 
 .kape-map :deep(.leaflet-bottom) {
@@ -503,6 +503,8 @@ defineExpose({
 
 .kape-map :deep(.leaflet-marker-pane) {
   z-index: 600;
+  /* Keep markers off the tile-pane sepia/saturate filter so bean artwork stays true. */
+  filter: none;
 }
 
 .kape-map :deep(.leaflet-div-icon.kd-cafe-pin),
@@ -514,7 +516,7 @@ defineExpose({
 .kape-map :deep(.kd-cafe-pin) {
   display: grid;
   place-items: center;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
 }
 
 .kape-map :deep(.kd-cafe-pin.is-selected) {
@@ -557,8 +559,9 @@ defineExpose({
 }
 
 .kape-map :deep(.kd-cafe-pin.is-selected .kd-cafe-pin__mark) {
-  width: 32px;
-  height: 42px;
+  width: 40px;
+  height: 44px;
+  transform: scale(1.08);
   transform-origin: center bottom;
   filter: drop-shadow(0 4px 8px var(--kd-shadow));
 }
@@ -608,7 +611,7 @@ defineExpose({
   overflow: hidden;
   border-radius: 4px;
   background: var(--kd-white);
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   font-size: 10px;
   font-weight: 700;
   line-height: 1.2;
@@ -626,7 +629,7 @@ defineExpose({
   width: 10px;
   height: 10px;
   border-radius: 999px;
-  background: var(--kd-primary);
+  background: var(--kd-accent);
   border: 2px solid var(--kd-white);
   box-shadow: 0 2px 6px var(--kd-shadow);
 }
@@ -640,7 +643,7 @@ defineExpose({
   width: 14px;
   height: 14px;
   border-radius: 999px;
-  background: var(--kd-primary);
+  background: var(--kd-accent);
   border: 2px solid var(--kd-white);
   box-shadow: 0 2px 6px var(--kd-shadow);
 }
@@ -650,7 +653,7 @@ defineExpose({
   width: 14px;
   height: 14px;
   border-radius: 999px;
-  background: var(--kd-primary);
+  background: var(--kd-accent);
   animation: kd-user-pulse 2.2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
 }
 

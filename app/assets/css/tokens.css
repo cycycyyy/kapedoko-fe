@@ -1,15 +1,22 @@
-/* KapeDoko color tokens from Figma Brand Guide (file: KapeDoko). */
+/* KapeDoko color tokens — teal primary, orange accent, stock + ink neutrals. */
 
 :root {
-  /* Primitives — Brand Guide swatches */
-  --kd-primary: #372d25;
-  --kd-gray: #cccccc;
-  --kd-secondary: #ece6db;
-  --kd-success: #7b9e87;
-  --kd-destructive: #cb8e8e;
-  --kd-open: #3f6a50;
-  --kd-closed: #a45d5d;
-  --kd-ink: #1e1e1e; /* Default Text Color */
+  /* Bag label: matte stock, ink, teal brand, orange accent */
+  --ion-font-family: 'Kumbh Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --kd-enamel: #f6f1e8;
+  --kd-chrome: #efeae2;
+  --kd-band: #6f4e37;
+  /* Kept brown for CafeCard small-text call sites until that file migrates. */
+  --kd-rule: #6f4e37;
+  --kd-primary: #1f6f6b;
+  --kd-accent: #d9793b;
+  --kd-gray: #d9d3c8;
+  --kd-secondary: #efe4d6;
+  --kd-success: #1f6f6b;
+  --kd-destructive: #8c3a2f;
+  --kd-open: #1c1917;
+  --kd-closed: #6f4e37;
+  --kd-ink: #1c1917;
   --kd-white: #ffffff;
   --kd-black: #000000;
 
@@ -22,37 +29,38 @@
   --kd-ink-10: color-mix(in srgb, var(--kd-ink) 10%, transparent);
   --kd-primary-25: color-mix(in srgb, var(--kd-primary) 25%, transparent);
   --kd-primary-5: color-mix(in srgb, var(--kd-primary) 5%, transparent);
+  --kd-accent-25: color-mix(in srgb, var(--kd-accent) 25%, transparent);
   --kd-white-80: color-mix(in srgb, var(--kd-white) 80%, transparent);
   --kd-white-5: color-mix(in srgb, var(--kd-white) 5%, transparent);
   --kd-shadow: color-mix(in srgb, var(--kd-black) 10%, transparent);
 
   /* shadcn / Tailwind HSL triplets (space-separated, no hsl()) */
-  --background: 0 0% 100%; /* #FFFFFF */
-  --foreground: 0 0% 12%; /* #1E1E1E */
+  --background: 39 44% 94%; /* #F6F1E8 */
+  --foreground: 24 10% 10%; /* #1C1917 */
 
-  --primary: 27 20% 18%; /* #372D25 */
-  --primary-foreground: 0 0% 100%;
+  --primary: 177 56% 28%; /* #1F6F6B */
+  --primary-foreground: 39 44% 94%; /* #F6F1E8 */
 
-  --secondary: 39 31% 89%; /* #ECE6DB */
-  --secondary-foreground: 0 0% 12%;
+  --secondary: 24 68% 54%; /* #D9793B */
+  --secondary-foreground: 24 10% 10%; /* #1C1917 — cream on orange fails AA */
 
   --muted: 0 0% 80%; /* #CCCCCC */
   --muted-foreground: 0 0% 45%;
   --border: 0 0% 80%;
-  --ring: 27 20% 18%;
+  --ring: 177 56% 28%; /* #1F6F6B */
   --placeholder: 0 0% 85%; /* #D9D9D9 */
 
-  --success: 141 15% 55%; /* #7B9E87 */
-  --success-foreground: 0 0% 100%;
+  --success: 177 56% 28%; /* #1F6F6B */
+  --success-foreground: 39 44% 94%;
 
-  --destructive: 0 37% 68%; /* #CB8E8E */
+  --destructive: 8 50% 39%; /* #8C3A2F */
   --destructive-foreground: 0 0% 100%;
 
   --gray: 0 0% 80%; /* #CCCCCC */
   --gray-foreground: 0 0% 12%;
 
   --input-background: 42 43% 98%;
-  --input-foreground: 27 20% 18%;
+  --input-foreground: 24 10% 10%;
   --input-border: 32 18% 72%;
   --input-placeholder: 30 10% 46%;
 
@@ -62,12 +70,12 @@
 .dark {
   --background: 0 0% 12%;
   --foreground: 0 0% 100%;
-  --primary: 27 20% 18%;
+  --primary: 177 45% 42%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 39 31% 89%;
-  --secondary-foreground: 0 0% 12%;
+  --secondary: 24 68% 54%;
+  --secondary-foreground: 24 10% 10%;
   --muted: 0 0% 45%;
   --muted-foreground: 0 0% 75%;
   --border: 0 0% 24%;
-  --ring: 0 0% 39%;
+  --ring: 177 45% 42%;
 }

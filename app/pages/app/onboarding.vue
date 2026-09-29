@@ -122,7 +122,7 @@ const finish = async () => {
   border: 0;
   border-radius: 8px;
   background: var(--kd-white);
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   font-size: 14px;
   font-weight: 700;
   font-family: inherit;

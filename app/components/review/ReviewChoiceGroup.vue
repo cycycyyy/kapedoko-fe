@@ -80,7 +80,7 @@ const emit = defineEmits<{
   border: 1px solid var(--kd-primary);
   border-radius: 8px;
   background: var(--kd-white);
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   font-family: inherit;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -92,14 +92,14 @@ const emit = defineEmits<{
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: var(--kd-primary);
+  background: var(--kd-accent);
   transform: scaleX(0);
   transform-origin: left center;
   transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .choice__option.is-on {
-  color: var(--kd-white);
+  color: var(--kd-ink);
 }
 
 .choice__option.is-on::before {
@@ -145,7 +145,7 @@ const emit = defineEmits<{
 }
 
 .choice__option.is-on:focus-visible {
-  outline-color: var(--kd-white);
+  outline-color: var(--kd-ink);
   box-shadow: 0 0 0 4px var(--kd-primary);
 }
 

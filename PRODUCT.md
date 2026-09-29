@@ -34,7 +34,7 @@ Used on a phone, often while already out or about to leave: search a shop by nam
 
 ## Brand Commitments
 
-Name is **KapeDoko**, also styled **kapé DOKO** in the wordmark. Keep existing logo and wordmark assets (dark/light marks, horizontal text, stacked text, SVG lockup, home watermark). Do not invent a different product name.
+Name is **KapeDoko**, also styled **kapé DOKO**. Do not invent a different product name. The standing visual preference is a clean coffee-shop identity. The first proof is a specialty bag label on Home and the shared header and menu: matte stock, ink, one coffee brown, facts in words.
 
 ## Evidence on Hand
 

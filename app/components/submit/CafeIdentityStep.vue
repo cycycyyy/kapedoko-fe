@@ -163,7 +163,7 @@ onBeforeUnmount(revoke)
   display: flex;
   align-items: flex-start;
   gap: 9px;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
 }
 
 .identity__mark {
@@ -176,7 +176,7 @@ onBeforeUnmount(revoke)
 #identity-title {
   margin: 0;
   min-width: 0;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   font-size: 24px;
   font-weight: 700;
   line-height: 1.2;
@@ -215,7 +215,7 @@ onBeforeUnmount(revoke)
   display: flex;
   flex-direction: column;
   gap: 8px;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   font-size: 12px;
   font-weight: 700;
 }
@@ -257,7 +257,7 @@ onBeforeUnmount(revoke)
 
 .identity__logo-label {
   margin: 0;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   font-size: 12px;
   font-weight: 700;
 }
@@ -279,7 +279,7 @@ onBeforeUnmount(revoke)
   border: 0;
   border-radius: 8px;
   background: var(--kd-secondary);
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   cursor: pointer;
   transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -314,7 +314,7 @@ onBeforeUnmount(revoke)
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--kd-primary);
+  color: var(--kd-ink);
   font-size: 12px;
   font-weight: 700;
   font-family: inherit;

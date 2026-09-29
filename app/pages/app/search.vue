@@ -2,17 +2,11 @@
   <IonPage>
     <IonContent class="search-content">
       <div class="search">
-        <header class="search-hero">
-          <img
-            src="/assets/home-watermark.png"
-            alt=""
-            class="search-hero__watermark"
-          />
-
-          <div class="search-hero__bar">
+        <header class="search-chrome">
+          <div class="search-chrome__bar">
             <button
               type="button"
-              class="search-hero__back"
+              class="search-chrome__back"
               aria-label="Back to Home"
               @click="goBack"
             >
@@ -23,6 +17,7 @@
 
           <form class="search-form" @submit.prevent="submitSearch">
             <label class="search-form__field">
+              <Search :size="18" :stroke-width="2.25" aria-hidden="true" />
               <span class="sr-only">Search a coffee shop</span>
               <input
                 v-model="query"
@@ -33,10 +28,6 @@
                 enterkeyhint="search"
               />
             </label>
-
-            <button type="submit" class="search-form__submit" aria-label="Search">
-              <Search :size="24" :stroke-width="2" />
-            </button>
           </form>
         </header>
 
@@ -44,30 +35,53 @@
           {{ resultAnnouncement }}
         </p>
 
+        <div class="search-filters" role="tablist" aria-label="Cafe filters">
+          <button
+            v-for="filter in filters"
+            :key="filter.id"
+            type="button"
+            role="tab"
+            class="search-filters__chip"
+            :class="{ 'is-active': activeFilter === filter.id }"
+            :aria-selected="activeFilter === filter.id"
+            @click="activeFilter = filter.id"
+          >
+            <component :is="filterIcons[filter.icon]" :size="14" :stroke-width="2.25" aria-hidden="true" />
+            {{ filter.label }}
+          </button>
+        </div>
+
         <Transition name="search-list" mode="out-in">
           <section :key="listKey" class="search-results" aria-label="Search results">
-            <p v-if="status === 'idle' || status === 'loading'" class="search-end">Loading coffee shops…</p>
-            <p v-else-if="status === 'error'" class="search-end">
-              {{ error || 'Could not load coffee shops.' }}
-              <button type="button" class="search-retry" @click="refresh">Try again</button>
-            </p>
-            <CafeCard
-              v-for="cafe in visibleCafes"
-              v-else
-              :key="cafe.id"
-              :cafe="cafe"
-              :distance-label="distanceLabel(cafe)"
-              @select="openCafe"
-            />
-
-            <div
-              v-if="status === 'ready'"
-              class="search-end"
-              :class="{ 'is-empty': visibleCafes.length === 0 }"
-            >
-              <Coffee :size="36" :stroke-width="1.5" aria-hidden="true" />
-              <p>{{ endCopy }}</p>
+            <div v-if="status === 'idle' || status === 'loading'" class="search-skeletons" aria-busy="true">
+              <p class="sr-only">Loading coffee shops…</p>
+              <span class="search-skeleton" />
+              <span class="search-skeleton" />
+              <span class="search-skeleton" />
             </div>
+            <p v-else-if="status === 'error'" class="search-empty">
+              <CircleAlert :size="18" :stroke-width="2.25" aria-hidden="true" />
+              <span>{{ error || 'Could not load coffee shops.' }}</span>
+              <button type="button" class="search-retry" @click="refresh">
+                <RefreshCw :size="16" :stroke-width="2.25" aria-hidden="true" />
+                Try again
+              </button>
+            </p>
+            <p v-else-if="visibleCafes.length === 0" class="search-empty">
+              <Coffee :size="18" :stroke-width="2.25" aria-hidden="true" />
+              <span>{{ emptyCopy }}</span>
+            </p>
+            <template v-else>
+              <CafeCard
+                v-for="(cafe, index) in pagedCafes"
+                :key="cafe.id"
+                :cafe="cafe"
+                :distance-label="distanceLabel(cafe)"
+                :style="{ '--enter': String(index % 12) }"
+                @select="openCafe"
+              />
+              <p v-if="hasMoreCafes" ref="moreCafes" class="search-more">Scroll for more</p>
+            </template>
           </section>
         </Transition>
       </div>
@@ -77,19 +91,32 @@
 
 <script lang="ts" setup>
 import { onIonViewWillEnter } from '@ionic/vue'
-import { ChevronLeft, Coffee, Search } from 'lucide-vue-next'
+import { BatteryCharging, ChevronLeft, CircleAlert, Coffee, Flame, Hourglass, Navigation, Plug, RefreshCw, Search, Wifi, Zap } from 'lucide-vue-next'
 import CafeCard from '~/components/cafe/CafeCard.vue'
 import type { Cafe } from '~/types/cafe'
-import { filterCafes } from '~/utils/cafe-filters'
+import { CAFE_FILTERS, filterCafes, type CafeFilterIcon, type CafeFilterId } from '~/utils/cafe-filters'
 import { distanceMeters, formatDistance } from '~/utils/geo'
 
 const { cafes, status, error, refresh } = useApprovedShops()
 const { status: locationStatus, location, usingFallback, requestLocation } = useDeviceLocation()
 
+const filterIcons: Record<CafeFilterIcon, typeof Navigation> = {
+  navigation: Navigation,
+  flame: Flame,
+  wifi: Wifi,
+  plug: Plug,
+  hourglass: Hourglass,
+  zap: Zap,
+  'battery-charging': BatteryCharging,
+}
+
+const filters = CAFE_FILTERS
+
 const route = useRoute()
 const requestURL = useRequestURL()
 const query = ref('')
 const submittedQuery = ref('')
+const activeFilter = ref<CafeFilterId>('near')
 
 const readQueryParam = (value: unknown) => {
   if (typeof value === 'string') return value
@@ -125,7 +152,7 @@ watch(() => route.fullPath, syncFromRoute)
 onIonViewWillEnter(syncFromRoute)
 onMounted(syncFromRoute)
 
-const listKey = computed(() => submittedQuery.value.trim().toLowerCase())
+const listKey = computed(() => `${submittedQuery.value.trim().toLowerCase()}|${activeFilter.value}`)
 
 const origin = computed(() => (
   locationStatus.value === 'granted' && location.value && !usingFallback.value
@@ -135,8 +162,15 @@ const origin = computed(() => (
 
 const visibleCafes = computed(() => filterCafes(cafes.value, {
   query: submittedQuery.value,
+  filter: activeFilter.value,
   origin: origin.value,
 }))
+
+const {
+  slice: pagedCafes,
+  hasMore: hasMoreCafes,
+  sentinel: moreCafes,
+} = useInfiniteWindow(visibleCafes, listKey)
 
 const distanceLabel = (cafe: Cafe) => {
   if (!origin.value) return undefined
@@ -153,7 +187,15 @@ const resultAnnouncement = computed(() => {
   return count === 1 ? '1 coffee shop found.' : `${count} coffee shops found.`
 })
 
-const endCopy = 'No coffee beans left'
+const emptyCopy = computed(() => {
+  const hasQuery = submittedQuery.value.trim().length > 0
+  if (hasQuery) {
+    return 'No coffee shops match that search. Try another name or clear a filter.'
+  }
+  return cafes.value.length === 0
+    ? 'No coffee shops yet.'
+    : 'No coffee shops match that filter. Try another filter.'
+})
 
 const submitSearch = async () => {
   const next = query.value.trim()
@@ -175,7 +217,7 @@ onMounted(() => {
 
 <style scoped>
 .search-content {
-  --background: var(--kd-white);
+  --background: #f2f2f2;
   --padding-start: 0;
   --padding-end: 0;
   --padding-top: 0;
@@ -193,42 +235,31 @@ onMounted(() => {
   flex: 1 1 auto;
   flex-direction: column;
   min-height: 100%;
-  background: var(--kd-white);
+  background: #f2f2f2;
+  color: var(--kd-ink);
+  caret-color: var(--kd-primary);
   padding-bottom: calc(2rem + env(safe-area-inset-bottom));
   container-type: inline-size;
   container-name: search;
 }
 
-.search-hero {
+.search-chrome {
   position: sticky;
   top: 0;
   z-index: 2;
-  overflow: hidden;
-  background: var(--kd-primary);
-  color: var(--kd-white);
-  padding: max(2.75rem, calc(env(safe-area-inset-top) + 16px)) 20px 20px;
+  background: #f2f2f2;
+  padding: max(16px, env(safe-area-inset-top)) 20px 0;
 }
 
-.search-hero__watermark {
-  position: absolute;
-  top: -15px;
-  right: -9px;
-  width: 199px;
-  height: 259px;
-  pointer-events: none;
-  user-select: none;
-}
-
-.search-hero__bar {
-  position: relative;
-  z-index: 1;
+.search-chrome__bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-height: 30px;
+  gap: 4px;
+  min-height: 44px;
+  margin: 0 0 8px;
 }
 
-.search-hero__back {
+.search-chrome__back {
   display: grid;
   place-items: center;
   width: 44px;
@@ -237,65 +268,57 @@ onMounted(() => {
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--kd-white);
+  color: var(--kd-ink);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.search-hero__back:focus-visible {
-  outline: 2px solid var(--kd-white);
+.search-chrome__back:focus-visible {
+  outline: 2px solid var(--kd-primary);
   outline-offset: 2px;
   border-radius: 8px;
 }
 
-.search-hero h1 {
+.search-chrome h1 {
   margin: 0;
-  color: var(--kd-white);
-  font-size: 24px;
+  color: var(--kd-ink);
+  font-size: clamp(0.95rem, 3.8vw, 1.05rem);
   font-weight: 700;
   line-height: 1.2;
+  letter-spacing: -0.02em;
 }
 
 .search-form {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: stretch;
-  flex-wrap: nowrap;
-  gap: 9px;
-  margin-top: 21px;
+  margin: 0 0 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--kd-ink) 28%, transparent);
 }
 
 .search-form__field {
   display: flex;
   align-items: center;
-  flex: 1;
-  min-width: 0;
-  height: 50px;
-  padding: 0 16px;
-  border-radius: 8px;
-  background: var(--kd-white);
+  gap: 8px;
+  padding: 0 12px;
   color: var(--kd-ink);
 }
 
 .search-form__field input {
   width: 100%;
+  height: 46px;
+  padding: 0;
   border: 0;
   background: transparent;
   color: var(--kd-ink);
-  font-size: 12px;
   font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-align: left;
   caret-color: var(--kd-primary);
-}
-
-.search-form__field input::-webkit-search-decoration,
-.search-form__field input::-webkit-search-cancel-button {
-  -webkit-appearance: none;
 }
 
 .search-form__field input::placeholder {
   color: var(--kd-ink-50);
+  opacity: 1;
 }
 
 .search-form__field input:focus {
@@ -303,196 +326,153 @@ onMounted(() => {
 }
 
 .search-form__field:focus-within {
-  box-shadow: 0 0 0 2px var(--kd-white), 0 0 0 4px var(--kd-primary);
+  box-shadow: inset 0 -1px 0 var(--kd-primary);
 }
 
-.search-form__submit {
-  display: grid;
-  place-items: center;
-  flex: 0 0 63px;
-  width: 63px;
-  height: 50px;
-  padding: 0;
-  border: 0;
-  border-radius: 8px;
-  background: var(--kd-white);
-  color: var(--kd-black);
-  line-height: 0;
+.search-form__field input::-webkit-search-decoration,
+.search-form__field input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+
+.search-filters {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 8px 20px 12px;
+  background: #f2f2f2;
+}
+
+.search-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.search-filters__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  min-width: 0;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 16px;
+  background: transparent;
+  color: var(--kd-ink);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  white-space: nowrap;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: opacity 140ms cubic-bezier(0.16, 1, 0.3, 1),
-    transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.search-form__submit :deep(svg) {
-  display: block;
+.search-filters__chip.is-active {
+  background: var(--kd-accent);
+  color: var(--kd-ink);
+  border-color: var(--kd-accent);
+  font-weight: 700;
 }
 
-.search-form__submit:focus-visible {
-  outline: 2px solid var(--kd-white);
-  outline-offset: 2px;
+.search-filters__chip:active {
+  box-shadow: inset 0 3px 0 color-mix(in srgb, var(--kd-ink) 35%, transparent);
+}
+
+.search-filters__chip.is-active:active {
+  box-shadow: inset 0 3px 0 color-mix(in srgb, var(--kd-ink) 22%, transparent);
+}
+
+.search-filters__chip:focus-visible {
+  outline: 2px solid var(--kd-primary);
+  outline-offset: -4px;
 }
 
 .search-results {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
-  gap: 14px;
-  padding: 20px 20px 0;
+  gap: 0;
+  padding: 0;
+  background: #f2f2f2;
 }
 
-.cafe-card {
-  display: flex;
-  min-height: 100px;
-  border-radius: 8px;
-  background: var(--kd-white);
-  box-shadow: 0 0 8px var(--kd-shadow);
-  transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.cafe-card__photo {
-  width: 90px;
-  height: 100px;
-  flex-shrink: 0;
-  overflow: hidden;
-  border-radius: 8px 0 0 8px;
-  background: var(--kd-secondary);
-}
-
-.cafe-card__photo img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.cafe-card__photo.is-broken img {
-  display: none;
-}
-
-.cafe-card__body {
-  flex: 1;
-  min-width: 0;
-  padding: 11px 13px 10px 15px;
-}
-
-.cafe-card__meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.cafe-card__stars {
-  display: flex;
-  flex-shrink: 0;
-  gap: 2px;
-  color: var(--kd-black);
-}
-
-.cafe-card__status {
-  margin: 0;
-  min-width: 0;
-  flex: 1 1 auto;
-  overflow: hidden;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1.2;
-  text-align: right;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.cafe-card__status.is-open {
-  color: var(--kd-success);
-}
-
-.cafe-card__status.is-closed {
-  color: var(--kd-destructive);
-}
-
-.cafe-card h2 {
-  margin: 3px 0 0;
-  overflow: hidden;
-  color: var(--kd-ink);
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.375;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.cafe-card__address {
-  margin: 0;
-  overflow: hidden;
-  color: var(--kd-ink-50);
-  font-size: 12px;
-  line-height: 1.35;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.cafe-card__amenities,
-.cafe-card__none {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  margin: 8px 0 0;
-  color: var(--kd-ink);
-}
-
-.cafe-card__none {
-  color: var(--kd-ink-25);
-  font-size: 10px;
-  font-style: italic;
-}
-
-.search-end {
+.search-skeletons {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 28px 12px 12px;
-  color: var(--kd-gray);
 }
 
-.search-end.is-empty {
-  flex: 1 1 auto;
-  justify-content: center;
-  padding: 12px;
+.search-skeleton {
+  display: block;
+  height: 128px;
+  margin: 0 20px 12px;
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 12%, transparent);
+  border-radius: 16px;
+  background: linear-gradient(
+    90deg,
+    var(--kd-white) 0%,
+    color-mix(in srgb, var(--kd-ink) 8%, var(--kd-white)) 50%,
+    var(--kd-white) 100%
+  );
+  background-size: 200% 100%;
+  animation: bag-shimmer 1.1s ease-in-out infinite;
+}
+
+.search-skeleton:nth-child(3) {
+  animation-delay: 120ms;
+}
+
+.search-skeleton:nth-child(4) {
+  animation-delay: 240ms;
+}
+
+.search-empty {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 4px 20px 12px;
+  color: var(--kd-ink);
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.3;
+  text-align: left;
 }
 
 .search-retry {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   min-height: 44px;
-  margin-top: 8px;
-  padding: 0 16px;
-  border: 0;
-  border-radius: 8px;
-  background: var(--kd-primary);
-  color: var(--kd-white);
-  font-size: 14px;
-  font-weight: 700;
+  margin-left: auto;
+  padding: 0 12px;
+  border: 1px solid var(--kd-primary);
+  background: transparent;
+  color: var(--kd-primary);
   font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
   cursor: pointer;
 }
 
-.search-end p {
+.search-retry:focus-visible {
+  outline: 2px solid var(--kd-primary);
+  outline-offset: 3px;
+}
+
+.search-more {
   margin: 0;
-  font-size: 12px;
-  line-height: 1.35;
+  padding: 12px 12px 14px;
+  color: var(--kd-ink);
+  font-size: 0.8rem;
+  font-weight: 700;
   text-align: center;
 }
 
-.search-hero__back:active,
-.search-form__submit:active {
+.search-chrome__back:active {
   transform: scale(0.94);
-}
-
-.cafe-card:active {
-  transform: scale(0.99);
 }
 
 .search-list-enter-active,
@@ -517,10 +497,9 @@ onMounted(() => {
   border: 0;
 }
 
-@media (hover: hover) {
-  .search-form__submit:hover {
-    opacity: 0.92;
-  }
+@keyframes bag-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
 }
 
 @media (min-width: 540px) {
@@ -531,23 +510,26 @@ onMounted(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .search-hero__back,
-  .search-form__submit,
-  .cafe-card,
+  .search-chrome__back,
+  .search-filters__chip,
   .search-list-enter-active,
   .search-list-leave-active {
     transition-duration: 1ms;
   }
 
-  .search-hero__back:active,
-  .search-form__submit:active,
-  .cafe-card:active {
+  .search-skeleton,
+  .search-filters__chip:active {
+    animation: none;
+    box-shadow: none;
+  }
+
+  .search-chrome__back:active {
     transform: none;
   }
 }
 
 ::selection {
-  background: var(--kd-secondary);
-  color: var(--kd-primary);
+  background: var(--kd-accent);
+  color: var(--kd-ink);
 }
 </style>
