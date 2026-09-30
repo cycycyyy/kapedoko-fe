@@ -4,6 +4,7 @@ export type AdminNavId =
   | 'dashboard'
   | 'cafes'
   | 'requests'
+  | 'claims'
   | 'partnerships'
   | 'ads'
   | 'users'
@@ -19,6 +20,7 @@ export interface AdminDashboardCounts {
   pending: number
   approved: number
   rejected: number
+  pendingClaims: number
   openReports: number
   activePlacements: number
   activeAds: number

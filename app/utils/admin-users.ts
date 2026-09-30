@@ -10,7 +10,7 @@ export function roleChangeError(input: {
   if (!input.actorId) return 'Sign in as an admin to change roles.'
   if (input.actorId === input.targetId) return 'You cannot change your own role.'
   if (input.nextRole === input.targetRole) return null
-  if (input.targetRole === 'admin' && input.nextRole === 'user' && input.adminCount <= 1) {
+  if (input.targetRole === 'admin' && input.nextRole !== 'admin' && input.adminCount <= 1) {
     return 'Cannot demote the last admin.'
   }
   return null

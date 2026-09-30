@@ -6,13 +6,23 @@
       :status="status"
       :error="error"
     >
-      <form class="admin-panel admin-form" @submit.prevent="onSave">
+      <form ref="formRef" class="admin-panel admin-form" @submit.prevent="onSave">
         <label class="admin-field">
           Cafe
-          <select v-model="draft.shopId" required>
-            <option value="" disabled>Choose an approved cafe</option>
-            <option v-for="shop in approved" :key="shop.id" :value="shop.id">{{ shop.name }}</option>
-          </select>
+          <AdminSearchPicker
+            v-model="draft.shopId"
+            :options="cafeOptions"
+            :status="pickerStatus"
+            title="Choose an approved cafe"
+            placeholder="Choose an approved cafe"
+            search-placeholder="Search cafe name or address"
+            empty-copy="No approved cafes yet."
+            no-match-copy="No cafes match that search."
+            loading-copy="Loading cafes…"
+            error-copy="Could not load cafes."
+            item-label="cafe"
+            required
+          />
         </label>
         <label class="admin-field">
           Internal label
@@ -37,9 +47,23 @@
         <p v-if="preview" class="admin-span">
           <img :src="preview" alt="Banner preview" width="640" height="200" class="ad-preview" />
         </p>
+        <p v-if="editingId && !draft.file" class="admin-meta admin-span">
+          Using the current banner. Choose a file only to replace it.
+        </p>
         <div class="admin-span admin-row-actions">
           <p v-if="formError" class="admin-error">{{ formError }}</p>
-          <button class="admin-btn" type="submit" :disabled="saving">Schedule banner</button>
+          <button class="admin-btn" type="submit" :disabled="saving">
+            {{ editingId ? 'Save changes' : 'Schedule banner' }}
+          </button>
+          <button
+            v-if="editingId"
+            type="button"
+            class="admin-btn admin-btn--quiet"
+            :disabled="saving"
+            @click="cancelEdit"
+          >
+            Cancel edit
+          </button>
         </div>
       </form>
 
@@ -59,14 +83,24 @@
               <td>{{ formatAdminDate(ad.starts_at) }} – {{ formatAdminDate(ad.ends_at) }}</td>
               <td>{{ adState(ad) }}</td>
               <td>
-                <button
-                  v-if="ad.enabled && !ad.cancelled_at"
-                  type="button"
-                  class="admin-btn admin-btn--ghost"
-                  @click="cancelAd(ad.id)"
-                >
-                  End now
-                </button>
+                <div class="admin-row-actions">
+                  <button
+                    v-if="canEdit(ad)"
+                    type="button"
+                    class="admin-link"
+                    @click="startEdit(ad)"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    v-if="ad.enabled && !ad.cancelled_at"
+                    type="button"
+                    class="admin-btn admin-btn--quiet"
+                    @click="cancelAd(ad.id)"
+                  >
+                    End now
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -78,14 +112,24 @@
           <h2>{{ shopName(ad.shop_id) }}</h2>
           <p>{{ formatAdminDate(ad.starts_at) }} – {{ formatAdminDate(ad.ends_at) }}</p>
           <p>{{ adState(ad) }}</p>
-          <button
-            v-if="ad.enabled && !ad.cancelled_at"
-            type="button"
-            class="admin-btn admin-btn--ghost"
-            @click="cancelAd(ad.id)"
-          >
-            End now
-          </button>
+          <div class="admin-row-actions">
+            <button
+              v-if="canEdit(ad)"
+              type="button"
+              class="admin-link"
+              @click="startEdit(ad)"
+            >
+              Edit
+            </button>
+            <button
+              v-if="ad.enabled && !ad.cancelled_at"
+              type="button"
+              class="admin-btn admin-btn--quiet"
+              @click="cancelAd(ad.id)"
+            >
+              End now
+            </button>
+          </div>
         </article>
       </div>
     </AdminShell>
@@ -93,32 +137,46 @@
 </template>
 
 <script lang="ts" setup>
+import AdminSearchPicker from '~/components/admin/AdminSearchPicker.vue'
 import AdminShell from '~/components/admin/AdminShell.vue'
 import type { AdCampaignRow } from '~/types/admin'
 import { bannerAspectError, bannerFileError, campaignWindowError, isAdCampaignActive } from '~/utils/admin-ads'
 import { formatAdminDate, toLocalInput } from '~/utils/admin-nav'
+import { cafePickerOptions } from '~/utils/admin-picker'
+import { publicObjectUrl } from '~/utils/shop-mapper'
 
 definePageMeta({
   middleware: ['auth', 'admin'],
 })
 
 const admin = useAdminData()
+const config = useRuntimeConfig()
+const publicBase = String(config.public.r2PublicBaseUrl || '')
 const { shops, ads, status, error, load, saveAd, cancelAd } = admin
-const now = new Date()
-const later = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000)
-const draft = reactive({
+const formRef = ref<HTMLFormElement | null>(null)
+const emptyDraft = () => ({
   shopId: '',
   label: '',
-  startsAt: toLocalInput(now),
-  endsAt: toLocalInput(later),
+  startsAt: toLocalInput(new Date()),
+  endsAt: toLocalInput(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)),
   priority: 0,
   file: null as File | null,
+  bannerObjectKey: null as string | null,
 })
+const draft = reactive(emptyDraft())
 const preview = ref('')
+const previewIsBlob = ref(false)
 const formError = ref('')
 const saving = ref(false)
-const approved = computed(() => shops.value.filter((shop) => shop.status === 'approved'))
+const editingId = ref('')
+const cafeOptions = computed(() => cafePickerOptions(shops.value))
+const pickerStatus = computed(() => {
+  if (status.value === 'ready') return 'ready' as const
+  if (status.value === 'error' || status.value === 'forbidden') return 'error' as const
+  return 'loading' as const
+})
 const shopName = (id: string) => shops.value.find((shop) => shop.id === id)?.name ?? id
+const editingAd = computed(() => ads.value.find((ad) => ad.id === editingId.value) ?? null)
 
 const adState = (ad: AdCampaignRow) => {
   if (ad.cancelled_at || !ad.enabled) return 'ended'
@@ -127,42 +185,96 @@ const adState = (ad: AdCampaignRow) => {
   return 'ended'
 }
 
+const canEdit = (ad: AdCampaignRow) => adState(ad) !== 'ended'
+
+const clearPreview = () => {
+  if (previewIsBlob.value && preview.value) URL.revokeObjectURL(preview.value)
+  preview.value = ''
+  previewIsBlob.value = false
+}
+
+const resetDraft = () => {
+  Object.assign(draft, emptyDraft())
+  editingId.value = ''
+  formError.value = ''
+  clearPreview()
+}
+
+const startEdit = (ad: AdCampaignRow) => {
+  clearPreview()
+  editingId.value = ad.id
+  draft.shopId = ad.shop_id
+  draft.label = ad.label ?? ''
+  draft.startsAt = toLocalInput(new Date(ad.starts_at))
+  draft.endsAt = toLocalInput(new Date(ad.ends_at))
+  draft.priority = ad.priority
+  draft.file = null
+  draft.bannerObjectKey = ad.banner_object_key
+  preview.value = publicObjectUrl(ad.banner_object_key, publicBase) ?? ''
+  formError.value = ''
+  formRef.value?.scrollIntoView({ block: 'start' })
+}
+
+const cancelEdit = () => {
+  resetDraft()
+}
+
 const onFile = async (event: Event) => {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0] ?? null
-  formError.value = bannerFileError(file)
-  draft.file = formError.value ? null : file
-  if (preview.value) URL.revokeObjectURL(preview.value)
-  preview.value = file ? URL.createObjectURL(file) : ''
-  if (file && !formError.value) {
-    const image = new Image()
-    image.src = preview.value
-    await new Promise((resolve) => {
-      image.onload = resolve
-      image.onerror = resolve
-    })
-    formError.value = bannerAspectError(image.naturalWidth, image.naturalHeight) ?? ''
-    if (formError.value) draft.file = null
+  if (!file) return
+  const issue = bannerFileError(file)
+  if (issue) {
+    input.value = ''
+    formError.value = issue
+    return
+  }
+  formError.value = ''
+  clearPreview()
+  draft.file = file
+  preview.value = URL.createObjectURL(file)
+  previewIsBlob.value = true
+  const image = new Image()
+  image.src = preview.value
+  await new Promise((resolve) => {
+    image.onload = resolve
+    image.onerror = resolve
+  })
+  formError.value = bannerAspectError(image.naturalWidth, image.naturalHeight) ?? ''
+  if (formError.value) {
+    draft.file = null
+    clearPreview()
+    if (draft.bannerObjectKey) preview.value = publicObjectUrl(draft.bannerObjectKey, publicBase) ?? ''
   }
 }
 
 const onSave = async () => {
-  formError.value = campaignWindowError(draft.startsAt, draft.endsAt) ?? bannerFileError(draft.file) ?? ''
+  if (!draft.shopId) {
+    formError.value = 'Choose an approved cafe.'
+    return
+  }
+  formError.value = campaignWindowError(draft.startsAt, draft.endsAt)
+    ?? bannerFileError(draft.file, !draft.bannerObjectKey)
+    ?? ''
   if (formError.value) return
   saving.value = true
   try {
-    await saveAd({
+    const saved = await saveAd({
+      id: editingId.value || undefined,
       shop_id: draft.shopId,
       bannerFile: draft.file,
+      banner_object_key: draft.bannerObjectKey,
       starts_at: draft.startsAt,
       ends_at: draft.endsAt,
       label: draft.label,
       priority: Number(draft.priority) || 0,
-      enabled: true,
+      enabled: editingAd.value ? editingAd.value.enabled && !editingAd.value.cancelled_at : true,
     })
+    editingId.value = saved.id
     draft.file = null
-    if (preview.value) URL.revokeObjectURL(preview.value)
-    preview.value = ''
+    draft.bannerObjectKey = saved.banner_object_key
+    clearPreview()
+    preview.value = publicObjectUrl(saved.banner_object_key, publicBase) ?? ''
   } catch (err) {
     formError.value = err instanceof Error ? err.message : 'Could not save this ad.'
   } finally {
@@ -172,6 +284,10 @@ const onSave = async () => {
 
 onMounted(() => {
   void load()
+})
+
+onBeforeUnmount(() => {
+  if (previewIsBlob.value && preview.value) URL.revokeObjectURL(preview.value)
 })
 </script>
 

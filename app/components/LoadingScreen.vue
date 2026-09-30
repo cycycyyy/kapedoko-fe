@@ -1,21 +1,16 @@
 <template>
-  <div class="loading-container">
-    <div class="loading-content">
+  <div class="splash" role="status" aria-live="polite" aria-label="Loading KapeDoko">
+    <div class="splash__stack">
       <img
         :src="logo"
-        alt="KapeDoko Logo"
-        class="logo"
+        alt=""
+        class="splash__mark"
         width="140"
         height="97"
       />
-
-      <!-- Animated Dots -->
-      <div class="dots-container">
-        <div class="dot"></div>
-        <div class="dot"></div>
-        <div class="dot"></div>
-        <div class="dot"></div>
-      </div>
+      <span class="splash__rule" aria-hidden="true">
+        <span class="splash__rule-fill" />
+      </span>
     </div>
   </div>
 </template>
@@ -25,59 +20,68 @@ import logo from '~/assets/css/logos/kapedoko-logo-typography.svg'
 </script>
 
 <style scoped>
-.loading-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
   width: 100%;
   min-height: 100dvh;
   height: 100dvh;
-  background-color: var(--kd-white); /* White background as per design */
+  padding:
+    env(safe-area-inset-top)
+    20px
+    env(safe-area-inset-bottom);
+  background: #faf8f5;
 }
 
-.loading-content {
-  text-align: center;
-}
-
-.logo {
-  margin: 0 auto 2rem; /* Space below the logo */
-  display: block;
-}
-
-.dots-container {
+.splash__stack {
   display: flex;
-  justify-content: center;
-  gap: 0.5rem; /* Space between dots */
+  flex-direction: column;
+  align-items: center;
 }
 
-.dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background-color: var(--kd-accent); /* Brand accent pulse */
-  animation: pulse 1.5s infinite ease-in-out;
+.splash__mark {
+  display: block;
+  width: min(168px, 52vw);
+  height: auto;
 }
 
-.dot:nth-child(2) {
-  animation-delay: 0.2s;
+.splash__rule {
+  display: block;
+  width: 72px;
+  height: 3px;
+  margin-top: 28px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--kd-ink) 12%, transparent);
 }
 
-.dot:nth-child(3) {
-  animation-delay: 0.4s;
+.splash__rule-fill {
+  display: block;
+  width: 42%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--kd-accent);
+  animation: splash-rule 1.15s cubic-bezier(0.16, 1, 0.3, 1) infinite;
 }
 
-.dot:nth-child(4) {
-  animation-delay: 0.6s;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
+@keyframes splash-rule {
+  0% {
+    transform: translateX(-130%);
   }
-  50% {
-    opacity: 0.5;
-    transform: scale(0.85);
+
+  100% {
+    transform: translateX(250%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash__rule-fill {
+    width: 100%;
+    animation: none;
+    transform: none;
   }
 }
 </style>

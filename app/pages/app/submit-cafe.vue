@@ -211,8 +211,10 @@ const validateIdentity = () => {
 
 const validateLocation = () => {
   issues.address = addressError(draft.address)
-  if (draft.lat == null || draft.lng == null || !isInCoverage({ lat: draft.lat, lng: draft.lng })) {
-    issues.address = issues.address || 'Metro Manila only for now. Pin the cafe inside Metro Manila.'
+  if (draft.lat == null || draft.lng == null) {
+    issues.address = issues.address || 'Pin the cafe on the map.'
+  } else if (!isInCoverage({ lat: draft.lat, lng: draft.lng })) {
+    issues.address = issues.address || 'Pin the cafe inside the Philippines.'
   }
   return !issues.address
 }

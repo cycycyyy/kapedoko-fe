@@ -13,6 +13,7 @@
           <Heart :size="18" :stroke-width="1.75" :fill="saved ? 'currentColor' : 'none'" />
         </button>
         <a
+          v-if="variant !== 'page'"
           class="cafe-detail__navigate"
           :href="mapsHref"
           target="_blank"
@@ -47,7 +48,7 @@
         </span>
       </p>
 
-      <p v-if="cafe.reviews.length === 0" class="cafe-detail__prompt">
+      <p v-if="variant !== 'page' && cafe.reviews.length === 0" class="cafe-detail__prompt">
         Not yet reviewed, add your review?
       </p>
 
@@ -77,6 +78,31 @@
           </p>
           <p class="cafe-detail__hours">{{ cafe.hoursHint }}</p>
         </div>
+        <a
+          v-if="variant !== 'page' && cafe.phone"
+          class="cafe-detail__call"
+          :href="`tel:${cafe.phone}`"
+        >
+          <span class="cafe-detail__action-face cafe-detail__action-face--quiet">
+            <Phone :size="16" :stroke-width="2" aria-hidden="true" />
+            Call this Cafe
+          </span>
+        </a>
+      </div>
+
+      <div v-if="variant === 'page'" class="cafe-detail__page-actions">
+        <a
+          class="cafe-detail__navigate"
+          :href="mapsHref"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Navigate to this cafe in Google Maps"
+        >
+          <span class="cafe-detail__action-face cafe-detail__action-face--primary">
+            <Navigation :size="16" :stroke-width="2.25" aria-hidden="true" />
+            Navigate to this Cafe
+          </span>
+        </a>
         <a
           v-if="cafe.phone"
           class="cafe-detail__call"
@@ -326,10 +352,84 @@ const selectPhoto = (index: number) => {
 }
 
 .cafe-detail--page {
+  display: block;
+  width: auto;
+  max-width: 100%;
   height: auto;
   min-height: 100%;
+  overflow-x: clip;
   padding-top: 0;
   background: #f2f2f2;
+}
+
+.cafe-detail--page .cafe-detail__header {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: auto;
+  max-width: 100%;
+  padding: 4px 20px 0;
+  background: #faf8f5;
+}
+
+.cafe-detail--page .cafe-detail__header > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.cafe-detail--page .cafe-detail__title-row { order: 1; }
+.cafe-detail--page .cafe-detail__address { order: 2; }
+.cafe-detail--page .cafe-detail__actions { order: 3; }
+.cafe-detail--page .cafe-detail__crowd,
+.cafe-detail--page .cafe-detail__prompt,
+.cafe-detail--page .cafe-detail__amenities-inline { order: 4; }
+.cafe-detail--page .cafe-detail__rating { order: 5; }
+.cafe-detail--page .cafe-detail__page-actions { order: 6; }
+
+.cafe-detail--page .cafe-detail__title-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 12px;
+}
+
+.cafe-detail--page .cafe-detail__header h2 {
+  font-size: 1.6rem;
+}
+
+.cafe-detail--page .cafe-detail__address,
+.cafe-detail--page .cafe-detail__hours,
+.cafe-detail--page .cafe-detail__prompt,
+.cafe-detail--page .cafe-detail__amenities-inline {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.cafe-detail--page .cafe-detail__address {
+  margin-top: 8px;
+  font-size: 0.7875rem;
+  line-height: 1.4;
+}
+
+.cafe-detail--page .cafe-detail__actions {
+  margin-top: 14px;
+}
+
+.cafe-detail__page-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.cafe-detail__page-actions .cafe-detail__navigate,
+.cafe-detail__page-actions .cafe-detail__call {
+  display: flex;
+  width: 100%;
+}
+
+.cafe-detail__page-actions .cafe-detail__action-face {
+  width: 100%;
 }
 
 .cafe-detail__header {
@@ -570,7 +670,31 @@ const selectPhoto = (index: number) => {
 .cafe-detail--page .cafe-detail__scroll {
   flex: none;
   overflow: visible;
-  padding-bottom: calc(28px + env(safe-area-inset-bottom));
+  padding: 0 0 12px;
+}
+
+.cafe-detail--page .cafe-detail__gallery {
+  padding: 16px 20px 20px;
+  background: #faf8f5;
+  border-bottom: 1px solid color-mix(in srgb, var(--kd-ink) 16%, transparent);
+}
+
+.cafe-detail--page .cafe-detail__hero {
+  height: 220px;
+}
+
+.cafe-detail--page .cafe-detail__insight,
+.cafe-detail--page .cafe-detail__review-block,
+.cafe-detail--page .cafe-detail__reviews,
+.cafe-detail--page .cafe-detail__scroll > .cafe-detail__prompt {
+  margin-right: 20px;
+  margin-left: 20px;
+}
+
+.cafe-detail--page .cafe-detail__leave {
+  border-color: var(--kd-accent);
+  background: var(--kd-accent);
+  color: var(--kd-ink);
 }
 
 .cafe-detail__hero {
@@ -774,7 +898,8 @@ const selectPhoto = (index: number) => {
   line-height: 1.4;
 }
 
-:root.is-android .cafe-detail__leave {
+:root.is-android .cafe-detail__leave,
+:root.is-android .cafe-detail__page-actions .cafe-detail__action-face {
   min-height: 48px;
 }
 
@@ -808,6 +933,11 @@ const selectPhoto = (index: number) => {
 
   .cafe-detail__leave:hover {
     background: #faf8f5;
+  }
+
+  .cafe-detail--page .cafe-detail__leave:hover {
+    background: var(--kd-accent);
+    box-shadow: inset 0 3px 0 color-mix(in srgb, var(--kd-ink) 22%, transparent);
   }
 }
 

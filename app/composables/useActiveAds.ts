@@ -51,7 +51,7 @@ export function useActiveAds() {
           name,
           href: `/app/cafes/${row.shop_id}`,
           image,
-          label: row.label?.trim() || name,
+          label: row.label?.trim() || '',
         }]
       })
       status.value = 'ready'

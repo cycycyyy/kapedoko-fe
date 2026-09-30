@@ -2,6 +2,7 @@ export const ADMIN_NAV = [
   { id: 'dashboard', label: 'Dashboard', href: '/admin' },
   { id: 'cafes', label: 'Cafes', href: '/admin/cafes' },
   { id: 'requests', label: 'Requests', href: '/admin/requests' },
+  { id: 'claims', label: 'Claims', href: '/admin/claims' },
   { id: 'partnerships', label: 'Partnerships', href: '/admin/partnerships' },
   { id: 'ads', label: 'Ads', href: '/admin/ads' },
   { id: 'users', label: 'Users', href: '/admin/users' },
@@ -11,6 +12,7 @@ export const ADMIN_NAV = [
 export function adminNavIdFromPath(path: string): (typeof ADMIN_NAV)[number]['id'] {
   if (path.startsWith('/admin/cafes')) return 'cafes'
   if (path.startsWith('/admin/requests')) return 'requests'
+  if (path.startsWith('/admin/claims')) return 'claims'
   if (path.startsWith('/admin/partnerships')) return 'partnerships'
   if (path.startsWith('/admin/ads')) return 'ads'
   if (path.startsWith('/admin/users')) return 'users'

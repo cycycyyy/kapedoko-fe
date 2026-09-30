@@ -8,15 +8,18 @@
     "cap:sync": "bun run build:mobile && bunx cap sync",
     "cap:android": "bun run cap:sync && bunx cap open android",
     "cap:ios": "bun run cap:sync && bunx cap open ios",
+    "cap:icons": "bun scripts/generate-app-icons.ts && bunx @capacitor/assets generate --ios --android --assetPath resources --iconBackgroundColor '#FAF8F5' --iconBackgroundColorDark '#FAF8F5'",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "test": "bun test",
+    "import:osm": "bun scripts/import-osm-cafes.ts",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
     "@capacitor/core": "^8.5.1",
     "@capacitor/geolocation": "^8.2.2",
+    "@capacitor/preferences": "8.0.1",
     "@ionic/vue": "^8.8.19",
     "@ionic/vue-router": "^8.8.19",
     "@nuxt/image": "2.1.0",

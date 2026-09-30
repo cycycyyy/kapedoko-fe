@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import type { Cafe } from '../types/cafe'
 import { UNKNOWN_WORK } from './shop-mapper'
 import { cafeMatchesFilter, filterCafes } from './cafe-filters'
+import { destinationPoint } from './geo'
 
 function cafe(partial: Partial<Cafe> & Pick<Cafe, 'id' | 'name'>): Cafe {
   return {
@@ -64,5 +65,45 @@ describe('live cafe filters', () => {
     const near = filterCafes(shops, { filter: 'near', origin: { lat: 14.5547, lng: 121.0244 } })
     expect(near.map((item) => item.id)[0]).toBe('near')
     expect(near.map((item) => item.id)).toContain('new')
+  })
+
+  test('keeps every shop when Near You has no origin, even with a radius', () => {
+    const near = filterCafes(shops, {
+      filter: 'near',
+      radiusMeters: 5_000,
+    })
+    expect(near.map((item) => item.id).sort()).toEqual(['far', 'near', 'new'])
+  })
+
+  test('limits Near You to shops inside the selected radius, including the boundary', () => {
+    const origin = { lat: 14.5547, lng: 121.0244 }
+    const atFour = destinationPoint(origin, 4_000, 90)
+    const justOutside = destinationPoint(origin, 5_001, 180)
+    const shopsWithRange = [
+      shops[0]!,
+      cafe({ id: 'edge', name: 'Edge Cup', lat: atFour.lat, lng: atFour.lng }),
+      cafe({ id: 'beyond', name: 'Beyond Cup', lat: justOutside.lat, lng: justOutside.lng }),
+    ]
+
+    expect(filterCafes(shopsWithRange, {
+      filter: 'near',
+      origin,
+      radiusMeters: 0,
+    }).map((item) => item.id)).toEqual(['near'])
+
+    expect(filterCafes(shopsWithRange, {
+      filter: 'near',
+      origin,
+      radiusMeters: 5_000,
+    }).map((item) => item.id)).toEqual(['near', 'edge'])
+  })
+
+  test('ignores radius when the filter is not Near You', () => {
+    const origin = { lat: 14.5547, lng: 121.0244 }
+    expect(filterCafes(shops, {
+      filter: 'plugs',
+      origin,
+      radiusMeters: 5_000,
+    }).map((item) => item.id)).toEqual(['far', 'near'])
   })
 })

@@ -1,0 +1,136 @@
+{
+  "title": "How the admin desk is composed",
+  "question": "The bag-label world stays. The roll picked a find-first ledger so scanning stays as fast as today’s table. Lock a composition, steer, or re-roll.",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "Find-first clipboard",
+      "kicker": "THE ROLL",
+      "lineage": "Shop inventory clipboard with a pinned find strip",
+      "thesis": "Search owns the first viewport; cafes stay a dense ink ledger you can scan like the table you have now.",
+      "palette": ["#F2F2F2", "#FAF8F5", "#1c1917", "#1F6F6B", "#D9793B"],
+      "materials": ["matte stock", "ink hairlines", "16px label corners"],
+      "viewport": "Teal nav rail. Cafes title and orange Add cafe. A full-width find field. Status tabs as printed marks. Then a compact ledger of name, status word, address, updated, Edit, Unpublish.",
+      "risk": "On a short laptop screen the ledger starts lower than today’s table, so the find strip has to stay one line.",
+      "raised": [
+        { "from": "sneaker box stacks", "raise": "Each ledger row reads as an end-label: name, status word, origin — not a dump of spreadsheet cells." },
+        { "from": "iridescent cloud edge", "raise": "Status is an ink word with a hairline, never a pill." },
+        { "from": "jet-age ticket wallet", "raise": "Unpublish cancels a listing the way a VOID stamp cancels a coupon, instead of a second outline button competing with Edit." },
+        { "from": "oscilloscope bench", "raise": "One shared ledger grid holds every cafe; cards are only the narrow-phone fallback." }
+      ],
+      "wireframe": {
+        "cols": 12,
+        "rows": 10,
+        "regions": [
+          { "label": "nav", "x": 0, "y": 0, "w": 2, "h": 10, "accent": true },
+          { "label": "Cafes", "x": 2, "y": 0, "w": 7, "h": 1 },
+          { "label": "Add cafe", "x": 9, "y": 0, "w": 3, "h": 1, "accent": true },
+          { "label": "find", "x": 2, "y": 1, "w": 10, "h": 2, "accent": true },
+          { "label": "All Approved Pending Rejected", "x": 2, "y": 3, "w": 10, "h": 1 },
+          { "label": "ledger", "x": 2, "y": 4, "w": 10, "h": 6 }
+        ]
+      },
+      "comp": ".impeccable/mocks/decision/assigned.webp"
+    },
+    {
+      "id": "pending-rail",
+      "label": "Pending rail + ledger",
+      "lineage": "Back-of-house ticket rail over an approved ledger",
+      "thesis": "Today’s work sits on a short pending rail; the approved catalog stays a dense ledger underneath.",
+      "palette": ["#F2F2F2", "#FAF8F5", "#1c1917", "#1F6F6B", "#D9793B"],
+      "materials": ["matte stock", "ink hairlines", "ticket stubs"],
+      "viewport": "Nav rail. Title and Add cafe. A horizontal rail of pending names. Under it, the same compact approved ledger with search and status tabs.",
+      "risk": "All is two places at once, so finding an approved cafe is still fast, but pending work can steal the first glance.",
+      "wireframe": {
+        "cols": 12,
+        "rows": 10,
+        "regions": [
+          { "label": "nav", "x": 0, "y": 0, "w": 2, "h": 10, "accent": true },
+          { "label": "Cafes", "x": 2, "y": 0, "w": 7, "h": 1 },
+          { "label": "Add cafe", "x": 9, "y": 0, "w": 3, "h": 1, "accent": true },
+          { "label": "pending rail", "x": 2, "y": 1, "w": 10, "h": 2, "accent": true },
+          { "label": "find + tabs", "x": 2, "y": 3, "w": 10, "h": 1 },
+          { "label": "approved ledger", "x": 2, "y": 4, "w": 10, "h": 6 }
+        ]
+      },
+      "comp": ".impeccable/mocks/decision/pending-rail.webp"
+    },
+    {
+      "id": "status-columns",
+      "label": "Status columns",
+      "lineage": "Three-bin packing station",
+      "thesis": "Approved, pending, and rejected sit in three label columns you scan sideways.",
+      "palette": ["#F2F2F2", "#FAF8F5", "#1c1917", "#1F6F6B", "#D9793B"],
+      "materials": ["matte stock", "column hairlines"],
+      "viewport": "Nav rail. Title and Add cafe. Find across the top. Three equal columns of slim cafe labels.",
+      "risk": "Finding Chatime is slower than today’s single table unless you already know its status — the failure you named.",
+      "wireframe": {
+        "cols": 12,
+        "rows": 10,
+        "regions": [
+          { "label": "nav", "x": 0, "y": 0, "w": 2, "h": 10, "accent": true },
+          { "label": "Cafes", "x": 2, "y": 0, "w": 7, "h": 1 },
+          { "label": "Add cafe", "x": 9, "y": 0, "w": 3, "h": 1, "accent": true },
+          { "label": "find", "x": 2, "y": 1, "w": 10, "h": 1 },
+          { "label": "Approved", "x": 2, "y": 2, "w": 4, "h": 8 },
+          { "label": "Pending", "x": 6, "y": 2, "w": 3, "h": 8, "accent": true },
+          { "label": "Rejected", "x": 9, "y": 2, "w": 3, "h": 8 }
+        ]
+      },
+      "comp": ".impeccable/mocks/decision/status-columns.webp"
+    },
+    {
+      "id": "challenger-sneaker-boxes",
+      "label": "Stacked box wall",
+      "verdict": "declined",
+      "lineage": "Sneaker archive box stacks",
+      "thesis": "Every cafe is a box end in a wall you pull open.",
+      "palette": ["#F2F2F2", "#FAF8F5", "#1c1917", "#D9793B"],
+      "materials": ["box board", "end labels"],
+      "viewport": "A wall of stacked cafe end-labels; pull one to edit.",
+      "case": "Thousands of cafes cannot live as a wall of boxes without burying scan speed.",
+      "kept": "The ledger row as an end-label: name, status, origin.",
+      "risk": "Looks like merch storage, not a publishing desk.",
+      "hero": "https://impeccable.style/worlds/cards/textiles-weave-drape-fashion-sneaker-box-stacks-hero.webp",
+      "comp": ".impeccable/mocks/decision/challenger-sneaker-boxes.webp"
+    },
+    {
+      "id": "challenger-ticket-wallet",
+      "label": "Coupon wallet",
+      "verdict": "declined",
+      "lineage": "Jet-age airline ticket wallet",
+      "thesis": "Each cafe is a coupon you validate or VOID.",
+      "palette": ["#F2F2F2", "#FAF8F5", "#1c1917", "#8c3a2f"],
+      "materials": ["coupon stock", "VOID stamp"],
+      "viewport": "A book of cafe coupons, one listing per stub.",
+      "case": "A coupon book cannot show eighty names as fast as a ledger.",
+      "kept": "Unpublish as a cancel stamp instead of a competing outline button.",
+      "risk": "Travel-ephemera theater on a daily ops desk.",
+      "hero": "https://impeccable.style/worlds/cards/vernacular-ephemera-jet-age-ticket-wallet-hero.webp",
+      "comp": ".impeccable/mocks/decision/challenger-ticket-wallet.webp"
+    },
+    {
+      "id": "challenger-video-feed",
+      "label": "One-up feed",
+      "verdict": "declined",
+      "lineage": "Vertical full-bleed media feed",
+      "thesis": "One cafe owns the screen; the next is a snap away.",
+      "palette": ["#1c1917", "#FAF8F5", "#D9793B"],
+      "materials": ["full-bleed frame", "scrim"],
+      "viewport": "A single cafe filling the viewport.",
+      "case": "One-up viewing fails find-and-scan, the job of this desk.",
+      "kept": "Pending count in nav as what is next, not a feed.",
+      "risk": "Turns publishing into browsing.",
+      "hero": "https://impeccable.style/worlds/cards/pop-culture-shelf-vertical-video-feed-surface-hero.webp",
+      "comp": ".impeccable/mocks/decision/challenger-video-feed.webp"
+    }
+  ],
+  "reroll": {
+    "registers": ["safer", "bolder"]
+  },
+  "buildPath": {
+    "value": "code",
+    "toggle": true
+  },
+  "steer": true
+}

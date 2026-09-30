@@ -4,8 +4,8 @@
       <span class="bag__mast">
         <span class="bag__logo" aria-hidden="true">
           <img
-            v-if="showLogo"
             class="bag__mark"
+            :class="{ 'bag__mark--app': usingAppLogo }"
             :src="photoSrc"
             alt=""
             width="40"
@@ -71,7 +71,7 @@
 <script lang="ts" setup>
 import { Clock, Heart, Navigation, Plug, Unplug, Wifi, WifiOff } from 'lucide-vue-next'
 import type { Cafe } from '~/types/cafe'
-import { isKapedokoMark } from '~/utils/logo'
+import { cafeDisplayLogo, isKapedokoMark, KAPEDOKO_APP_LOGO_SRC } from '~/utils/logo'
 
 const props = defineProps<{
   cafe: Pick<Cafe, 'id' | 'name' | 'address' | 'image' | 'open' | 'status' | 'amenities' | 'work' | 'rating' | 'hoursHint'>
@@ -86,8 +86,8 @@ const emit = defineEmits<{
 const favorites = useFavorites()
 const broken = ref(false)
 const saved = computed(() => favorites.isSaved(props.cafe.id))
-const showLogo = computed(() => !broken.value && !isKapedokoMark(props.cafe.image))
-const photoSrc = computed(() => (showLogo.value ? props.cafe.image : ''))
+const usingAppLogo = computed(() => broken.value || isKapedokoMark(props.cafe.image))
+const photoSrc = computed(() => cafeDisplayLogo(broken.value ? null : props.cafe.image))
 const closed = computed(() => props.cafe.status === 'Closed')
 
 const wifiWords = computed(() => {
@@ -121,6 +121,7 @@ const onSave = () => {
 }
 
 const onPhotoError = () => {
+  if (photoSrc.value === KAPEDOKO_APP_LOGO_SRC) return
   broken.value = true
 }
 </script>
@@ -181,6 +182,10 @@ const onPhotoError = () => {
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+
+.bag__mark--app {
+  padding: 4px;
 }
 
 .bag__copy {

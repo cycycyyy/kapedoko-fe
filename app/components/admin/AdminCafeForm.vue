@@ -4,11 +4,17 @@
       <CafeIdentityStep
         :name="draft.name"
         :logo-file="draft.logoFile"
+        :logo-object-key="draft.logoObjectKey"
+        :logo-preview-url="logoPreviewUrl"
+        :logo-source-label="logoSourceLabel"
+        :logo-sources="logoSources"
+        :logo-sources-status="logoSourcesStatus"
         :name-issue="issues.name"
         :logo-issue="issues.logo"
         lede="This cafe is published as soon as you save it. It can sit anywhere, including outside Metro Manila."
         @update:name="draft.name = $event"
-        @update:logoFile="draft.logoFile = $event"
+        @update:logoFile="onLogoFile"
+        @update:logoObjectKey="onLogoObjectKey"
       />
       <CafeDetailsStep
         :phone="draft.phone"
@@ -55,10 +61,12 @@ import CafeIdentityStep from '~/components/submit/CafeIdentityStep.vue'
 import CafeDetailsStep from '~/components/submit/CafeDetailsStep.vue'
 import CafeLocationPicker from '~/components/submit/CafeLocationPicker.client.vue'
 import type { ShopRow, WeeklyHours } from '~/types/shop'
+import { cafeLogoSources, findCafeLogoSource } from '~/utils/admin-logos'
 import { adminCafeErrors } from '~/utils/admin-shop'
 import { allDayEveryDay, isValidWeeklyHours, sameHoursEveryDay } from '~/utils/hours'
 import { normalizeAddress, normalizeCafeName } from '~/utils/identity'
 import { optionalPhone } from '~/utils/phone'
+import { publicObjectUrl } from '~/utils/shop-mapper'
 import { DAY_KEYS } from '~/types/shop'
 
 const props = withDefaults(defineProps<{
@@ -104,10 +112,15 @@ const hoursFromShop = (hours: WeeklyHours | null | undefined): {
   }
 }
 
+const admin = useAdminData()
+const config = useRuntimeConfig()
+const publicBase = String(config.public.r2PublicBaseUrl || '')
+
 const initial = hoursFromShop(props.shop?.hours)
 const draft = reactive({
   name: props.shop?.name ?? '',
   logoFile: null as File | null,
+  logoObjectKey: (props.shop?.logo_object_key ?? null) as string | null,
   lat: props.shop?.latitude ?? null as number | null,
   lng: props.shop?.longitude ?? null as number | null,
   address: props.shop?.address ?? '',
@@ -127,6 +140,40 @@ const issues = reactive({
   phone: null as string | null,
   hours: null as string | null,
   form: null as string | null,
+})
+
+const logoSources = computed(() => cafeLogoSources(admin.shops.value, publicBase, {
+  excludeShopId: props.shop?.id,
+}))
+const logoSourcesStatus = computed(() => {
+  if (admin.status.value === 'loading' || admin.status.value === 'idle') return 'loading' as const
+  if (admin.status.value === 'error' || admin.status.value === 'forbidden') return 'error' as const
+  return 'ready' as const
+})
+const selectedSource = computed(() => findCafeLogoSource(logoSources.value, draft.logoObjectKey))
+const logoPreviewUrl = computed(() => {
+  if (draft.logoFile || !draft.logoObjectKey) return null
+  return selectedSource.value?.logoUrl ?? publicObjectUrl(draft.logoObjectKey, publicBase)
+})
+const logoSourceLabel = computed(() => {
+  if (draft.logoFile || !draft.logoObjectKey) return null
+  if (selectedSource.value) return `Using ${selectedSource.value.name}’s logo`
+  if (props.shop?.logo_object_key === draft.logoObjectKey) return 'Current logo'
+  return 'Using an existing cafe logo'
+})
+
+const onLogoFile = (file: File | null) => {
+  draft.logoFile = file
+  if (file) draft.logoObjectKey = null
+}
+
+const onLogoObjectKey = (key: string | null) => {
+  draft.logoObjectKey = key
+  if (key) draft.logoFile = null
+}
+
+onMounted(() => {
+  if (admin.status.value === 'idle') void admin.load()
 })
 
 const onSubmit = () => {
@@ -152,7 +199,7 @@ const onSubmit = () => {
     hours: draft.weekly,
     contact_number: optionalPhone(draft.phone),
     logoFile: draft.logoFile,
-    logoObjectKey: props.shop?.logo_object_key ?? null,
+    logoObjectKey: draft.logoObjectKey,
   })
 }
 </script>

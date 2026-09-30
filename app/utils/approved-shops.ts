@@ -34,6 +34,20 @@ export function shopIdFromRoute(path: string, param?: unknown): string {
   return match?.[0] ?? ''
 }
 
+export function resolveLiveShopId(
+  fullPath: string,
+  path: string,
+  param?: unknown,
+  extras: { ionPath?: string; href?: string } = {},
+): string {
+  return (
+    shopIdFromRoute(fullPath, param)
+    || shopIdFromRoute(path, param)
+    || shopIdFromRoute(extras.ionPath || '', param)
+    || shopIdFromRoute(extras.href || '', param)
+  )
+}
+
 function firstRow<T>(data: T | T[] | null | undefined): T | null {
   if (Array.isArray(data)) return data[0] ?? null
   return data ?? null

@@ -1,15 +1,15 @@
 # KapeDoko Roadmap
 
-KapeDoko helps people in Metro Manila choose a cafe where they can actually work. The roadmap prioritizes trustworthy WiFi, power, hours, location, and structured community feedback over generic cafe discovery. Coverage later expands beyond Metro Manila without changing the shop-submission model.
+KapeDoko helps people in the Philippines choose a cafe where they can actually work. The roadmap prioritizes trustworthy WiFi, power, hours, location, and structured community feedback over generic cafe discovery. Public submissions cover the Philippines. The shop-submission model stays the same when a region is active.
 
 ## Launch scope
 
-- **Launch geography:** Metro Manila (NCR) only; submissions outside NCR are blocked
+- **Launch geography:** Philippines; public submissions outside the country are blocked
 - **Platforms:** Nuxt web app plus Capacitor iOS and Android shells
-- **Seed data:** Manually curated cafe list; no scraping
+- **Seed data:** OpenStreetMap cafe imports for Metro Manila, Cebu City, and Davao City (`bun run import:osm`), plus owner-submitted shops. Imports land pending and need admin approval. ODbL attribution is required. No Wi-Fi, plugs, photos, or logos are invented from OSM.
 - **Guest experience:** Browse, search, filter, view cafe details, and use map/navigation without an account
-- **Authenticated experience:** Favorites, reviews, and shop submissions
-- **Admin experience:** A minimal `/admin` route for submissions and moderation
+- **Authenticated experience:** Favorites, reviews, shop submissions, and cafe-owner claims
+- **Admin experience:** `/admin` for submissions, ownership claims, and moderation. Cafe owners use `/app` claim and edit pages, not the admin tree.
 - **Design reference:** Existing Figma onboarding and the current KapeDoko design system
 
 ## Phase 0 — Foundation and data model
@@ -23,7 +23,8 @@ Establish the shared contracts before building feature-specific screens.
   - Opening hours, location, contact details, and photos
   - Cafe categories, including future Matcha Cafe tagging
 - Define review, `shop_review_stats` view, favorites, shop-submission, moderation, and admin-role models.
-- Add seed-data import for the manually curated Metro Manila launch list.
+- Add seed-data import for OpenStreetMap cafes in Metro Manila, Cebu City, and Davao City.
+- Define cafe-owner role, shop claims, and scoped owner edits.
 - Set up Cloudflare R2 and a presigned-upload Supabase Edge Function.
 - Establish image validation, resizing/thumbnail conventions, and ownership rules.
 - Add route/auth guards and a consistent guest-versus-authenticated capability model.
@@ -85,7 +86,7 @@ No map API key is required. OSM attribution and reasonable tile usage are requir
 
 ### 6. User-submitted shops and moderation
 
-- Allow authenticated users to submit a shop with required Metro Manila location, basic details, and optional photos.
+- Allow authenticated users to submit a shop with a Philippines location, basic details, and optional photos.
 - Track submission status as `pending`, `approved`, or `rejected`.
 - Keep pending and rejected shops out of public listings and map results.
 - Add an admin-only `/admin` route to:
@@ -161,7 +162,7 @@ This phase begins only after the Metro Manila directory and moderation workflow 
 | Frontend | Nuxt + Capacitor |
 | UI components | shadcn-vue + Ionic Vue |
 | Map | Leaflet + OpenStreetMap; no API key |
-| Geography | Metro Manila (NCR) launch; later regions activate without rewriting submissions |
+| Geography | Philippines for public submissions; later regions activate without rewriting submissions |
 | Initial catalog | Manually curated seed list; no scraping |
 | Reviews | Structured inputs aggregated by the `shop_review_stats` view |
 | Auth policy | Guest discovery; auth required for Favorites, Reviews, and Shop Submission |
@@ -191,7 +192,8 @@ This phase begins only after the Metro Manila directory and moderation workflow 
 ## Out of scope for the initial launch
 
 - Nationwide or worldwide coverage
-- Automated scraping or unverified third-party cafe data
+- Automated scraping of Google Maps, Grab, Foodpanda, or other ToS-restricted sources
+- Unverified third-party cafe data published without admin review
 - ML-based recommendations
 - Paid advertising before the organic directory and moderation process are stable
 - Replacing OSM/Leaflet with a paid map provider

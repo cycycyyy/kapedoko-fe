@@ -2,33 +2,40 @@
   <IonPage>
     <IonContent :scroll-y="false" class="onboarding-content">
       <div class="onboarding">
-        <button type="button" class="onboarding__skip" @click="finish">Skip</button>
-        <div
-          ref="trackRef"
-          class="onboarding__track"
-          tabindex="0"
-          role="region"
-          aria-roledescription="carousel"
-          :aria-label="`Onboarding, step ${activeStep + 1} of 3`"
-          @scroll.passive="onScroll"
-          @keydown="onKeydown"
-        >
-          <OnboardingStep1
-            class="onboarding__slide"
-            :active-step="activeStep"
-            @next="goTo(1)"
-            @go-to="goTo"
-          />
-          <OnboardingStep2
-            class="onboarding__slide"
-            :active-step="activeStep"
-            @next="goTo(2)"
-            @go-to="goTo"
-          />
-          <OnboardingStep3
-            class="onboarding__slide"
-            @complete="finish"
-          />
+        <div class="onboarding__frame">
+          <button type="button" class="onboarding__skip" @click="finish">Skip</button>
+          <div
+            ref="trackRef"
+            class="onboarding__track"
+            tabindex="0"
+            role="region"
+            aria-roledescription="carousel"
+            :aria-label="`Onboarding, step ${activeStep + 1} of 3`"
+            @scroll.passive="onScroll"
+            @keydown="onKeydown"
+          >
+            <OnboardingStep1
+              class="onboarding__slide"
+              :active-step="activeStep"
+              :inert="activeStep !== 0"
+              @next="goTo(1)"
+              @go-to="goTo"
+            />
+            <OnboardingStep2
+              class="onboarding__slide"
+              :active-step="activeStep"
+              :inert="activeStep !== 1"
+              @next="goTo(2)"
+              @go-to="goTo"
+            />
+            <OnboardingStep3
+              class="onboarding__slide"
+              :active-step="activeStep"
+              :inert="activeStep !== 2"
+              @complete="finish"
+              @go-to="goTo"
+            />
+          </div>
         </div>
       </div>
     </IonContent>
@@ -84,14 +91,14 @@ const onKeydown = (event: KeyboardEvent) => {
 }
 
 const finish = async () => {
-  markOnboardingDone()
+  await markOnboardingDone()
   await navigateTo('/app')
 }
 </script>
 
 <style scoped>
 .onboarding-content {
-  --background: var(--kd-white);
+  --background: #f2f2f2;
   --overflow: hidden;
 }
 
@@ -105,34 +112,49 @@ const finish = async () => {
 }
 
 .onboarding {
+  height: 100%;
+  min-height: 100%;
+  background: #f2f2f2;
+  color: var(--kd-ink);
+}
+
+.onboarding__frame {
   position: relative;
   height: 100%;
   min-height: 100%;
-  background: var(--kd-white);
+  overflow: hidden;
+}
+
+@media (min-width: 540px) {
+  .onboarding__frame {
+    max-width: 480px;
+    margin-inline: auto;
+  }
 }
 
 .onboarding__skip {
   position: absolute;
   z-index: 2;
-  top: max(0.75rem, env(safe-area-inset-top));
-  right: 12px;
+  top: max(2.75rem, calc(env(safe-area-inset-top) + 16px));
+  right: 8px;
   min-width: 44px;
   min-height: 44px;
   padding: 0 12px;
   border: 0;
-  border-radius: 8px;
-  background: var(--kd-white);
-  color: var(--kd-ink);
-  font-size: 14px;
+  background: transparent;
+  color: var(--kd-primary);
+  font-size: 0.75rem;
   font-weight: 700;
   font-family: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
   cursor: pointer;
 }
 
 .onboarding__skip:focus-visible {
   outline: 2px solid var(--kd-primary);
   outline-offset: 2px;
-  border-radius: 8px;
 }
 
 .onboarding__track {
@@ -169,5 +191,10 @@ const finish = async () => {
   .onboarding__track {
     scroll-behavior: auto;
   }
+}
+
+::selection {
+  background: var(--kd-accent);
+  color: var(--kd-ink);
 }
 </style>

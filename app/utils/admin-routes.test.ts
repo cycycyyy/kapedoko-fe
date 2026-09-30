@@ -8,6 +8,7 @@ describe('admin routes', () => {
       '/admin',
       '/admin/cafes',
       '/admin/requests',
+      '/admin/claims',
       '/admin/partnerships',
       '/admin/ads',
       '/admin/users',
@@ -19,5 +20,6 @@ describe('admin routes', () => {
   test('keeps nested cafe routes on the cafes section', () => {
     expect(adminNavIdFromPath('/admin/cafes/abc-123')).toBe('cafes')
     expect(adminNavIdFromPath('/admin/requests?id=1')).toBe('requests')
+    expect(adminNavIdFromPath('/admin/claims')).toBe('claims')
   })
 })

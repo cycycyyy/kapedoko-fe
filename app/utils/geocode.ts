@@ -2,7 +2,6 @@ import type { LatLng } from '../types/cafe'
 import { coverageBounds, isInCoverage } from './geography'
 
 const NOMINATIM = 'https://nominatim.openstreetmap.org'
-const USER_AGENT = 'KapeDoko/1.0 (cafe directory; https://kapedoko.app)'
 
 interface NominatimPlace {
   display_name?: string
@@ -51,37 +50,36 @@ export function formatShopStreet(place: Pick<NominatimPlace, 'display_name' | 'a
   return kept.join(', ')
 }
 
-async function nominatim<T>(path: string): Promise<T | null> {
+async function nominatim<T>(path: string, signal?: AbortSignal): Promise<T | null> {
   try {
     const response = await fetch(`${NOMINATIM}${path}`, {
-      headers: { Accept: 'application/json', 'User-Agent': USER_AGENT },
+      headers: { Accept: 'application/json' },
+      signal,
     })
-    if (!response.ok) return null
+    if (!response.ok) throw new Error(String(response.status))
     return (await response.json()) as T
+  } catch (err) {
+    if (signal?.aborted) return null
+    throw err
+  }
+}
+
+export async function reverseGeocode(point: LatLng): Promise<string | null> {
+  try {
+    const data = await nominatim<NominatimPlace>(
+      `/reverse?lat=${encodeURIComponent(point.lat)}&lon=${encodeURIComponent(point.lng)}&format=jsonv2&addressdetails=1`,
+    )
+    if (!data) return null
+    return formatShopStreet(data) || data.display_name?.trim() || null
   } catch {
     return null
   }
 }
 
-export async function reverseGeocode(point: LatLng): Promise<string | null> {
-  const data = await nominatim<NominatimPlace>(
-    `/reverse?lat=${encodeURIComponent(point.lat)}&lon=${encodeURIComponent(point.lng)}&format=jsonv2&addressdetails=1`,
-  )
-  if (!data) return null
-  return formatShopStreet(data) || data.display_name?.trim() || null
-}
-
-export async function searchCoverageAddress(query: string): Promise<{ label: string; point: LatLng }[]> {
-  const term = query.trim()
-  if (term.length < 3) return []
-
-  const bounds = coverageBounds()
-  const viewbox = [bounds.west, bounds.north, bounds.east, bounds.south].join(',')
-
-  const data = await nominatim<NominatimPlace[]>(
-    `/search?q=${encodeURIComponent(term)}&format=jsonv2&limit=5&addressdetails=1&viewbox=${viewbox}&bounded=1`,
-  )
-
+function toAddressHits(
+  data: NominatimPlace[] | null,
+  keep: (point: LatLng) => boolean,
+): { label: string; point: LatLng }[] {
   if (!Array.isArray(data)) return []
 
   return data
@@ -90,30 +88,44 @@ export async function searchCoverageAddress(query: string): Promise<{ label: str
       const lng = Number.parseFloat(place.lon ?? '')
       if (!Number.isFinite(lat) || !Number.isFinite(lng) || !place.display_name) return null
       const point = { lat, lng }
-      if (!isInCoverage(point)) return null
+      if (!keep(point)) return null
       const label = formatShopStreet(place) || place.display_name
+      if (!label) return null
       return { label, point }
     })
     .filter((item): item is { label: string; point: LatLng } => Boolean(item))
 }
 
-export async function searchWorldAddress(query: string): Promise<{ label: string; point: LatLng }[]> {
+export async function searchCoverageAddress(
+  query: string,
+  signal?: AbortSignal,
+): Promise<{ label: string; point: LatLng }[]> {
+  const term = query.trim()
+  if (term.length < 3) return []
+
+  const bounds = coverageBounds()
+  const viewbox = [bounds.west, bounds.north, bounds.east, bounds.south].join(',')
+  const data = await nominatim<NominatimPlace[]>(
+    `/search?q=${encodeURIComponent(term)}&format=jsonv2&limit=5&addressdetails=1&countrycodes=ph&viewbox=${viewbox}`,
+    signal,
+  )
+  if (signal?.aborted) return []
+
+  return toAddressHits(data, (point) => isInCoverage(point))
+}
+
+export async function searchWorldAddress(
+  query: string,
+  signal?: AbortSignal,
+): Promise<{ label: string; point: LatLng }[]> {
   const term = query.trim()
   if (term.length < 3) return []
 
   const data = await nominatim<NominatimPlace[]>(
     `/search?q=${encodeURIComponent(term)}&format=jsonv2&limit=5&addressdetails=1`,
+    signal,
   )
+  if (signal?.aborted) return []
 
-  if (!Array.isArray(data)) return []
-
-  return data
-    .map((place) => {
-      const lat = Number.parseFloat(place.lat ?? '')
-      const lng = Number.parseFloat(place.lon ?? '')
-      if (!Number.isFinite(lat) || !Number.isFinite(lng) || !place.display_name) return null
-      const label = formatShopStreet(place) || place.display_name
-      return { label, point: { lat, lng } }
-    })
-    .filter((item): item is { label: string; point: LatLng } => Boolean(item))
+  return toAddressHits(data, () => true)
 }

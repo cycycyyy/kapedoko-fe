@@ -8,7 +8,7 @@ adaptive
 
 ## Users
 
-Primary users are people in the Philippines, especially Metro Manila, who need a cafe to sit and work. They open the app to find a place with WiFi, power outlets, and usable open hours—not to browse coffee as a hobby.
+Primary users are people in the Philippines, especially Metro Manila, Cebu, and Davao, who need a cafe to sit and work. They open the app to find a place with WiFi, power outlets, and usable open hours—not to browse coffee as a hobby. Cafe owners claim a listed shop and keep hours, contact, and the logo accurate after an admin verifies them. Admins approve listings and ownership claims.
 
 ## Product Purpose
 
@@ -20,14 +20,16 @@ KapeDoko is a Philippines-specific cafe guide whose job is work-readiness, not g
 
 ## Operating Context
 
-Used on a phone, often while already out or about to leave: search a shop by name or area, filter by Near You / Popular / WiFi / Plugs, scan a list of cards (photo, rating, open/closed, address, amenity icons), and use maps for the exact location. Cafe submissions and public listings currently cover Metro Manila (NCR) only; pins outside that boundary are blocked. First-run onboarding teaches the WiFi and plug icons, then maps. A bottom bar opens Home, saved cafes, Map, and Profile. Accounts use Supabase email and password, including registration, password reset, and sign-out. Guests can browse and save cafes on the device; signing in syncs those saves to the account. The same UI ships as a web app and as Capacitor iOS/Android shells.
+Used on a phone, often while already out or about to leave: search a shop by name or area, filter by Near You / Popular / WiFi / Plugs, scan a list of cards (photo, rating, open/closed, address, amenity icons), and use maps for the exact location. Cafe submissions can be pinned anywhere in the Philippines. Pins outside the country are blocked. First-run onboarding teaches the WiFi and plug icons, then maps. A bottom bar opens Home, saved cafes, Map, and Profile. Accounts use Supabase email and password, including registration, password reset, and sign-out. Guests can browse and save cafes on the device; signing in syncs those saves to the account. The same UI ships as a web app and as Capacitor iOS/Android shells.
 
 ## Capabilities and Constraints
 
 - Confirmed in product intent: cafe search, amenity-aware listing (WiFi, power outlets), open/closed status, filters, maps for location, saved cafes, profile, first-run onboarding.
 - One shared UI across web and Capacitor iOS/Android. Do not split into separate iOS vs Android design languages.
-- Current coverage is Metro Manila (NCR). Expansion outside Metro Manila is later work; do not pretend nationwide coverage.
-- Cafe submissions outside Metro Manila are blocked until a later region is activated.
+- Public cafe submissions cover the Philippines. Pins outside the country stay blocked.
+- Admins can still publish a cafe anywhere, including outside the Philippines.
+- Catalog seed data for Metro Manila, Cebu City, and Davao City may be imported from OpenStreetMap as pending shops. Admins approve them. Place data is © OpenStreetMap contributors (ODbL). The importer does not invent Wi-Fi, plugs, photos, or logos.
+- A signed-in person can claim a listed cafe. An admin verifies the claim before the account becomes a cafe owner for that shop. Verified owners can edit identity, hours, contact, and logo only — never publish status, ads, or other cafes.
 - Home and Search list approved shops. WiFi and outlet claims appear only after enough reviews; until then the app says they are not confirmed. Do not treat sample shop names, ratings, or stock images as real product evidence.
 - Auth implementation (Supabase) is present in the repo; keeping that vendor is not a confirmed product commitment.
 - Push notifications are not part of the current app. Featured placements are later work and are not shown as live cafes.
@@ -44,7 +46,7 @@ Brand assets live under `public/assets/` and `app/assets/css/logos/`. Onboarding
 
 - Choose a cafe to work, not to window-shop coffee.
 - Amenity truth (WiFi, outlets, hours, location) outranks atmosphere copy.
-- Stay local: current service area is Metro Manila; do not pretend nationwide or worldwide coverage.
+- Stay in the Philippines: public submissions cover the country, and pins outside it stay blocked.
 - Treat placeholder data as scaffolding; never present it as proof.
 - Ship one interface people can learn once, on phone or in a native wrapper.
 

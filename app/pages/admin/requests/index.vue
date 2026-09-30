@@ -6,6 +6,7 @@
       :status="status"
       :error="error"
       :pending-count="pending.length"
+      :claim-count="pendingClaims.length"
     >
       <div class="admin-toolbar" role="tablist" aria-label="Request status">
         <button
@@ -34,6 +35,7 @@
         <p>{{ summarizeHours(shop.hours) }}</p>
         <p v-if="shop.contact_number">{{ shop.contact_number }}</p>
         <p class="admin-meta">Pinned at {{ shop.latitude.toFixed(5) }}, {{ shop.longitude.toFixed(5) }}</p>
+        <p v-if="shop.source === 'openstreetmap'" class="admin-meta">OpenStreetMap {{ shop.osm_type && shop.osm_id ? `${shop.osm_type}/${shop.osm_id}` : 'import' }}</p>
         <p v-if="shop.reviewed_at" class="admin-meta">Reviewed {{ formatAdminDate(shop.reviewed_at) }}</p>
         <p v-if="shop.rejection_reason" class="admin-error">{{ shop.rejection_reason }}</p>
         <div v-if="shop.status === 'pending'" class="admin-row-actions">
@@ -58,7 +60,7 @@ definePageMeta({
 })
 
 const admin = useAdminData()
-const { shops, status, error, savingId, load, moderate } = admin
+const { shops, claims, status, error, savingId, load, moderate } = admin
 const config = useRuntimeConfig()
 const publicBase = String(config.public.r2PublicBaseUrl || '')
 const route = useRoute()
@@ -76,6 +78,7 @@ const logoSrc = (shop: ShopRow) => {
 
 const visible = computed(() => shops.value.filter((shop) => shop.status === activeFilter.value))
 const pending = computed(() => shops.value.filter((shop) => shop.status === 'pending'))
+const pendingClaims = computed(() => claims.value.filter((claim) => claim.status === 'pending'))
 
 const onApprove = async (shop: ShopRow) => {
   try {

@@ -1,5 +1,7 @@
 import type { LatLng } from '../types/cafe'
 import metroManila from '../data/metro-manila.json'
+import cebuCity from '../data/cebu-city.json'
+import davaoCity from '../data/davao-city.json'
 
 export interface GeoBounds {
   south: number
@@ -24,22 +26,88 @@ interface CoverageFeature {
     center: LatLng
   }
   geometry: {
-    coordinates: [number, number][][]
+    type?: 'Polygon' | 'MultiPolygon'
+    coordinates: [number, number][][] | [number, number][][][]
   }
 }
 
-const feature = metroManila as CoverageFeature
-
-export const METRO_MANILA_REGION: CoverageRegion = {
-  id: feature.properties.id,
-  name: feature.properties.name,
-  bounds: feature.properties.bounds,
-  center: feature.properties.center,
-  rings: feature.geometry.coordinates,
+function regionsFromFeature(feature: CoverageFeature): CoverageRegion[] {
+  const polygons = feature.geometry.type === 'MultiPolygon'
+    ? (feature.geometry.coordinates as [number, number][][][])
+    : [feature.geometry.coordinates as [number, number][][]]
+  return polygons.map((rings, index) => ({
+    id: polygons.length > 1 ? `${feature.properties.id}-${index}` : feature.properties.id,
+    name: feature.properties.name,
+    bounds: feature.properties.bounds,
+    center: feature.properties.center,
+    rings,
+  }))
 }
 
-/** Active launch regions. Add another region here (and in coverage_regions) to expand later. */
-export const ACTIVE_REGIONS: CoverageRegion[] = [METRO_MANILA_REGION]
+const metroManilaFeature = metroManila as CoverageFeature
+const cebuCityFeature = cebuCity as CoverageFeature
+const davaoCityFeature = davaoCity as CoverageFeature
+
+export const METRO_MANILA_REGIONS: CoverageRegion[] = regionsFromFeature(metroManilaFeature)
+export const CEBU_CITY_REGIONS: CoverageRegion[] = regionsFromFeature(cebuCityFeature)
+export const DAVAO_CITY_REGIONS: CoverageRegion[] = regionsFromFeature(davaoCityFeature)
+
+export const METRO_MANILA_REGION: CoverageRegion = METRO_MANILA_REGIONS[0] ?? {
+  id: metroManilaFeature.properties.id,
+  name: metroManilaFeature.properties.name,
+  bounds: metroManilaFeature.properties.bounds,
+  center: metroManilaFeature.properties.center,
+  rings: metroManilaFeature.geometry.coordinates as [number, number][][],
+}
+
+export const CATALOG_IMPORT_CITIES: Record<string, CoverageRegion[]> = {
+  'metro-manila': METRO_MANILA_REGIONS,
+  'cebu-city': CEBU_CITY_REGIONS,
+  'davao-city': DAVAO_CITY_REGIONS,
+}
+
+export function catalogImportRegions(cityIds?: string[]): CoverageRegion[] {
+  const ids = cityIds?.length ? cityIds : Object.keys(CATALOG_IMPORT_CITIES)
+  return ids.flatMap((id) => CATALOG_IMPORT_CITIES[id] ?? [])
+}
+
+function rectangularRegion(
+  id: string,
+  name: string,
+  south: number,
+  north: number,
+  west: number,
+  east: number,
+): CoverageRegion {
+  return {
+    id,
+    name,
+    bounds: { south, north, west, east },
+    center: {
+      lat: (south + north) / 2,
+      lng: (west + east) / 2,
+    },
+    rings: [[
+      [west, south],
+      [east, south],
+      [east, north],
+      [west, north],
+      [west, south],
+    ]],
+  }
+}
+
+/** Island boxes covering the Philippines. Keep these in sync with db/20260929_philippines_coverage.sql. */
+export const PHILIPPINES_REGIONS: CoverageRegion[] = [
+  rectangularRegion('luzon', 'Luzon', 12.05, 21.25, 119.75, 124.75),
+  rectangularRegion('palawan', 'Palawan', 7.4, 12.4, 116.85, 121.5),
+  rectangularRegion('visayas', 'Visayas', 8.95, 12.75, 121.25, 126.65),
+  rectangularRegion('mindanao', 'Mindanao', 5.2, 10.55, 121.65, 126.75),
+  rectangularRegion('sulu', 'Sulu', 4.55, 6.9, 119.15, 122.35),
+]
+
+/** Public cafe pins may land anywhere in the Philippines. */
+export const ACTIVE_REGIONS: CoverageRegion[] = PHILIPPINES_REGIONS
 
 export const METRO_MANILA_BOUNDS = METRO_MANILA_REGION.bounds
 export const METRO_MANILA_CENTER = METRO_MANILA_REGION.center

@@ -28,36 +28,31 @@
 </template>
 
 <script lang="ts" setup>
+import { useIonRouter } from '@ionic/vue'
 import { Heart, House, Map as MapIcon, User } from 'lucide-vue-next'
-
-type TabId = 'home' | 'saved' | 'map' | 'profile'
+import { APP_TAB_PATHS, activeAppTab, isSameAppPath, type AppTabId } from '~/utils/app-tabs'
 
 const props = defineProps<{
-  active?: TabId
+  active?: AppTabId
 }>()
 
 const route = useRoute()
+const ionRouter = useIonRouter()
 
 const tabs: {
-  id: TabId
+  id: AppTabId
   label: string
   aria: string
   path: string
   icon: typeof House
 }[] = [
-  { id: 'home', label: 'Home', aria: 'Home', path: '/app', icon: House },
-  { id: 'saved', label: 'Saved', aria: 'Saved cafes', path: '/app/favorites', icon: Heart },
-  { id: 'map', label: 'Map', aria: 'Map', path: '/app/map', icon: MapIcon },
-  { id: 'profile', label: 'Profile', aria: 'Profile', path: '/app/profile', icon: User },
+  { id: 'home', label: 'Home', aria: 'Home', path: APP_TAB_PATHS.home, icon: House },
+  { id: 'saved', label: 'Saved', aria: 'Saved cafes', path: APP_TAB_PATHS.saved, icon: Heart },
+  { id: 'map', label: 'Map', aria: 'Map', path: APP_TAB_PATHS.map, icon: MapIcon },
+  { id: 'profile', label: 'Profile', aria: 'Profile', path: APP_TAB_PATHS.profile, icon: User },
 ]
 
-const active = computed<TabId>(() => {
-  if (props.active) return props.active
-  if (route.path.includes('/map')) return 'map'
-  if (route.path.includes('/favorites')) return 'saved'
-  if (route.path.includes('/profile')) return 'profile'
-  return 'home'
-})
+const active = computed<AppTabId>(() => props.active ?? activeAppTab(route.path))
 
 const activeIndex = computed(() => {
   const index = tabs.findIndex((tab) => tab.id === active.value)
@@ -65,8 +60,14 @@ const activeIndex = computed(() => {
 })
 
 const go = async (path: string) => {
-  if (route.path === path) return
-  await navigateTo(path)
+  if (isSameAppPath(route.path, path)) return
+  // `/app` is a parent of `/app/profile`. A normal push is treated as a pop
+  // and often leaves Profile on screen. Tab switches replace the stack.
+  if (import.meta.client) {
+    ionRouter.navigate(path, 'root', 'replace')
+    return
+  }
+  await navigateTo(path, { replace: true })
 }
 </script>
 

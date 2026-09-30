@@ -1,11 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import { adminCafeErrors, adminCafeHasErrors, isValidLatitude, isValidLongitude } from './admin-shop'
-import { bannerAspectError, bannerFileError, campaignWindowError, isAdCampaignActive, sortActiveAds } from './admin-ads'
+import { bannerAspectError, bannerFileError, campaignWindowError, featuredAdCopy, isAdCampaignActive, sortActiveAds } from './admin-ads'
 import { edgeFunctionErrorMessage, roleChangeError, suspendError } from './admin-users'
 import { placementKindFromTier, placementLifecycle, placementWindowError } from './admin-placements'
 import { adminNavIdFromPath, toLocalInput } from './admin-nav'
 import { allDayEveryDay } from './hours'
 
+import { adminLogoPayload } from './admin-logos'
 import { publicObjectUrl } from './shop-mapper'
 
 describe('admin cafe validation', () => {
@@ -93,9 +94,20 @@ describe('ad campaigns', () => {
 
   test('validates banner files and wide aspect', () => {
     expect(bannerFileError(null)).toMatch(/banner/)
+    expect(bannerFileError(null, false)).toBeNull()
     expect(bannerAspectError(1200, 400)).toBeNull()
     expect(bannerAspectError(400, 400)).toMatch(/640/)
     expect(bannerAspectError(1600, 1600)).toMatch(/wide/)
+  })
+
+  test('shows an internal ad label under the cafe name when it is set', () => {
+    expect(featuredAdCopy('% Arabica', 'Summer blend')).toEqual({
+      name: '% Arabica',
+      place: 'Summer blend',
+    })
+    expect(featuredAdCopy('% Arabica', '  ')).toEqual({ name: '% Arabica', place: '' })
+    expect(featuredAdCopy('% Arabica', '% Arabica')).toEqual({ name: '% Arabica', place: '' })
+    expect(featuredAdCopy('% Arabica', null)).toEqual({ name: '% Arabica', place: '' })
   })
 })
 
@@ -117,8 +129,15 @@ describe('roles and placements', () => {
     })).toMatch(/last admin/)
     expect(roleChangeError({
       actorId: 'admin-1',
+      targetId: 'admin-2',
+      nextRole: 'cafe-owner',
+      adminCount: 1,
+      targetRole: 'admin',
+    })).toMatch(/last admin/)
+    expect(roleChangeError({
+      actorId: 'admin-1',
       targetId: 'user-2',
-      nextRole: 'admin',
+      nextRole: 'cafe-owner',
       adminCount: 1,
       targetRole: 'user',
     })).toBeNull()
@@ -156,5 +175,29 @@ describe('roles and placements', () => {
   test('builds public object URLs and rejects the R2 API host', () => {
     expect(publicObjectUrl('ad-banners/a/b.webp', 'https://pub-test.r2.dev')).toBe('https://pub-test.r2.dev/ad-banners/a/b.webp')
     expect(publicObjectUrl('ad-banners/a/b.webp', 'https://abc.r2.cloudflarestorage.com')).toBeNull()
+  })
+
+  test('create and update payloads keep a selected existing logo key without uploading', () => {
+    const reused = adminLogoPayload({
+      logoFile: null,
+      logoObjectKey: 'shop-logos/yardstick.webp',
+    })
+    expect(reused).toEqual({
+      shouldUpload: false,
+      logoObjectKey: 'shop-logos/yardstick.webp',
+    })
+
+    const createInput = {
+      name: 'Yardstick BGC',
+      logoFile: null as File | null,
+      logoObjectKey: reused.logoObjectKey,
+    }
+    const updateInput = {
+      name: 'Yardstick Poblacion',
+      logoFile: null as File | null,
+      logoObjectKey: reused.logoObjectKey,
+    }
+    expect(adminLogoPayload(createInput)).toEqual(reused)
+    expect(adminLogoPayload(updateInput)).toEqual(reused)
   })
 })

@@ -56,12 +56,12 @@ const emit = defineEmits<{
   isolation: isolate;
   display: grid;
   place-items: center;
-  min-height: 100px;
+  min-height: 56px;
   overflow: hidden;
   padding: 0 16px;
-  border: 1px solid var(--kd-primary);
-  border-radius: 5px;
-  background: var(--kd-white);
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 16px;
+  background: #faf8f5;
   color: var(--kd-ink);
   font-size: 20px;
   font-weight: 700;
@@ -77,13 +77,9 @@ const emit = defineEmits<{
   inset: 0;
   z-index: -1;
   background: var(--kd-accent);
-  transform: scale(0.72);
-  opacity: 0;
-  filter: blur(4px);
-  transition:
-    transform 240ms cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 180ms cubic-bezier(0.16, 1, 0.3, 1),
-    filter 240ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .yesno__card.is-on {
@@ -92,9 +88,7 @@ const emit = defineEmits<{
 }
 
 .yesno__card.is-on::before {
-  opacity: 1;
-  filter: none;
-  transform: scale(1);
+  transform: scaleX(1);
 }
 
 .yesno__card:focus-visible {
@@ -130,7 +124,7 @@ const emit = defineEmits<{
 
 @media (hover: hover) and (pointer: fine) {
   .yesno__card:hover:not(.is-on) {
-    background: var(--kd-secondary);
+    background: color-mix(in srgb, var(--kd-ink) 6%, #faf8f5);
   }
 }
 

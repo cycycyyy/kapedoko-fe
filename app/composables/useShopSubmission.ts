@@ -115,7 +115,7 @@ function friendlyUploadError(fnMessage?: string, payloadError?: string): string 
 function friendlyInsertError(message?: string): string {
   const text = (message ?? '').toLowerCase()
   if (text.includes('shops_in_coverage') || text.includes('shops_in_marikina')) {
-    return 'Metro Manila only for now. Pin the cafe inside Metro Manila before submitting.'
+    return 'Philippines only. Pin the cafe inside the Philippines before submitting.'
   }
   if (text.includes('shops_hours_shape')) {
     return 'Check the opening hours and try again.'

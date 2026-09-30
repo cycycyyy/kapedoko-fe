@@ -12,38 +12,48 @@
       </button>
     </div>
 
-    <div class="picker__search">
-      <label class="picker__search-field">
-        <span class="sr-only">{{ unrestricted ? 'Search an address' : 'Search an address in Metro Manila' }}</span>
+    <div class="picker__search" @keydown.enter.stop>
+      <div class="picker__search-field">
+        <label class="sr-only" for="cafe-address-search">
+          {{ unrestricted ? 'Search an address' : 'Search an address in the Philippines' }}
+        </label>
         <input
+          id="cafe-address-search"
           v-model="query"
           type="search"
           name="address-search"
-          :placeholder="unrestricted ? 'Search an address' : 'Search an address in Metro Manila'"
+          :placeholder="unrestricted ? 'Search an address' : 'Search an address in the Philippines'"
           autocomplete="off"
           enterkeyhint="search"
-          @keydown.enter.prevent="runSearch"
+          role="combobox"
+          aria-autocomplete="list"
+          :aria-expanded="results.length > 0"
+          aria-controls="cafe-address-results"
+          @input="scheduleSearch"
+          @keydown.enter.stop.prevent="runSearch()"
+          @search.stop.prevent="runSearch()"
         />
-        <button type="button" class="picker__icon-btn" aria-label="Search address" @click="runSearch">
+        <button type="button" class="picker__icon-btn" aria-label="Search address" @click.stop="runSearch()">
           <Search :size="20" :stroke-width="2" />
         </button>
-      </label>
+      </div>
+
+      <p v-if="searching" class="picker__banner" role="status">Searching addresses…</p>
+      <p v-else-if="searchError" class="picker__banner picker__banner--error" role="alert">
+        {{ searchError }}
+      </p>
+      <ul v-if="results.length" id="cafe-address-results" class="picker__results">
+        <li v-for="result in results" :key="`${result.label}-${result.point.lat}-${result.point.lng}`">
+          <button type="button" @mousedown.prevent @click="chooseResult(result)">
+            {{ result.label }}
+          </button>
+        </li>
+      </ul>
     </div>
 
-    <p v-if="searchError" class="picker__banner picker__banner--error" role="alert">
-      {{ searchError }}
+    <p v-if="!unrestricted && !inBounds" class="picker__banner picker__banner--error" role="alert">
+      That pin is outside the Philippines.
     </p>
-    <p v-else-if="!unrestricted && !inBounds" class="picker__banner picker__banner--error" role="alert">
-      That pin is outside Metro Manila. Metro Manila only for now.
-    </p>
-
-    <ul v-if="results.length" class="picker__results">
-      <li v-for="result in results" :key="result.label">
-        <button type="button" @click="chooseResult(result)">
-          {{ result.label }}
-        </button>
-      </li>
-    </ul>
 
     <div class="picker__peek">
       <div class="picker__copy">
@@ -78,8 +88,8 @@ import { LocateFixed, Search } from 'lucide-vue-next'
 import type { LatLng } from '~/types/cafe'
 import { reverseGeocode, searchCoverageAddress, searchWorldAddress } from '~/utils/geocode'
 import {
+  METRO_MANILA_CENTER,
   coverageBounds,
-  coverageCenter,
   coverageRings,
   isInCoverage,
 } from '~/utils/geography'
@@ -104,13 +114,17 @@ const config = useRuntimeConfig()
 const root = ref<HTMLElement | null>(null)
 const query = ref('')
 const searchError = ref('')
+const searching = ref(false)
 const locationNote = ref('')
 const results = ref<{ label: string; point: LatLng }[]>([])
 let previousLookup = ''
 let map: LeafletMap | null = null
 let marker: Marker | null = null
+let searchTimer: ReturnType<typeof setTimeout> | null = null
+let searchAbort: AbortController | null = null
+let searchSerial = 0
 
-const fallback = coverageCenter()
+const fallback = METRO_MANILA_CENTER
 const point = computed<LatLng>(() => ({
   lat: props.lat ?? fallback.lat,
   lng: props.lng ?? fallback.lng,
@@ -144,19 +158,54 @@ const setPoint = async (next: LatLng, lookup = true) => {
   previousLookup = label ?? previousLookup
 }
 
-const runSearch = async () => {
+const scheduleSearch = () => {
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    void runSearch({ quiet: true })
+  }, 350)
+}
+
+const runSearch = async (options?: { quiet?: boolean }) => {
+  if (searchTimer) {
+    clearTimeout(searchTimer)
+    searchTimer = null
+  }
+
+  const term = query.value.trim()
   searchError.value = ''
-  results.value = []
-  const found = props.unrestricted
-    ? await searchWorldAddress(query.value)
-    : await searchCoverageAddress(query.value)
-  if (!found.length) {
-    searchError.value = props.unrestricted
-      ? 'No addresses matched that search. Move the pin instead.'
-      : 'No Metro Manila addresses matched that search. Move the pin instead.'
+  if (term.length < 3) {
+    searchAbort?.abort()
+    searching.value = false
+    results.value = []
+    if (term.length > 0 && !options?.quiet) searchError.value = 'Type at least 3 characters.'
     return
   }
-  results.value = found
+
+  searchAbort?.abort()
+  const abort = new AbortController()
+  searchAbort = abort
+  const serial = ++searchSerial
+  searching.value = true
+  results.value = []
+
+  try {
+    const found = props.unrestricted
+      ? await searchWorldAddress(term, abort.signal)
+      : await searchCoverageAddress(term, abort.signal)
+    if (serial !== searchSerial || abort.signal.aborted) return
+    if (!found.length) {
+      searchError.value = props.unrestricted
+        ? 'No addresses matched that search. Move the pin instead.'
+        : 'No Philippine addresses matched that search. Move the pin instead.'
+      return
+    }
+    results.value = found
+  } catch {
+    if (serial !== searchSerial || abort.signal.aborted) return
+    searchError.value = 'Address search is unavailable. Move the pin instead.'
+  } finally {
+    if (serial === searchSerial) searching.value = false
+  }
 }
 
 const chooseResult = async (result: { label: string; point: LatLng }) => {
@@ -175,7 +224,7 @@ const useMyLocation = async () => {
     return
   }
   if (!props.unrestricted && !isInCoverage(location.value)) {
-    locationNote.value = 'Your location is outside Metro Manila. Metro Manila only for now — pin the cafe on the map instead.'
+    locationNote.value = 'Your location is outside the Philippines. Pin the cafe on the map instead.'
     return
   }
   await setPoint(location.value)
@@ -258,6 +307,8 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  if (searchTimer) clearTimeout(searchTimer)
+  searchAbort?.abort()
   map?.remove()
   map = null
   marker = null
@@ -311,10 +362,15 @@ onBeforeUnmount(() => {
 
 .picker.is-overlay .picker__search {
   position: absolute;
+  z-index: 40;
   top: calc(max(2.75rem, env(safe-area-inset-top) + 16px) + 62px);
   left: 20px;
   right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   grid-row: 1;
+  pointer-events: auto;
 }
 
 .picker__search-field {
@@ -463,13 +519,16 @@ onBeforeUnmount(() => {
   background: #ffffff;
 }
 
-.picker.is-overlay .picker__results {
-  position: absolute;
-  top: calc(max(2.75rem, env(safe-area-inset-top) + 16px) + 122px);
-  left: 20px;
-  right: 20px;
-  grid-row: 1;
+.picker.is-overlay .picker__search .picker__banner,
+.picker.is-overlay .picker__search .picker__results {
+  position: static;
+  top: auto;
+  left: auto;
+  right: auto;
   margin: 0;
+}
+
+.picker.is-overlay .picker__results {
   max-height: 36vh;
   overflow: auto;
 }

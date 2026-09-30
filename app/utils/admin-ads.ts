@@ -32,8 +32,8 @@ export const BANNER_MAX_RATIO = 4.5
 
 const BANNER_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
 
-export function bannerFileError(file: File | null): string | null {
-  if (!file) return 'Upload a banner image.'
+export function bannerFileError(file: File | null, required = true): string | null {
+  if (!file) return required ? 'Upload a banner image.' : null
   if (!BANNER_TYPES.has(file.type)) return 'Use a JPG, PNG, or WebP image.'
   if (file.size > BANNER_MAX_BYTES) return 'Keep the banner under 4 MB.'
   return null
@@ -57,4 +57,12 @@ export function sortActiveAds<T extends { priority?: number; starts_at: string }
     if (priority) return priority
     return new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime()
   })
+}
+
+export function featuredAdCopy(cafeName: string, label?: string | null): { name: string; place: string } {
+  const campaign = label?.trim() ?? ''
+  return {
+    name: cafeName,
+    place: campaign && campaign !== cafeName ? campaign : '',
+  }
 }

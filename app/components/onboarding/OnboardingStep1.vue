@@ -2,48 +2,42 @@
   <section class="onboarding-step" aria-labelledby="onboarding-step-1-title">
     <header class="onboarding-step__brand">
       <img
-        src="/assets/kapedoko-logo_dark.png"
+        src="/assets/kapedoko-horizontal-text_dark.png"
         alt="KapeDoko"
-        width="46"
-        height="60"
-        class="onboarding-step__logo"
+        width="120"
+        height="26"
+        class="onboarding-step__wordmark"
       />
     </header>
 
     <div class="onboarding-step__stage">
-      <img
-        src="/assets/onboarding_graphic-1.png"
-        alt="Cafe cards showing ratings, WiFi, and power outlet icons"
-        width="350"
-        height="215"
-        class="onboarding-step__graphic"
-      />
-    </div>
-
-    <div class="onboarding-step__footer">
-      <div class="onboarding-step__icons" aria-hidden="true">
-        <Wifi :size="36" :stroke-width="2" />
-        <Plug :size="36" :stroke-width="2" />
+      <div class="teach-bag" aria-hidden="true">
+        <p class="teach-bag__name">On each cafe</p>
+        <div class="teach-bag__lines">
+          <div class="teach-bag__line">
+            <span class="teach-bag__key">
+              <Wifi :size="15" :stroke-width="2.25" />
+              <span>WiFi</span>
+            </span>
+            <span>Confirmed</span>
+          </div>
+          <div class="teach-bag__line">
+            <span class="teach-bag__key">
+              <Plug :size="15" :stroke-width="2.25" />
+              <span>Outlets</span>
+            </span>
+            <span>Confirmed</span>
+          </div>
+        </div>
       </div>
 
       <p id="onboarding-step-1-title" class="onboarding-step__copy">
         Check if the coffee shop offers WiFi and power outlets by looking for the WiFi and power plug icons.
       </p>
+    </div>
 
-      <div class="onboarding-step__dots" role="tablist" aria-label="Onboarding steps">
-        <button
-          v-for="step in 3"
-          :key="step"
-          type="button"
-          role="tab"
-          class="onboarding-step__dot"
-          :class="{ 'is-active': activeStep === step - 1 }"
-          :aria-selected="activeStep === step - 1"
-          :aria-label="`Go to step ${step}`"
-          @click="emit('goTo', step - 1)"
-        />
-      </div>
-
+    <div class="onboarding-step__footer">
+      <OnboardingTicks :active-step="activeStep" @go-to="emit('goTo', $event)" />
       <button type="button" class="onboarding-step__cta" @click="emit('next')">
         Next
       </button>
@@ -53,6 +47,8 @@
 
 <script lang="ts" setup>
 import { Plug, Wifi } from 'lucide-vue-next'
+import OnboardingTicks from '~/components/onboarding/OnboardingTicks.vue'
+import './onboarding-step.css'
 
 defineProps<{
   activeStep: number
@@ -65,133 +61,51 @@ const emit = defineEmits<{
 </script>
 
 <style scoped>
-.onboarding-step {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 100%;
-  background: var(--kd-white);
-  color: var(--kd-black);
-  padding: max(2.75rem, env(safe-area-inset-top)) 0 max(1.5rem, env(safe-area-inset-bottom));
-}
-
-.onboarding-step__brand {
-  display: flex;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.onboarding-step__logo {
-  width: 46px;
-  height: 60px;
-  display: block;
-  object-fit: contain;
-}
-
-.onboarding-step__stage {
-  flex: 1 1 auto;
-  display: flex;
-  align-items: center;
-  min-height: 0;
-  overflow: hidden;
-  padding-top: 1.5rem;
-}
-
-.onboarding-step__graphic {
-  width: 89.75%;
-  max-width: 350px;
-  height: auto;
-  margin-left: 29%;
-  flex-shrink: 0;
-  filter: drop-shadow(0 2px 8px var(--kd-shadow));
-}
-
-.onboarding-step__footer {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0 20px;
-}
-
-.onboarding-step__icons {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  color: var(--kd-black);
-  margin-bottom: 16px;
-}
-
-.onboarding-step__copy {
-  margin: 0;
-  max-width: 325px;
-  text-align: center;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.375;
-  color: var(--kd-black);
-}
-
-.onboarding-step__dots {
-  display: flex;
-  justify-content: center;
-  gap: 3.2px;
-  margin: 22px 0 18px;
-}
-
-.onboarding-step__dot {
-  width: 9.5px;
-  height: 9.5px;
-  padding: 0;
-  border: 0;
-  border-radius: 999px;
-  background: var(--kd-ink-25);
-  cursor: pointer;
-  transition: background-color 180ms ease, transform 180ms ease;
-}
-
-.onboarding-step__dot.is-active {
-  background: var(--kd-accent);
-  transform: scale(1.08);
-}
-
-.onboarding-step__dot:focus-visible {
-  outline: 2px solid var(--kd-primary);
-  outline-offset: 3px;
-}
-
-.onboarding-step__cta {
-  width: 100%;
-  max-width: 350px;
-  height: 45px;
-  border: 0;
-  border-radius: 8px;
-  background: var(--kd-accent);
+.teach-bag {
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 34%, transparent);
+  border-radius: 16px;
+  background: #faf8f5;
   color: var(--kd-ink);
-  font-size: 16px;
+}
+
+.teach-bag__name {
+  margin: 0;
+  font-size: 1.325rem;
   font-weight: 700;
-  cursor: pointer;
-  transition: opacity 160ms ease, transform 160ms ease;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
 }
 
-.onboarding-step__cta:hover {
-  opacity: 0.92;
+.teach-bag__lines {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--kd-ink) 12%, transparent);
 }
 
-.onboarding-step__cta:active {
-  transform: scale(0.985);
+.teach-bag__line {
+  display: grid;
+  grid-template-columns: 7rem max-content;
+  column-gap: 8px;
+  align-items: baseline;
+  font-size: 0.7875rem;
+  line-height: 1.3;
 }
 
-.onboarding-step__cta:focus-visible {
-  outline: 2px solid var(--kd-primary);
-  outline-offset: 3px;
+.teach-bag__key {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .onboarding-step__dot,
-  .onboarding-step__cta {
-    transition: none;
-  }
+.teach-bag__key :deep(svg) {
+  color: var(--kd-accent);
+}
+
+.teach-bag__line > span:last-child {
+  font-weight: 700;
 }
 </style>

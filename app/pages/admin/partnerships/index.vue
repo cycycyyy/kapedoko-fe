@@ -9,10 +9,20 @@
       <form class="admin-panel admin-form" @submit.prevent="onCreate">
         <label class="admin-field">
           Cafe
-          <select v-model="draft.shopId" required>
-            <option value="" disabled>Choose an approved cafe</option>
-            <option v-for="shop in approved" :key="shop.id" :value="shop.id">{{ shop.name }}</option>
-          </select>
+          <AdminSearchPicker
+            v-model="draft.shopId"
+            :options="cafeOptions"
+            :status="pickerStatus"
+            title="Choose an approved cafe"
+            placeholder="Choose an approved cafe"
+            search-placeholder="Search cafe name or address"
+            empty-copy="No approved cafes yet."
+            no-match-copy="No cafes match that search."
+            loading-copy="Loading cafes…"
+            error-copy="Could not load cafes."
+            item-label="cafe"
+            required
+          />
         </label>
         <label class="admin-field">
           Pin
@@ -103,9 +113,11 @@
 </template>
 
 <script lang="ts" setup>
+import AdminSearchPicker from '~/components/admin/AdminSearchPicker.vue'
 import AdminShell from '~/components/admin/AdminShell.vue'
 import type { PlacementLifecycle } from '~/types/admin'
 import { formatAdminDate, toLocalInput } from '~/utils/admin-nav'
+import { cafePickerOptions } from '~/utils/admin-picker'
 import { placementLifecycle, placementWindowError } from '~/utils/admin-placements'
 
 definePageMeta({
@@ -132,6 +144,12 @@ const filters = [
 ]
 
 const approved = computed(() => shops.value.filter((shop) => shop.status === 'approved'))
+const cafeOptions = computed(() => cafePickerOptions(shops.value))
+const pickerStatus = computed(() => {
+  if (status.value === 'ready') return 'ready' as const
+  if (status.value === 'error' || status.value === 'forbidden') return 'error' as const
+  return 'loading' as const
+})
 const shopName = (id: string) => shops.value.find((shop) => shop.id === id)?.name ?? id
 const rows = computed(() =>
   placements.value.map((row) => ({ ...row, life: placementLifecycle(row) })),

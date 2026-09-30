@@ -74,12 +74,12 @@ const emit = defineEmits<{
   justify-content: center;
   gap: 10px;
   width: 100%;
-  min-height: 45px;
+  min-height: 44px;
   padding: 10px 16px;
   overflow: hidden;
-  border: 1px solid var(--kd-primary);
-  border-radius: 8px;
-  background: var(--kd-white);
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 16px;
+  background: #faf8f5;
   color: var(--kd-ink);
   font-family: inherit;
   cursor: pointer;
@@ -99,6 +99,7 @@ const emit = defineEmits<{
 }
 
 .choice__option.is-on {
+  border-color: var(--kd-accent);
   color: var(--kd-ink);
 }
 
@@ -136,7 +137,6 @@ const emit = defineEmits<{
   font-size: 12px;
   font-weight: 400;
   line-height: 1.2;
-  opacity: 0.82;
 }
 
 .choice__option:focus-visible {
@@ -165,7 +165,7 @@ const emit = defineEmits<{
 
 @media (hover: hover) and (pointer: fine) {
   .choice__option:hover:not(.is-on):not(:disabled) {
-    background: var(--kd-secondary);
+    background: color-mix(in srgb, var(--kd-ink) 6%, #faf8f5);
   }
 }
 

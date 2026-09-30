@@ -28,6 +28,10 @@ export type DayHours =
 
 export type WeeklyHours = Record<DayKey, DayHours>
 
+export type ShopSource = 'openstreetmap' | 'user' | 'admin'
+export type OsmElementType = 'node' | 'way' | 'relation'
+export type ShopClaimStatus = 'pending' | 'verified' | 'rejected'
+
 export interface ShopRow {
   id: string
   name: string
@@ -45,6 +49,10 @@ export interface ShopRow {
   reviewed_by: string | null
   reviewed_at: string | null
   rejection_reason: string | null
+  source?: ShopSource | null
+  osm_type?: OsmElementType | null
+  osm_id?: number | null
+  imported_at?: string | null
   created_at: string
   updated_at: string
 }
@@ -153,7 +161,22 @@ export interface ShopBusynessInsert {
   level: BusynessLevel
 }
 
-export type ProfileRole = 'user' | 'admin'
+export interface ShopClaimRow {
+  id: string
+  shop_id: string
+  claimant_id: string
+  status: ShopClaimStatus
+  evidence_note: string
+  contact_email: string | null
+  contact_phone: string | null
+  rejection_reason: string | null
+  reviewed_by: string | null
+  reviewed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type ProfileRole = 'user' | 'cafe-owner' | 'admin'
 
 export interface ProfileRow {
   id: string

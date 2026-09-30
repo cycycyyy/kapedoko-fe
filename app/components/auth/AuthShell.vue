@@ -28,7 +28,7 @@ defineProps<{
 
 <style scoped>
 .auth-content {
-  --background: var(--kd-secondary);
+  --background: #f2f2f2;
   --padding-start: 0;
   --padding-end: 0;
   --padding-top: 0;
@@ -42,15 +42,15 @@ defineProps<{
   max-width: 480px;
   margin-inline: auto;
   padding: max(2.75rem, calc(env(safe-area-inset-top) + 16px)) 20px calc(2rem + env(safe-area-inset-bottom));
-  background: var(--kd-secondary);
+  background: #f2f2f2;
+  color: var(--kd-ink);
 }
 
 .auth__header {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 8px;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
   color: var(--kd-ink);
 }
 
@@ -62,17 +62,18 @@ defineProps<{
 }
 
 .auth__header h1 {
-  margin: 8px 0 0;
-  font-size: 24px;
+  margin: 16px 0 0;
+  font-size: 1.6rem;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
 }
 
 .auth__header p {
-  margin: 0;
+  margin: 8px 0 0;
   max-width: 28rem;
   color: var(--kd-ink);
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.45;
 }
 </style>
@@ -81,7 +82,7 @@ defineProps<{
 .auth-form {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
 .auth-field {
@@ -89,17 +90,17 @@ defineProps<{
   flex-direction: column;
   gap: 6px;
   color: var(--kd-ink);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
 }
 
 .auth-field input {
   width: 100%;
-  height: 50px;
+  height: 48px;
   padding: 0 16px;
-  border: 0;
-  border-radius: 8px;
-  background: var(--kd-white);
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 16px;
+  background: #faf8f5;
   color: var(--kd-ink);
   font-size: 16px;
   font-weight: 400;
@@ -108,7 +109,7 @@ defineProps<{
 }
 
 .auth-field input::placeholder {
-  color: color-mix(in srgb, var(--kd-ink) 46%, var(--kd-white));
+  color: color-mix(in srgb, var(--kd-ink) 62%, #faf8f5);
 }
 
 .auth-field input:focus {
@@ -117,9 +118,9 @@ defineProps<{
 }
 
 .auth-error {
-  margin: 0 0 14px;
-  color: var(--kd-closed);
-  font-size: 14px;
+  margin: 0 0 12px;
+  color: var(--kd-destructive);
+  font-size: 0.875rem;
   font-weight: 700;
   line-height: 1.4;
 }
@@ -129,18 +130,19 @@ defineProps<{
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 45px;
-  margin-top: 6px;
-  padding: 0 20px;
+  min-height: 44px;
+  margin-top: 8px;
+  padding: 0 16px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 16px;
   background: var(--kd-accent);
   color: var(--kd-ink);
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .auth-submit:disabled {
@@ -165,8 +167,11 @@ defineProps<{
 }
 
 .auth-links a {
-  color: var(--kd-ink);
+  color: var(--kd-primary);
   font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
 }
 
 .auth-note {
@@ -176,13 +181,33 @@ defineProps<{
   line-height: 1.45;
 }
 
-:root.is-android .auth-submit {
+:root.is-android .auth-submit,
+:root.is-android .auth-field input {
   min-height: 48px;
 }
 
+.auth-submit:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .auth-submit:hover:not(:disabled) {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--kd-ink) 18%, transparent);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .auth-submit {
+    transition: none;
+  }
+
   .auth-submit:active {
     transform: none;
   }
+}
+
+::selection {
+  background: color-mix(in srgb, var(--kd-accent) 35%, #faf8f5);
+  color: var(--kd-ink);
 }
 </style>

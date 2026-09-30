@@ -3,16 +3,6 @@
     <IonContent :scroll-y="true" class="review-content">
       <div class="review" :class="{ 'is-done': submitted }">
         <header class="review__hero">
-          <div class="review__photo" :class="{ 'is-ready': Boolean(cafe) }" aria-hidden="true">
-            <img
-              v-if="cafe"
-              :src="heroSrc"
-              alt=""
-              :class="{ 'is-mark': heroIsMark }"
-              @error="heroBroken = true"
-            />
-          </div>
-
           <div class="review__hero-bar">
             <button type="button" class="review__back" :aria-label="backLabel" @click="goBack">
               <ChevronLeft :size="22" :stroke-width="2.25" />
@@ -78,7 +68,7 @@
 
         <form v-else-if="cafe && allowed" class="review__form" @submit.prevent="onPrimary">
           <div class="review__note">
-            <Info :size="12" :stroke-width="2.5" aria-hidden="true" />
+            <Info :size="16" :stroke-width="2.25" aria-hidden="true" />
             <p>
               This review only asks about your visit at
               <strong>{{ cafe.name }}</strong>.
@@ -95,7 +85,7 @@
             <Transition :name="chapterMotion" mode="out-in">
               <div :key="chapter" class="review__pane">
                 <p class="review__topic">
-                  <component :is="topicIcon" :size="12" :stroke-width="2.5" aria-hidden="true" />
+                  <component :is="topicIcon" :size="16" :stroke-width="2.25" aria-hidden="true" />
                   {{ topicLabel }}
                 </p>
                 <h2>{{ question }}</h2>
@@ -235,7 +225,6 @@ import ReviewChoiceGroup from '~/components/review/ReviewChoiceGroup.vue'
 import ReviewYesNo from '~/components/review/ReviewYesNo.vue'
 import type { Cafe } from '~/types/cafe'
 import { isShopId, shopIdFromRoute } from '~/utils/approved-shops'
-import { isKapedokoMark, KAPEDOKO_MARK_SRC } from '~/utils/logo'
 import {
   BUSYNESS_OPTIONS,
   chapterIssue,
@@ -289,14 +278,8 @@ const editing = ref(false)
 const issue = ref<string | null>(null)
 const notice = ref('')
 const allowLeave = ref(false)
-const heroBroken = ref(false)
 const commentCountId = 'review-comment-count'
 
-const heroIsMark = computed(() => {
-  if (!cafe.value) return true
-  return heroBroken.value || isKapedokoMark(cafe.value.image)
-})
-const heroSrc = computed(() => (heroIsMark.value ? KAPEDOKO_MARK_SRC : cafe.value?.image || KAPEDOKO_MARK_SRC))
 const commentLength = computed(() => draft.comment.length)
 const busy = computed(() => submitting.value || reporting.value)
 const stepLabel = computed(() => chapterLabel(chapter.value))
@@ -384,13 +367,26 @@ const goHome = async () => {
   await navigateTo('/app')
 }
 
-const goToCafe = async () => {
+const cafeHref = (id: string) => `/app/cafes/${id}`
+
+const sameCafePath = (path: string, id: string) => {
+  const bare = path.split(/[?#]/)[0].replace(/\/$/, '')
+  return bare === cafeHref(id)
+}
+
+const goToCafe = () => {
   allowLeave.value = true
-  if (!shopId.value) {
-    await goHome()
+  const id = shopId.value
+  if (!id) {
+    ionRouter.replace('/app')
     return
   }
-  await navigateTo(`/app/cafes/${shopId.value}`)
+  const previous = typeof history.state?.back === 'string' ? history.state.back : ''
+  if (ionRouter.canGoBack() && sameCafePath(previous, id)) {
+    ionRouter.back()
+    return
+  }
+  ionRouter.replace(cafeHref(id))
 }
 
 const setChapter = (next: ReviewChapter) => {
@@ -533,6 +529,11 @@ const ensureSignedIn = async () => {
 }
 
 onIonViewWillEnter(() => {
+  if (submitted.value) {
+    submitted.value = false
+    chapter.value = 1
+    chapterDir.value = 'forward'
+  }
   void ensureSignedIn()
   void bootstrap(resolveShopId())
 })
@@ -553,7 +554,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .review-content {
-  --background: var(--kd-white);
+  --background: #f2f2f2;
   --padding-start: 0;
   --padding-end: 0;
   --padding-top: 0;
@@ -568,56 +569,21 @@ onBeforeUnmount(() => {
 .review {
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 100%;
   min-height: 100%;
-  background: var(--kd-white);
+  overflow-x: clip;
+  background: #f2f2f2;
 }
 
 .review__hero {
-  position: relative;
-  overflow: hidden;
-  min-height: 197px;
-  padding: max(2.75rem, calc(env(safe-area-inset-top) + 16px)) 20px 18px;
-  background: var(--kd-accent);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: max(0.75rem, env(safe-area-inset-top)) 20px 16px;
+  background: #faf8f5;
   color: var(--kd-ink);
-}
-
-.review__photo {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.review__photo img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0;
-  filter: blur(8px);
-  transition:
-    opacity 480ms cubic-bezier(0.16, 1, 0.3, 1),
-    filter 480ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.review__photo.is-ready img {
-  opacity: 0.1;
-  filter: blur(4px);
-}
-
-.review__photo img.is-mark {
-  object-fit: contain;
-  padding: 28px 72px 18px;
-}
-
-.review__photo.is-ready img.is-mark {
-  opacity: 0.16;
-  filter: none;
-}
-
-.review__hero-bar,
-.review__place {
-  position: relative;
-  z-index: 1;
+  border-bottom: 1px solid color-mix(in srgb, var(--kd-ink) 12%, transparent);
 }
 
 .review__hero-bar {
@@ -633,11 +599,11 @@ onBeforeUnmount(() => {
   flex: 0 0 44px;
   width: 44px;
   height: 44px;
-  margin-left: -12px;
+  margin-left: -8px;
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--kd-white);
+  color: var(--kd-ink);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -645,28 +611,31 @@ onBeforeUnmount(() => {
 
 .review__title {
   margin: 0;
-  font-size: 20px;
+  font-size: 0.95rem;
   font-weight: 700;
   line-height: 1.2;
 }
 
 .review__place {
-  margin-top: 16px;
+  margin-top: 12px;
+  min-width: 0;
 }
 
 .review__place h1 {
   margin: 0;
-  font-size: 16px;
+  font-size: 1.6rem;
   font-weight: 700;
-  line-height: 1.375;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
   overflow-wrap: anywhere;
 }
 
 .review__place p {
-  margin: 6px 0 0;
-  font-size: 12px;
+  margin: 8px 0 0;
+  font-size: 0.7875rem;
   font-weight: 400;
-  line-height: 1.35;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .review__body,
@@ -694,11 +663,18 @@ onBeforeUnmount(() => {
   margin: 0 20px;
 }
 
+.review__sheet {
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 16px;
+  background: #faf8f5;
+}
+
 .review__pulse span {
   display: block;
   height: 10px;
   border-radius: 999px;
-  background: var(--kd-secondary);
+  background: color-mix(in srgb, var(--kd-ink) 12%, transparent);
   transform-origin: left center;
   animation: review-pulse 900ms cubic-bezier(0.16, 1, 0.3, 1) infinite;
 }
@@ -839,9 +815,9 @@ onBeforeUnmount(() => {
   width: 100%;
   min-height: 144px;
   padding: 12px 14px;
-  border: 1px solid var(--kd-primary);
-  border-radius: 8px;
-  background: var(--kd-white);
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 16px;
+  background: #faf8f5;
   color: var(--kd-ink);
   font-size: 12px;
   font-weight: 400;
@@ -891,11 +867,11 @@ onBeforeUnmount(() => {
 
 .review__cta {
   width: 100%;
-  height: 45px;
-  min-height: 45px;
-  padding: 0 20px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 16px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 16px;
   background: var(--kd-accent);
   color: var(--kd-ink);
   font-size: 16px;
@@ -916,13 +892,9 @@ onBeforeUnmount(() => {
 
 .review__back:focus-visible,
 .review__cta:focus-visible {
-  outline: 2px solid var(--kd-white);
+  outline: 2px solid var(--kd-primary);
   outline-offset: 2px;
-  border-radius: 8px;
-}
-
-.review__cta:focus-visible {
-  box-shadow: 0 0 0 4px var(--kd-primary);
+  border-radius: 16px;
 }
 
 .review__back:active,
@@ -1030,16 +1002,28 @@ onBeforeUnmount(() => {
     max-width: 480px;
     margin-inline: auto;
   }
+
+  .review__question,
+  .review__pane {
+    flex: none;
+  }
+
+  .review__answers {
+    margin-top: 20px;
+  }
+
+  .review__dock {
+    margin-top: 8px;
+  }
 }
 
 @media (hover: hover) and (pointer: fine) {
   .review__cta:hover:not(:disabled) {
-    filter: brightness(1.06);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--kd-ink) 18%, transparent);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .review__photo img,
   .review__ticks span::after,
   .review__cta,
   .review__back {

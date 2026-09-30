@@ -1,4 +1,7 @@
 -- KapéDoko seed: Metro Manila cafes from OpenStreetMap
+-- DEPRECATED for new imports. Use `bun run import:osm` which writes
+-- db/seed_osm_cafes.sql with source/osm_id identity for Metro Manila,
+-- Cebu City, and Davao City. Keep this file only for the original 266 rows.
 -- Source file: metro-manila-cafes.geojson
 -- © OpenStreetMap contributors, ODbL. https://www.openstreetmap.org/copyright
 --

@@ -1,7 +1,9 @@
 import type { AdCampaignRow, AdminDashboardCounts, AdminUserRow, AdminUsersResponse } from '~/types/admin'
-import type { ContentReportRow, MarkerTier, ProfileRole, ShopPlacementRow, ShopRow, ShopStatus, WeeklyHours } from '~/types/shop'
+import type { ContentReportRow, MarkerTier, ProfileRole, ShopClaimRow, ShopPlacementRow, ShopRow, ShopStatus, WeeklyHours } from '~/types/shop'
 import { authUserId } from '~/utils/auth'
+import { adminLogoPayload } from '~/utils/admin-logos'
 import { effectiveMarkerTier } from '~/utils/marker-tier'
+import { parseProfileRole } from '~/utils/profile-role'
 import { edgeFunctionErrorMessage } from '~/utils/admin-users'
 
 export async function requireAdminUserId(): Promise<string> {
@@ -33,6 +35,7 @@ export function useAdminData() {
   const placements = ref<ShopPlacementRow[]>([])
   const reports = ref<ContentReportRow[]>([])
   const ads = ref<AdCampaignRow[]>([])
+  const claims = ref<ShopClaimRow[]>([])
   const status = ref<'idle' | 'loading' | 'ready' | 'forbidden' | 'error'>('idle')
   const error = ref('')
   const savingId = ref<string | null>(null)
@@ -53,6 +56,7 @@ export function useAdminData() {
       pending: shops.value.filter((shop) => shop.status === 'pending').length,
       approved: shops.value.filter((shop) => shop.status === 'approved').length,
       rejected: shops.value.filter((shop) => shop.status === 'rejected').length,
+      pendingClaims: claims.value.filter((claim) => claim.status === 'pending').length,
       openReports: reports.value.filter((report) => report.status === 'open').length,
       activePlacements: placements.value.filter((row) => new Date(row.starts_at).getTime() <= now && new Date(row.ends_at).getTime() > now).length,
       activeAds: ads.value.filter((row) => row.enabled && !row.cancelled_at && new Date(row.starts_at).getTime() <= now && new Date(row.ends_at).getTime() > now).length,
@@ -93,6 +97,18 @@ export function useAdminData() {
     ads.value = (data ?? []) as AdCampaignRow[]
   }
 
+  const loadClaims = async () => {
+    const { data, error: claimsError } = await supabase
+      .from('shop_claims')
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (claimsError) {
+      claims.value = []
+      return
+    }
+    claims.value = (data ?? []) as ShopClaimRow[]
+  }
+
   const load = async () => {
     status.value = 'loading'
     error.value = ''
@@ -113,7 +129,7 @@ export function useAdminData() {
         .order('created_at', { ascending: false })
       if (shopsError) throw shopsError
       shops.value = (data ?? []) as ShopRow[]
-      await Promise.all([loadPlacements(), loadReports(), loadAds()])
+      await Promise.all([loadPlacements(), loadReports(), loadAds(), loadClaims()])
       status.value = 'ready'
     } catch (err) {
       status.value = 'error'
@@ -239,9 +255,14 @@ export function useAdminData() {
     hours: WeeklyHours
     contact_number: string | null
     logoFile: File | null
+    logoObjectKey?: string | null
   }) => {
-    let logoKey: string | null = null
-    if (input.logoFile) logoKey = await uploadAdminAsset(input.logoFile, 'shop-logo')
+    const planned = adminLogoPayload({
+      logoFile: input.logoFile,
+      logoObjectKey: input.logoObjectKey ?? null,
+    })
+    let logoKey = planned.logoObjectKey
+    if (planned.shouldUpload && input.logoFile) logoKey = await uploadAdminAsset(input.logoFile, 'shop-logo')
     const { data, error: rpcError } = await supabase.rpc('create_admin_shop', {
       p_name: input.name,
       p_address: input.address,
@@ -270,7 +291,10 @@ export function useAdminData() {
       logoObjectKey: string | null
     },
   ) => {
-    let logoKey = input.logoObjectKey
+    let logoKey = adminLogoPayload({
+      logoFile: input.logoFile,
+      logoObjectKey: input.logoObjectKey,
+    }).logoObjectKey
     if (input.logoFile) logoKey = await uploadAdminAsset(input.logoFile, 'shop-logo')
     const { data, error: rpcError } = await supabase.rpc('update_admin_shop', {
       p_shop_id: shopId,
@@ -355,6 +379,34 @@ export function useAdminData() {
     ads.value = ads.value.map((item) => (item.id === id ? (data as AdCampaignRow) : item))
   }
 
+  const moderateClaim = async (
+    claim: ShopClaimRow,
+    next: Extract<ShopClaimRow['status'], 'verified' | 'rejected'>,
+    rejectionReason = '',
+  ) => {
+    savingId.value = claim.id
+    error.value = ''
+    try {
+      const { data, error: rpcError } = await supabase.rpc('moderate_shop_claim', {
+        p_claim_id: claim.id,
+        p_status: next,
+        p_rejection_reason: next === 'rejected' ? rejectionReason : null,
+      })
+      const rpcRow = Array.isArray(data) ? data[0] : data
+      if (rpcError || !rpcRow) {
+        throw new Error(rpcError?.message || 'Could not update this claim.')
+      }
+      const updated = rpcRow as ShopClaimRow
+      claims.value = claims.value.map((item) => (item.id === claim.id ? updated : item))
+      return updated
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Could not update this claim.'
+      throw err
+    } finally {
+      savingId.value = null
+    }
+  }
+
   return {
     supabase,
     shops,
@@ -362,6 +414,7 @@ export function useAdminData() {
     placementsByShop,
     reports,
     ads,
+    claims,
     counts,
     status,
     error,
@@ -370,6 +423,7 @@ export function useAdminData() {
     fetchShop,
     loadPlacements,
     loadAds,
+    loadClaims,
     markerTierFor,
     moderate,
     savePlacement,
@@ -379,6 +433,7 @@ export function useAdminData() {
     resolveReport,
     saveAd,
     cancelAd,
+    moderateClaim,
   }
 }
 
@@ -424,7 +479,7 @@ export function useAdminUsers() {
       id: row.id,
       email: null,
       displayName: row.display_name,
-      role: row.role === 'admin' ? 'admin' : 'user',
+      role: parseProfileRole(row.role),
       banned: false,
       createdAt: row.created_at,
       lastSignInAt: null,

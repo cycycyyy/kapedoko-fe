@@ -1,11 +1,14 @@
 import { describe, expect, test } from 'bun:test'
 import {
   METRO_MANILA_CENTER,
+  CEBU_CITY_REGIONS,
+  DAVAO_CITY_REGIONS,
   boundsContain,
   boundsFromRadius,
   clampQueryBounds,
   coverageBounds,
   isInCoverage,
+  isInRegion,
   padBounds,
   pointInBounds,
 } from './geography'
@@ -28,22 +31,45 @@ import { googleMapsDirectionsUrl } from './maps'
 import type { Cafe } from '../types/cafe'
 import type { ShopRow } from '../types/shop'
 
-describe('metro manila coverage', () => {
+describe('philippines coverage', () => {
   test('accepts the fallback center', () => {
     expect(isInCoverage(METRO_MANILA_CENTER)).toBe(true)
   })
 
-  test('accepts representative NCR cities', () => {
+  test('accepts cities across the Philippines', () => {
     expect(isInCoverage({ lat: 14.6507, lng: 121.1029 })).toBe(true) // Marikina
     expect(isInCoverage({ lat: 14.5547, lng: 121.0244 })).toBe(true) // Makati
     expect(isInCoverage({ lat: 14.619, lng: 121.051 })).toBe(true) // Quezon City
     expect(isInCoverage({ lat: 14.423, lng: 121.047 })).toBe(true) // Muntinlupa
     expect(isInCoverage({ lat: 14.5894, lng: 120.9842 })).toBe(true) // Manila
+    expect(isInCoverage({ lat: 14.586, lng: 121.175 })).toBe(true) // Antipolo
+    expect(isInCoverage({ lat: 14.359, lng: 121.056 })).toBe(true) // San Pedro
+    expect(isInCoverage({ lat: 16.4023, lng: 120.596 })).toBe(true) // Baguio
+    expect(isInCoverage({ lat: 10.3157, lng: 123.8854 })).toBe(true) // Cebu
+    expect(isInCoverage({ lat: 10.7202, lng: 122.5621 })).toBe(true) // Iloilo
+    expect(isInCoverage({ lat: 11.9674, lng: 121.9248 })).toBe(true) // Boracay
+    expect(isInCoverage({ lat: 9.3068, lng: 123.3054 })).toBe(true) // Dumaguete
+    expect(isInCoverage({ lat: 11.2444, lng: 125.0039 })).toBe(true) // Tacloban
+    expect(isInCoverage({ lat: 8.4542, lng: 124.6319 })).toBe(true) // Cagayan de Oro
+    expect(isInCoverage({ lat: 7.1907, lng: 125.4553 })).toBe(true) // Davao
+    expect(isInCoverage({ lat: 6.1164, lng: 125.1716 })).toBe(true) // General Santos
+    expect(isInCoverage({ lat: 9.7392, lng: 118.7353 })).toBe(true) // Puerto Princesa
+    expect(isInCoverage({ lat: 6.9214, lng: 122.079 })).toBe(true) // Zamboanga
+    expect(isInCoverage({ lat: 5.0292, lng: 119.7731 })).toBe(true) // Bongao
   })
 
-  test('rejects points outside NCR', () => {
-    expect(isInCoverage({ lat: 14.586, lng: 121.175 })).toBe(false) // Antipolo
-    expect(isInCoverage({ lat: 14.359, lng: 121.056 })).toBe(false) // San Pedro
+  test('catalog cities include Cebu City and Davao City halls and exclude neighbors', () => {
+    expect(CEBU_CITY_REGIONS.some((region) => isInRegion({ lat: 10.3157, lng: 123.8854 }, region))).toBe(true)
+    expect(CEBU_CITY_REGIONS.some((region) => isInRegion({ lat: 10.332, lng: 123.942 }, region))).toBe(false)
+    expect(DAVAO_CITY_REGIONS.some((region) => isInRegion({ lat: 7.1907, lng: 125.4553 }, region))).toBe(true)
+    expect(DAVAO_CITY_REGIONS.some((region) => isInRegion({ lat: 7.447, lng: 125.808 }, region))).toBe(false)
+  })
+
+  test('rejects points outside the Philippines', () => {
+    expect(isInCoverage({ lat: 1.3521, lng: 103.8198 })).toBe(false) // Singapore
+    expect(isInCoverage({ lat: 35.6762, lng: 139.6503 })).toBe(false) // Tokyo
+    expect(isInCoverage({ lat: 5.9804, lng: 116.0735 })).toBe(false) // Kota Kinabalu
+    expect(isInCoverage({ lat: 13.5, lng: 119.0 })).toBe(false) // open sea west of Luzon
   })
 
   test('fallback sits inside the region bounds', () => {
@@ -257,6 +283,10 @@ describe('shop to cafe mapping', () => {
 
   test('defaults unpaid shops to the standard pin', () => {
     expect(mapShopToCafe(shop).markerTier).toBe('standard')
+  })
+
+  test('carries OSM source for attribution', () => {
+    expect(mapShopToCafe({ ...shop, source: 'openstreetmap' }).source).toBe('openstreetmap')
   })
 })
 

@@ -118,7 +118,7 @@
             </p>
             <p v-else-if="visibleCafes.length === 0" class="home-empty">
               <Coffee :size="18" :stroke-width="2.25" aria-hidden="true" />
-              <span>{{ cafes.length === 0 ? 'No coffee shops yet.' : 'No coffee shops match that filter.' }}</span>
+              <span>{{ emptyCopy }}</span>
             </p>
 
             <CafeCard
@@ -147,10 +147,12 @@
 
 <script lang="ts" setup>
 import { Capacitor } from '@capacitor/core'
+import { onIonViewWillEnter } from '@ionic/vue'
 import { BatteryCharging, CircleAlert, Coffee, Flame, Hourglass, Navigation, Plug, Plus, RefreshCw, Search, Wifi, Zap } from 'lucide-vue-next'
 import CafeCard from '~/components/cafe/CafeCard.vue'
 import AppTabBar from '~/components/navigation/AppTabBar.vue'
 import type { Cafe } from '~/types/cafe'
+import { featuredAdCopy } from '~/utils/admin-ads'
 import { CAFE_FILTERS, filterCafes, type CafeFilterIcon, type CafeFilterId } from '~/utils/cafe-filters'
 import { distanceMeters, formatDistance } from '~/utils/geo'
 
@@ -169,6 +171,7 @@ const filters = CAFE_FILTERS
 const { cafes: liveCafes, status, error, refresh } = useApprovedShops()
 const { ads: liveAds } = useActiveAds()
 const { status: locationStatus, location, usingFallback, requestLocation } = useDeviceLocation()
+const { radiusKm: nearbyRadiusKm, radiusMeters, hydrate: hydrateNearbyRadius } = useNearbyRadius()
 const { user, loadProfile } = useAuth()
 const cafes = computed(() => liveCafes.value)
 
@@ -188,16 +191,21 @@ const usingLiveAds = computed(() => liveAds.value.length > 0)
 
 const homeAds = computed(() => {
   if (usingLiveAds.value) {
-    return liveAds.value.map((ad, index) => ({
-      id: ad.id,
-      shopId: ad.shopId,
-      name: ad.name,
-      place: '',
-      image: ad.image,
-      badge: 'Ad',
-      kind: 'ad' as const,
-      ariaLabel: `Ad: ${ad.name}, ${index + 1} of ${liveAds.value.length}`,
-    }))
+    return liveAds.value.map((ad, index) => {
+      const copy = featuredAdCopy(ad.name, ad.label)
+      return {
+        id: ad.id,
+        shopId: ad.shopId,
+        name: copy.name,
+        place: copy.place,
+        image: ad.image,
+        badge: 'Ad',
+        kind: 'ad' as const,
+        ariaLabel: copy.place
+          ? `Ad: ${copy.name}, ${copy.place}, ${index + 1} of ${liveAds.value.length}`
+          : `Ad: ${copy.name}, ${index + 1} of ${liveAds.value.length}`,
+      }
+    })
   }
   return placementCafes.value.map((cafe, index) => {
     const badge = cafe.markerTier === 'promoted' ? 'Sponsored' : 'Partner'
@@ -239,20 +247,32 @@ const locationNote = computed(() => {
   if (activeFilter.value !== 'near') return ''
   if (locationStatus.value === 'denied') return 'Location is off, so this list is not sorted by distance.'
   if (locationStatus.value === 'unavailable') return 'Location is unavailable, so this list is not sorted by distance.'
+  if (origin.value) return `within ${nearbyRadiusKm.value} km`
   return ''
 })
 
-const listKey = computed(() => `${activeFilter.value}|${submittedQuery.value}|${status.value}`)
+const listKey = computed(() => (
+  `${activeFilter.value}|${submittedQuery.value}|${status.value}|${nearbyRadiusKm.value}|${origin.value ? 'geo' : 'nogeo'}`
+))
 
 const visibleCafes = computed(() => filterCafes(cafes.value, {
   query: submittedQuery.value,
   filter: activeFilter.value,
   origin: origin.value,
+  radiusMeters: radiusMeters.value,
 }))
 
 const shopCountLabel = computed(() => {
   const count = visibleCafes.value.length
   return `${count} ${count === 1 ? 'shop' : 'shops'}`
+})
+
+const emptyCopy = computed(() => {
+  if (cafes.value.length === 0) return 'No coffee shops yet.'
+  if (activeFilter.value === 'near' && origin.value) {
+    return `No coffee shops within ${nearbyRadiusKm.value} km.`
+  }
+  return 'No coffee shops match that filter.'
 })
 
 const {
@@ -284,6 +304,10 @@ const openCafe = async (id: string) => {
 const addCafe = async () => {
   await navigateTo('/app/submit-cafe')
 }
+
+onIonViewWillEnter(() => {
+  hydrateNearbyRadius()
+})
 
 onMounted(() => {
   if (Capacitor.getPlatform() === 'android') {

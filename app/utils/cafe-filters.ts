@@ -54,18 +54,36 @@ export function sortCafes(cafes: Cafe[], filter: CafeFilterId, origin?: LatLng |
   return next
 }
 
+export function cafeWithinRadius(
+  cafe: Cafe,
+  origin: LatLng | null | undefined,
+  radiusMeters: number | null | undefined,
+): boolean {
+  if (!origin || radiusMeters == null || !Number.isFinite(radiusMeters)) return true
+  return distanceMeters(origin, cafe) <= radiusMeters
+}
+
 export function filterCafes(
   cafes: Cafe[],
-  options: { query?: string; filter?: CafeFilterId; origin?: LatLng | null },
+  options: {
+    query?: string
+    filter?: CafeFilterId
+    origin?: LatLng | null
+    radiusMeters?: number | null
+  },
 ): Cafe[] {
   const term = options.query?.trim().toLowerCase() ?? ''
   const filter = options.filter ?? 'near'
+  const origin = options.origin
+  const radiusMeters = filter === 'near' ? options.radiusMeters : null
   const matched = cafes.filter((cafe) => {
     const matchesQuery =
       !term
       || cafe.name.toLowerCase().includes(term)
       || cafe.address.toLowerCase().includes(term)
-    return matchesQuery && cafeMatchesFilter(cafe, filter)
+    return matchesQuery
+      && cafeMatchesFilter(cafe, filter)
+      && cafeWithinRadius(cafe, origin, radiusMeters)
   })
-  return sortCafes(matched, filter, options.origin)
+  return sortCafes(matched, filter, origin)
 }

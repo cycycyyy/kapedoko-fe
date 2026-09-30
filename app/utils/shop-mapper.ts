@@ -170,6 +170,7 @@ export function mapShopToCafe(
     lat: Number(shop.latitude),
     lng: Number(shop.longitude),
     markerTier,
+    source: shop.source ?? null,
   }
 }
 

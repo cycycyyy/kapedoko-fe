@@ -1,4 +1,15 @@
+<template>
+  <IonPage />
+</template>
+
 <script setup lang="ts">
-// App home is /app. Guests and signed-in users both enter there.
-await navigateTo('/app', { replace: true })
+import { IonPage } from '@ionic/vue'
+
+definePageMeta({
+  redirect: '/app',
+})
+
+onMounted(() => {
+  void navigateTo('/app', { replace: true })
+})
 </script>

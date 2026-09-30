@@ -17,7 +17,7 @@ import {
   type CafeReviewDraft,
 } from './cafe-review'
 import { amenitiesFromStats, mapShopToCafe, withCafeBusyness, withCafeReviews } from './shop-mapper'
-import { isShopId, shopIdFromRoute } from './approved-shops'
+import { isShopId, resolveLiveShopId, shopIdFromRoute } from './approved-shops'
 import type { ShopRow } from '../types/shop'
 
 const completeDraft = (): CafeReviewDraft => ({
@@ -254,11 +254,19 @@ describe('review route shop id', () => {
     const id = '2f1c8e6a-4b9d-4c3a-9f10-7a6b5c4d3e2f'
     expect(shopIdFromRoute(`/app/cafes/${id}/review`)).toBe(id)
     expect(shopIdFromRoute(`/#/app/cafes/${id}/review`)).toBe(id)
+    expect(shopIdFromRoute(`/app/cafes/${id}/claim`)).toBe(id)
+    expect(shopIdFromRoute(`/#/app/cafes/${id}/claim`)).toBe(id)
+    expect(shopIdFromRoute(`/app/cafes/${id}/edit`)).toBe(id)
     expect(shopIdFromRoute(`/admin/cafes/${id}`)).toBe(id)
     expect(shopIdFromRoute(`/#/admin/cafes/${id}`)).toBe(id)
     expect(shopIdFromRoute('/app/map', undefined)).toBe('')
     expect(isShopId(id)).toBe(true)
     expect(isShopId('')).toBe(false)
     expect(isShopId('review')).toBe(false)
+    expect(isShopId('claim')).toBe(false)
+    expect(resolveLiveShopId('', '', undefined, { href: `/app/cafes/${id}/claim` })).toBe(id)
+    expect(resolveLiveShopId('/app/cafes/claim', '/app/cafes/claim', 'claim', {
+      href: `/app/cafes/${id}/claim`,
+    })).toBe(id)
   })
 })

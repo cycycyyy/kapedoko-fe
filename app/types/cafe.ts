@@ -48,4 +48,5 @@ export interface Cafe {
   lat: number
   lng: number
   markerTier: MarkerTier
+  source?: 'openstreetmap' | 'user' | 'admin' | null
 }

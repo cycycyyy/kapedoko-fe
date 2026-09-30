@@ -6,33 +6,33 @@
       :status="status"
       :error="error"
       :pending-count="counts.pending"
+      :claim-count="counts.pendingClaims"
     >
-      <section class="admin-stats" aria-label="Admin totals">
-        <article v-for="card in cards" :key="card.label" class="admin-card">
-          <p class="admin-meta">{{ card.label }}</p>
-          <h2>{{ card.value }}</h2>
-        </article>
-      </section>
+      <p class="admin-facts" aria-label="Admin totals">
+        <template v-for="(card, index) in cards" :key="card.label">
+          {{ card.value }} <span>{{ card.label }}</span>
+          <template v-if="index < cards.length - 1"> · </template>
+        </template>
+      </p>
+
+      <AdminPendingRail :shops="pending" :status="status" />
+      <AdminPendingRail
+        :shops="claimShops"
+        :status="status"
+        title="Waiting to verify"
+        empty-copy="No ownership claims waiting."
+        :to="claimTo"
+      />
 
       <div class="admin-grid dashboard-grid">
         <section class="admin-panel">
-          <h2>Needs a decision</h2>
-          <p v-if="pending.length === 0" class="admin-meta">No pending cafe requests.</p>
-          <article v-for="shop in pending.slice(0, 5)" :key="shop.id" class="admin-card">
-            <h2>{{ shop.name }}</h2>
-            <p>{{ shop.address }}</p>
-            <NuxtLink class="admin-link" :to="`/admin/requests?id=${shop.id}`">Review request</NuxtLink>
-          </article>
-          <NuxtLink v-if="pending.length" class="admin-link" to="/admin/requests">All requests</NuxtLink>
-        </section>
-        <section class="admin-panel">
           <h2>Open reports</h2>
           <p v-if="openReports.length === 0" class="admin-meta">No open reports.</p>
-          <article v-for="report in openReports.slice(0, 5)" :key="report.id" class="admin-card">
+          <div v-for="report in openReports.slice(0, 5)" :key="report.id">
             <h2>{{ report.target_type === 'review' ? 'Review' : 'Photo' }}</h2>
-            <p>{{ report.reason || 'No note from the reporter.' }}</p>
-            <NuxtLink class="admin-link" to="/admin/moderation">Open moderation</NuxtLink>
-          </article>
+            <p class="admin-meta">{{ report.reason || 'No note from the reporter.' }}</p>
+            <p><NuxtLink class="admin-link" to="/admin/moderation">Open moderation</NuxtLink></p>
+          </div>
         </section>
       </div>
     </AdminShell>
@@ -40,6 +40,7 @@
 </template>
 
 <script lang="ts" setup>
+import AdminPendingRail from '~/components/admin/AdminPendingRail.vue'
 import AdminShell from '~/components/admin/AdminShell.vue'
 
 definePageMeta({
@@ -48,12 +49,18 @@ definePageMeta({
 
 const admin = useAdminData()
 const usersAdmin = useAdminUsers()
-const { shops, reports, counts, status, error, load } = admin
+const { shops, reports, claims, counts, status, error, load } = admin
 const pending = computed(() => shops.value.filter((shop) => shop.status === 'pending'))
+const claimShops = computed(() => {
+  const ids = new Set(claims.value.filter((claim) => claim.status === 'pending').map((claim) => claim.shop_id))
+  return shops.value.filter((shop) => ids.has(shop.id))
+})
+const claimTo = () => '/admin/claims'
 const openReports = computed(() => reports.value.filter((report) => report.status === 'open'))
 const userTotal = computed(() => usersAdmin.total.value)
 const cards = computed(() => [
   { label: 'Pending', value: counts.value.pending },
+  { label: 'Claims', value: counts.value.pendingClaims },
   { label: 'Approved', value: counts.value.approved },
   { label: 'Rejected', value: counts.value.rejected },
   { label: 'Reports', value: counts.value.openReports },
@@ -69,12 +76,6 @@ onMounted(async () => {
 
 <style scoped>
 .dashboard-grid {
-  margin-top: 16px;
-}
-
-@media (min-width: 1024px) {
-  .dashboard-grid {
-    grid-template-columns: 1fr 1fr;
-  }
+  margin-top: 8px;
 }
 </style>

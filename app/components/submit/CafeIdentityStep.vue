@@ -30,7 +30,7 @@
 
     <div class="identity__logo">
       <p class="identity__logo-label" id="logo-label">Logo</p>
-      <p class="identity__hint" id="logo-hint">Optional. JPG, PNG, or WebP, under 2 MB.</p>
+      <p class="identity__hint" id="logo-hint">{{ logoHint }}</p>
 
       <div class="identity__logo-row">
         <button
@@ -41,10 +41,11 @@
           @click="pick"
         >
           <img
-            v-if="preview"
-            :src="preview"
+            v-if="shownPreview"
+            :src="shownPreview"
             alt=""
             class="identity__preview"
+            @error="onPreviewError"
           />
           <span v-else class="identity__logo-empty">
             <Plus :size="18" :stroke-width="2.25" aria-hidden="true" />
@@ -54,10 +55,20 @@
 
         <div class="identity__logo-actions">
           <button type="button" class="identity__text-btn" @click="pick">
-            {{ preview ? 'Replace logo' : 'Choose image' }}
+            {{ hasSelectedLogo ? 'Upload a different image' : 'Choose image' }}
           </button>
           <button
-            v-if="preview"
+            v-if="canUseExisting"
+            type="button"
+            class="identity__text-btn"
+            :aria-expanded="chooserOpen"
+            aria-controls="logo-chooser"
+            @click="openChooser"
+          >
+            {{ hasSelectedLogo ? 'Change' : 'Use an existing logo' }}
+          </button>
+          <button
+            v-if="hasSelectedLogo"
             type="button"
             class="identity__text-btn identity__text-btn--quiet"
             @click="clear"
@@ -65,6 +76,71 @@
             Remove
           </button>
         </div>
+      </div>
+
+      <p v-if="selectedSourceLabel" class="identity__source">{{ selectedSourceLabel }}</p>
+
+      <div
+        v-if="chooserOpen && canUseExisting"
+        id="logo-chooser"
+        class="identity__chooser"
+        role="dialog"
+        aria-labelledby="logo-chooser-title"
+      >
+        <p id="logo-chooser-title" class="identity__chooser-title">Use a logo already on another cafe</p>
+        <label class="identity__field identity__chooser-search">
+          <span class="sr-only">Search cafes with logos</span>
+          <input
+            ref="searchRef"
+            v-model="chooserQuery"
+            type="search"
+            name="logo-search"
+            placeholder="Search by cafe name or address"
+            autocomplete="off"
+            @keydown.esc.prevent="chooserOpen = false"
+          />
+        </label>
+        <p v-if="logoSourcesStatus === 'loading'" class="identity__hint">Loading cafe logos…</p>
+        <p v-else-if="logoSourcesStatus === 'error'" class="identity__error" role="alert">
+          Could not load existing logos.
+        </p>
+        <p v-else-if="(logoSources ?? []).length === 0" class="identity__hint">No saved cafe logos yet.</p>
+        <p v-else-if="filteredSources.length === 0" class="identity__hint">No cafes match that search.</p>
+        <ul
+          v-else
+          class="identity__chooser-list"
+          role="listbox"
+          aria-label="Cafes with saved logos"
+        >
+          <li v-for="source in filteredSources" :key="source.shopId">
+            <button
+              type="button"
+              class="identity__chooser-option"
+              role="option"
+              :aria-selected="source.logoObjectKey === logoObjectKey"
+              @click="chooseSource(source)"
+            >
+              <img
+                v-if="source.logoUrl && !broken[source.shopId]"
+                :src="source.logoUrl"
+                alt=""
+                width="48"
+                height="48"
+                @error="broken[source.shopId] = true"
+              />
+              <span v-else class="identity__chooser-fallback" aria-hidden="true">
+                <Plus :size="16" :stroke-width="2.25" />
+              </span>
+              <span class="identity__chooser-copy">
+                <span class="identity__chooser-name">{{ source.name }}</span>
+                <span class="identity__chooser-address">{{ source.address }}</span>
+              </span>
+            </button>
+          </li>
+        </ul>
+        <button type="button" class="identity__text-btn identity__text-btn--quiet" @click="chooserOpen = false">
+          Cancel
+        </button>
       </div>
 
       <p v-if="localLogoIssue || logoIssue" id="identity-logo-error" class="identity__error" role="alert">
@@ -84,29 +160,77 @@
 
 <script lang="ts" setup>
 import { Coffee, Plus } from 'lucide-vue-next'
+import { searchCafeLogoSources, type CafeLogoSource } from '~/utils/admin-logos'
 import { logoFileError } from '~/utils/logo'
 
 const props = withDefaults(defineProps<{
   name: string
   logoFile: File | null
+  logoObjectKey?: string | null
+  logoPreviewUrl?: string | null
+  logoSourceLabel?: string | null
+  logoSources?: CafeLogoSource[] | null
+  logoSourcesStatus?: 'idle' | 'loading' | 'ready' | 'error'
   nameIssue?: string | null
   logoIssue?: string | null
   lede?: string
 }>(), {
+  logoObjectKey: null,
+  logoPreviewUrl: null,
+  logoSourceLabel: null,
+  logoSources: null,
+  logoSourcesStatus: 'idle',
   lede: 'This listing stays off the map until we review it. WiFi and outlets come from visitor reviews, not this form.',
 })
 
 const emit = defineEmits<{
   'update:name': [value: string]
   'update:logoFile': [value: File | null]
+  'update:logoObjectKey': [value: string | null]
 }>()
 
 const fileRef = ref<HTMLInputElement | null>(null)
+const searchRef = ref<HTMLInputElement | null>(null)
 const preview = ref<string | null>(null)
+const previewBroken = ref(false)
 const localLogoIssue = ref<string | null>(null)
+const chooserOpen = ref(false)
+const chooserQuery = ref('')
+const broken = reactive<Record<string, boolean>>({})
+
+const canUseExisting = computed(() => props.logoSources != null)
+const logoHint = computed(() => (
+  canUseExisting.value
+    ? 'Optional. Upload a JPG, PNG, or WebP under 2 MB, or reuse a logo already on another cafe.'
+    : 'Optional. JPG, PNG, or WebP, under 2 MB.'
+))
+const shownPreview = computed(() => {
+  if (previewBroken.value) return null
+  return preview.value || props.logoPreviewUrl || null
+})
+const hasSelectedLogo = computed(() => Boolean(props.logoFile || props.logoObjectKey || shownPreview.value))
+const filteredSources = computed(() => searchCafeLogoSources(props.logoSources ?? [], chooserQuery.value))
+const selectedSourceLabel = computed(() => {
+  if (!canUseExisting.value) return ''
+  if (props.logoFile) return 'New upload'
+  return props.logoSourceLabel || ''
+})
 
 const pick = () => {
+  chooserOpen.value = false
   fileRef.value?.click()
+}
+
+const openChooser = () => {
+  chooserOpen.value = !chooserOpen.value
+  chooserQuery.value = ''
+  if (chooserOpen.value) {
+    void nextTick(() => searchRef.value?.focus())
+  }
+}
+
+const onPreviewError = () => {
+  previewBroken.value = true
 }
 
 const revoke = () => {
@@ -116,9 +240,22 @@ const revoke = () => {
 
 const clear = () => {
   revoke()
+  previewBroken.value = false
   localLogoIssue.value = null
+  chooserOpen.value = false
   if (fileRef.value) fileRef.value.value = ''
   emit('update:logoFile', null)
+  emit('update:logoObjectKey', null)
+}
+
+const chooseSource = (source: CafeLogoSource) => {
+  revoke()
+  previewBroken.value = false
+  localLogoIssue.value = null
+  if (fileRef.value) fileRef.value.value = ''
+  chooserOpen.value = false
+  emit('update:logoFile', null)
+  emit('update:logoObjectKey', source.logoObjectKey)
 }
 
 const onFile = (event: Event) => {
@@ -134,8 +271,10 @@ const onFile = (event: Event) => {
   }
 
   localLogoIssue.value = null
+  previewBroken.value = false
   revoke()
   preview.value = URL.createObjectURL(file)
+  emit('update:logoObjectKey', null)
   emit('update:logoFile', file)
 }
 
@@ -143,6 +282,13 @@ watch(
   () => props.logoFile,
   (file) => {
     if (!file && preview.value) revoke()
+  },
+)
+
+watch(
+  () => props.logoPreviewUrl,
+  () => {
+    previewBroken.value = false
   },
 )
 
@@ -277,9 +423,16 @@ onBeforeUnmount(revoke)
 
 .identity__logo-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   margin-top: 2px;
+}
+
+.identity__logo-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
 }
 
 .identity__logo-btn {
@@ -316,11 +469,116 @@ onBeforeUnmount(revoke)
   object-fit: cover;
 }
 
-.identity__logo-actions {
+.identity__source {
+  margin: 0;
+  color: color-mix(in srgb, var(--kd-ink) 78%, #faf8f5);
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.identity__chooser {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 16px;
+  background: #faf8f5;
+}
+
+.identity__chooser-title {
+  margin: 0;
+  color: var(--kd-ink);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.identity__chooser-search {
+  margin-top: 4px;
+}
+
+.identity__chooser-list {
+  display: flex;
+  flex-direction: column;
   gap: 4px;
+  max-height: 280px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.identity__chooser-option {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 64px;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--kd-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.identity__chooser-option img,
+.identity__chooser-fallback {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #f2f2f2;
+}
+
+.identity__chooser-fallback {
+  display: grid;
+  place-items: center;
+  color: color-mix(in srgb, var(--kd-ink) 55%, #faf8f5);
+}
+
+.identity__chooser-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.identity__chooser-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.identity__chooser-address {
+  overflow: hidden;
+  color: color-mix(in srgb, var(--kd-ink) 72%, #faf8f5);
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.identity__chooser-option[aria-selected='true'] {
+  border-color: var(--kd-accent);
+  background: color-mix(in srgb, var(--kd-accent) 16%, #faf8f5);
+}
+
+.identity__chooser-option:focus-visible {
+  outline: 2px solid var(--kd-primary);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .identity__chooser-option:hover:not([aria-selected='true']) {
+    background: color-mix(in srgb, var(--kd-ink) 4%, #faf8f5);
+  }
 }
 
 .identity__text-btn {
@@ -388,6 +646,10 @@ onBeforeUnmount(revoke)
 :root.is-android .identity__field input {
   min-height: 48px;
   height: 48px;
+}
+
+:root.is-android .identity__chooser-option {
+  min-height: 64px;
 }
 
 .sr-only {

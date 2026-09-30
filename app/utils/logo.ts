@@ -1,8 +1,13 @@
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
 export const LOGO_MAX_BYTES = 2 * 1024 * 1024
+
+/** App mark used in logo slots when a cafe has no assigned logo. */
+export const KAPEDOKO_APP_LOGO_SRC = '/assets/kapedoko-logo_dark.png'
+export const KAPEDOKO_APP_LOGO_LIGHT_SRC = '/assets/kapedoko-logo_light.png'
+
 const LEGACY_MARKS = new Set([
-  '/assets/kapedoko-logo_dark.png',
-  '/assets/kapedoko-logo_light.png',
+  KAPEDOKO_APP_LOGO_SRC,
+  KAPEDOKO_APP_LOGO_LIGHT_SRC,
 ])
 
 /** Legacy yellow plate SVG — promo pin logo fallback only. */
@@ -19,6 +24,11 @@ const PLACEHOLDER_MARKS = new Set([
 
 export function isKapedokoMark(src?: string | null): boolean {
   return !src || PLACEHOLDER_MARKS.has(src)
+}
+
+export function cafeDisplayLogo(src?: string | null): string {
+  if (!src || isKapedokoMark(src)) return KAPEDOKO_APP_LOGO_SRC
+  return src
 }
 
 export function logoFileError(file: File | null): string | null {

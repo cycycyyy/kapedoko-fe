@@ -2,35 +2,37 @@
   <section class="onboarding-step" aria-labelledby="onboarding-step-2-title">
     <header class="onboarding-step__brand">
       <img
-        src="/assets/kapedoko-logo_dark.png"
+        src="/assets/kapedoko-horizontal-text_dark.png"
         alt="KapeDoko"
-        width="46"
-        height="60"
-        class="onboarding-step__logo"
+        width="120"
+        height="26"
+        class="onboarding-step__wordmark"
       />
     </header>
 
-    <div class="onboarding-step__stage" aria-hidden="true" />
+    <div class="onboarding-step__stage">
+      <div class="teach-map" aria-hidden="true">
+        <span class="teach-map__street teach-map__street--h" />
+        <span class="teach-map__street teach-map__street--h2" />
+        <span class="teach-map__street teach-map__street--v" />
+        <span class="teach-map__street teach-map__street--v2" />
+        <img
+          src="/assets/bean-pin.png"
+          alt=""
+          width="36"
+          height="48"
+          class="teach-map__pin"
+        />
+        <span class="teach-map__label">Exact location</span>
+      </div>
 
-    <div class="onboarding-step__footer">
       <p id="onboarding-step-2-title" class="onboarding-step__copy">
         Use our maps to find the exact location of coffee shops.
       </p>
+    </div>
 
-      <div class="onboarding-step__dots" role="tablist" aria-label="Onboarding steps">
-        <button
-          v-for="step in 3"
-          :key="step"
-          type="button"
-          role="tab"
-          class="onboarding-step__dot"
-          :class="{ 'is-active': activeStep === step - 1 }"
-          :aria-selected="activeStep === step - 1"
-          :aria-label="`Go to step ${step}`"
-          @click="emit('goTo', step - 1)"
-        />
-      </div>
-
+    <div class="onboarding-step__footer">
+      <OnboardingTicks :active-step="activeStep" @go-to="emit('goTo', $event)" />
       <button type="button" class="onboarding-step__cta" @click="emit('next')">
         Next
       </button>
@@ -39,6 +41,9 @@
 </template>
 
 <script lang="ts" setup>
+import OnboardingTicks from '~/components/onboarding/OnboardingTicks.vue'
+import './onboarding-step.css'
+
 defineProps<{
   activeStep: number
 }>()
@@ -50,111 +55,70 @@ const emit = defineEmits<{
 </script>
 
 <style scoped>
-.onboarding-step {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 100%;
-  background: var(--kd-white);
-  color: var(--kd-black);
-  padding: max(2.75rem, env(safe-area-inset-top)) 0 max(1.5rem, env(safe-area-inset-bottom));
+.teach-map {
+  position: relative;
+  height: 220px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 34%, transparent);
+  border-radius: 16px;
+  background: #faf8f5;
 }
 
-.onboarding-step__brand {
-  display: flex;
-  justify-content: center;
-  flex-shrink: 0;
+.teach-map__street {
+  position: absolute;
+  background: color-mix(in srgb, var(--kd-ink) 12%, transparent);
 }
 
-.onboarding-step__logo {
-  width: 46px;
-  height: 60px;
-  display: block;
+.teach-map__street--h {
+  top: 38%;
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+
+.teach-map__street--h2 {
+  top: 68%;
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+
+.teach-map__street--v {
+  top: 0;
+  bottom: 0;
+  left: 32%;
+  width: 1px;
+}
+
+.teach-map__street--v2 {
+  top: 0;
+  bottom: 0;
+  left: 71%;
+  width: 1px;
+}
+
+.teach-map__pin {
+  position: absolute;
+  top: 42%;
+  left: 32%;
+  width: 36px;
+  height: 48px;
+  transform: translate(-50%, -88%);
   object-fit: contain;
 }
 
-.onboarding-step__stage {
-  flex: 1 1 auto;
-  min-height: 215px;
-}
-
-.onboarding-step__footer {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0 20px;
-}
-
-.onboarding-step__copy {
-  margin: 0;
-  max-width: 325px;
-  text-align: center;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.375;
-  color: var(--kd-black);
-}
-
-.onboarding-step__dots {
-  display: flex;
-  justify-content: center;
-  gap: 3.2px;
-  margin: 22px 0 18px;
-}
-
-.onboarding-step__dot {
-  width: 9.5px;
-  height: 9.5px;
-  padding: 0;
-  border: 0;
-  border-radius: 999px;
-  background: var(--kd-ink-25);
-  cursor: pointer;
-  transition: background-color 180ms ease, transform 180ms ease;
-}
-
-.onboarding-step__dot.is-active {
-  background: var(--kd-accent);
-  transform: scale(1.08);
-}
-
-.onboarding-step__dot:focus-visible {
-  outline: 2px solid var(--kd-primary);
-  outline-offset: 3px;
-}
-
-.onboarding-step__cta {
-  width: 100%;
-  max-width: 350px;
-  height: 45px;
-  border: 0;
+.teach-map__label {
+  position: absolute;
+  top: 42%;
+  left: calc(32% + 18px);
+  padding: 6px 10px;
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 34%, transparent);
   border-radius: 8px;
-  background: var(--kd-accent);
+  background: #faf8f5;
   color: var(--kd-ink);
-  font-size: 16px;
+  font-size: 0.75rem;
   font-weight: 700;
-  cursor: pointer;
-  transition: opacity 160ms ease, transform 160ms ease;
-}
-
-.onboarding-step__cta:hover {
-  opacity: 0.92;
-}
-
-.onboarding-step__cta:active {
-  transform: scale(0.985);
-}
-
-.onboarding-step__cta:focus-visible {
-  outline: 2px solid var(--kd-primary);
-  outline-offset: 3px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .onboarding-step__dot,
-  .onboarding-step__cta {
-    transition: none;
-  }
+  line-height: 1.3;
+  transform: translateY(-50%);
 }
 </style>

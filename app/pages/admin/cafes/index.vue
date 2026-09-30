@@ -6,10 +6,13 @@
       :status="status"
       :error="error"
       :pending-count="counts.pending"
+      :claim-count="counts.pendingClaims"
     >
       <template #actions>
         <NuxtLink class="admin-btn" to="/admin/cafes/new">Add cafe</NuxtLink>
       </template>
+
+      <AdminPendingRail :shops="pending" :status="status" />
 
       <div class="admin-toolbar">
         <input v-model="query" class="admin-search" type="search" placeholder="Search cafe name or address" />
@@ -27,66 +30,69 @@
 
       <p v-if="visible.length === 0" class="admin-meta">No cafes match that search.</p>
 
-      <div class="admin-table-wrap">
-        <table class="admin-table">
-          <thead>
-            <tr>
-              <th>Cafe</th>
-              <th>Status</th>
-              <th>Address</th>
-              <th>Updated</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="shop in paged" :key="shop.id">
-              <td>{{ shop.name }}</td>
-              <td><span class="admin-status" :class="`admin-status--${shop.status}`">{{ shop.status }}</span></td>
-              <td>{{ shop.address }}</td>
-              <td>{{ formatAdminDate(shop.updated_at) }}</td>
-              <td>
-                <div class="admin-row-actions">
-                  <NuxtLink class="admin-link" :to="`/admin/cafes/${shop.id}`">Edit</NuxtLink>
-                  <button
-                    v-if="shop.status === 'approved'"
-                    type="button"
-                    class="admin-btn admin-btn--ghost"
-                    :disabled="savingId === shop.id"
-                    @click="unpublish(shop)"
-                  >
-                    Unpublish
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <div v-else class="admin-ledger">
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Cafe</th>
+                <th>Status</th>
+                <th>Address</th>
+                <th>Updated</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="shop in paged" :key="shop.id">
+                <td>{{ shop.name }}</td>
+                <td><span class="admin-status" :class="`admin-status--${shop.status}`">{{ statusWord(shop.status) }}</span></td>
+                <td>{{ shop.address }}</td>
+                <td>{{ formatAdminDate(shop.updated_at) }}</td>
+                <td>
+                  <div class="admin-row-actions">
+                    <NuxtLink class="admin-link" :to="`/admin/cafes/${shop.id}`">Edit</NuxtLink>
+                    <button
+                      v-if="shop.status === 'approved'"
+                      type="button"
+                      class="admin-btn admin-btn--quiet"
+                      :disabled="savingId === shop.id"
+                      @click="unpublish(shop)"
+                    >
+                      Unpublish
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-      <div class="admin-cards">
-        <article v-for="shop in paged" :key="shop.id" class="admin-card">
-          <h2>{{ shop.name }}</h2>
-          <p>{{ shop.address }}</p>
-          <p><span class="admin-status" :class="`admin-status--${shop.status}`">{{ shop.status }}</span></p>
-          <div class="admin-row-actions">
-            <NuxtLink class="admin-link" :to="`/admin/cafes/${shop.id}`">Edit</NuxtLink>
-            <button
-              v-if="shop.status === 'approved'"
-              type="button"
-              class="admin-btn admin-btn--ghost"
-              :disabled="savingId === shop.id"
-              @click="unpublish(shop)"
-            >
-              Unpublish
-            </button>
-          </div>
-        </article>
+        <div class="admin-cards">
+          <article v-for="shop in paged" :key="shop.id" class="admin-card">
+            <h2>{{ shop.name }}</h2>
+            <p><span class="admin-status" :class="`admin-status--${shop.status}`">{{ statusWord(shop.status) }}</span></p>
+            <p>{{ shop.address }}</p>
+            <div class="admin-row-actions">
+              <NuxtLink class="admin-link" :to="`/admin/cafes/${shop.id}`">Edit</NuxtLink>
+              <button
+                v-if="shop.status === 'approved'"
+                type="button"
+                class="admin-btn admin-btn--quiet"
+                :disabled="savingId === shop.id"
+                @click="unpublish(shop)"
+              >
+                Unpublish
+              </button>
+            </div>
+          </article>
+        </div>
       </div>
     </AdminShell>
   </IonPage>
 </template>
 
 <script lang="ts" setup>
+import AdminPendingRail from '~/components/admin/AdminPendingRail.vue'
 import AdminShell from '~/components/admin/AdminShell.vue'
 import type { ShopRow, ShopStatus } from '~/types/shop'
 import { formatAdminDate } from '~/utils/admin-nav'
@@ -106,6 +112,7 @@ const filters = [
   { id: 'rejected' as const, label: 'Rejected' },
 ]
 
+const pending = computed(() => shops.value.filter((shop) => shop.status === 'pending'))
 const visible = computed(() => {
   const term = query.value.trim().toLowerCase()
   return shops.value.filter((shop) => {
@@ -115,6 +122,11 @@ const visible = computed(() => {
   })
 })
 const paged = computed(() => visible.value.slice(0, 80))
+const statusWord = (value: ShopStatus) => {
+  if (value === 'approved') return 'Approved'
+  if (value === 'pending') return 'Pending'
+  return 'Rejected'
+}
 
 const unpublish = async (shop: ShopRow) => {
   if (!window.confirm(`Unpublish ${shop.name}? It leaves Home and Map until it is approved again.`)) return

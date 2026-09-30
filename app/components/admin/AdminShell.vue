@@ -22,8 +22,10 @@
             :class="{ 'is-active': active === item.id }"
             @click="navOpen = false"
           >
+            <span class="admin-shell__link-mark" aria-hidden="true" />
             {{ item.label }}
             <span v-if="item.id === 'requests' && pendingCount > 0" class="admin-shell__badge">{{ pendingCount }}</span>
+            <span v-if="item.id === 'claims' && claimCount > 0" class="admin-shell__badge">{{ claimCount }}</span>
           </NuxtLink>
         </nav>
         <NuxtLink to="/app" class="admin-shell__back" @click="navOpen = false">Back to app</NuxtLink>
@@ -71,8 +73,10 @@ const props = withDefaults(defineProps<{
   status?: 'idle' | 'loading' | 'ready' | 'forbidden' | 'error'
   error?: string
   pendingCount?: number
+  claimCount?: number
 }>(), {
   pendingCount: 0,
+  claimCount: 0,
 })
 
 const route = useRoute()
@@ -98,7 +102,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .admin-shell-content {
-  --background: var(--kd-enamel);
+  --background: #f2f2f2;
   --padding-start: 0;
   --padding-end: 0;
   --padding-top: 0;
@@ -108,8 +112,9 @@ onBeforeUnmount(() => {
 .admin-shell {
   display: grid;
   min-height: 100%;
-  background: var(--kd-enamel);
+  background: #f2f2f2;
   color: var(--kd-ink);
+  scrollbar-color: color-mix(in srgb, var(--kd-ink) 28%, transparent) #f2f2f2;
 }
 
 .admin-shell__scrim {
@@ -121,8 +126,8 @@ onBeforeUnmount(() => {
   flex-direction: column;
   gap: 18px;
   padding: 24px 18px;
-  background: var(--kd-white);
-  border-right: 1px solid var(--kd-ink-10);
+  background: #faf8f5;
+  border-right: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
 }
 
 .admin-shell__brand {
@@ -136,14 +141,12 @@ onBeforeUnmount(() => {
   height: auto;
 }
 
-.admin-shell__brand p,
-.admin-shell__back {
+.admin-shell__brand p {
   margin: 0;
-  color: var(--kd-ink-50);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  color: color-mix(in srgb, var(--kd-ink) 72%, #faf8f5);
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.3;
 }
 
 .admin-shell__nav nav {
@@ -162,40 +165,53 @@ onBeforeUnmount(() => {
 .admin-shell__link {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  min-height: 40px;
-  padding: 0 12px;
-  border-radius: 8px;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px 0 16px;
+  border-radius: 16px;
   color: var(--kd-ink);
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 400;
   text-decoration: none;
 }
 
-.admin-shell__link.is-active,
-.admin-shell__link:hover {
-  background: var(--kd-primary-5);
+.admin-shell__link-mark {
+  display: none;
+  width: 4px;
+  height: 16px;
+  margin-left: -8px;
+  border-radius: 16px;
+  background: var(--kd-accent);
+}
+
+.admin-shell__link.is-active {
   color: var(--kd-primary);
+  font-weight: 700;
+}
+
+.admin-shell__link.is-active .admin-shell__link-mark {
+  display: block;
 }
 
 .admin-shell__badge {
+  margin-left: auto;
   min-width: 20px;
   padding: 0 6px;
-  border-radius: 999px;
+  border-radius: 8px;
   background: var(--kd-accent);
   color: var(--kd-ink);
-  font-size: 11px;
+  font-size: 0.75rem;
   font-weight: 700;
   text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
 .admin-shell__back {
   margin-top: auto;
   color: var(--kd-primary);
+  font-size: 0.7875rem;
+  font-weight: 700;
   text-decoration: none;
-  letter-spacing: 0;
-  text-transform: none;
-  font-size: 13px;
 }
 
 .admin-shell__main {
@@ -208,8 +224,8 @@ onBeforeUnmount(() => {
   align-items: flex-start;
   gap: 12px 16px;
   padding: max(16px, env(safe-area-inset-top)) 16px 12px;
-  border-bottom: 1px solid var(--kd-ink-10);
-  background: var(--kd-white);
+  border-bottom: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  background: #faf8f5;
 }
 
 .admin-shell__heading {
@@ -219,17 +235,18 @@ onBeforeUnmount(() => {
 
 .admin-shell__heading h1 {
   margin: 0;
-  font-size: 22px;
+  font-size: 1.325rem;
   font-weight: 700;
+  line-height: 1.05;
   letter-spacing: -0.03em;
 }
 
 .admin-shell__heading p,
 .admin-shell__state {
-  margin: 4px 0 0;
-  color: var(--kd-ink-50);
-  font-size: 13px;
-  line-height: 1.4;
+  margin: 8px 0 0;
+  color: color-mix(in srgb, var(--kd-ink) 72%, #faf8f5);
+  font-size: 0.7875rem;
+  line-height: 1.3;
 }
 
 .admin-shell__state--error {
@@ -238,13 +255,13 @@ onBeforeUnmount(() => {
 }
 
 .admin-shell__menu {
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 12px;
-  border: 1px solid var(--kd-ink-10);
-  border-radius: 8px;
-  background: var(--kd-white);
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 16px;
+  background: #faf8f5;
   color: var(--kd-ink);
-  font-size: 13px;
+  font-size: 0.7875rem;
   font-weight: 700;
   cursor: pointer;
 }
@@ -273,59 +290,78 @@ onBeforeUnmount(() => {
 .admin-shell :deep(.admin-card),
 .admin-shell :deep(.admin-panel) {
   padding: 16px;
-  border-radius: 12px;
-  background: var(--kd-white);
-  box-shadow: 0 2px 8px var(--kd-shadow);
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 16px;
+  background: #faf8f5;
 }
 
 .admin-shell :deep(.admin-card h2),
 .admin-shell :deep(.admin-panel h2) {
   margin: 0;
-  font-size: 16px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.2;
 }
 
 .admin-shell :deep(.admin-card p),
 .admin-shell :deep(.admin-meta) {
   margin: 6px 0 0;
-  color: var(--kd-ink-50);
-  font-size: 13px;
-  line-height: 1.4;
+  color: color-mix(in srgb, var(--kd-ink) 72%, #faf8f5);
+  font-size: 0.7875rem;
+  line-height: 1.3;
 }
 
 .admin-shell :deep(.admin-toolbar) {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-
-.admin-shell :deep(.admin-search),
-.admin-shell :deep(.admin-field input),
-.admin-shell :deep(.admin-field select),
-.admin-shell :deep(.admin-field textarea) {
-  min-height: 44px;
-  width: 100%;
-  padding: 0 12px;
-  border: 1px solid var(--kd-ink-10);
-  border-radius: 8px;
-  background: var(--kd-white);
-  color: var(--kd-ink);
-  font: inherit;
-  font-size: 14px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
 .admin-shell :deep(.admin-search) {
   flex: 1;
   min-width: 180px;
+  min-height: 46px;
+  width: 100%;
+  padding: 0 4px;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--kd-ink) 34%, transparent);
+  border-radius: 0;
+  background: transparent;
+  color: var(--kd-ink);
+  font: inherit;
+  font-size: 0.95rem;
+}
+
+.admin-shell :deep(.admin-field input),
+.admin-shell :deep(.admin-field select),
+.admin-shell :deep(.admin-field textarea) {
+  min-height: 44px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 8px;
+  background: #faf8f5;
+  color: var(--kd-ink);
+  font: inherit;
+  font-size: 0.95rem;
+}
+
+.admin-shell :deep(.admin-search::placeholder),
+.admin-shell :deep(.admin-field input::placeholder) {
+  color: color-mix(in srgb, var(--kd-ink) 72%, #faf8f5);
 }
 
 .admin-shell :deep(.admin-chip) {
-  min-height: 36px;
+  min-height: 44px;
   padding: 0 12px;
-  border: 0;
-  border-radius: 8px;
-  background: var(--kd-ink-10);
+  border: 1px solid transparent;
+  border-radius: 16px;
+  background: transparent;
   color: var(--kd-ink);
+  font-size: 0.7875rem;
+  font-weight: 400;
   cursor: pointer;
 }
 
@@ -339,12 +375,12 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   min-height: 44px;
-  padding: 0 14px;
+  padding: 0 16px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 16px;
   background: var(--kd-accent);
   color: var(--kd-ink);
-  font-size: 14px;
+  font-size: 0.7875rem;
   font-weight: 700;
   cursor: pointer;
 }
@@ -352,6 +388,14 @@ onBeforeUnmount(() => {
 .admin-shell :deep(.admin-btn--ghost) {
   border: 1px solid var(--kd-primary);
   background: transparent;
+  color: var(--kd-primary);
+}
+
+.admin-shell :deep(.admin-btn--quiet) {
+  border: 0;
+  background: transparent;
+  color: var(--kd-ink);
+  font-weight: 400;
 }
 
 .admin-shell :deep(.admin-btn--danger) {
@@ -371,52 +415,145 @@ onBeforeUnmount(() => {
 .admin-shell :deep(.admin-table) {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 0.7875rem;
 }
 
 .admin-shell :deep(.admin-table th),
 .admin-shell :deep(.admin-table td) {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--kd-ink-10);
+  padding: 12px 12px 12px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--kd-ink) 14%, transparent);
   text-align: left;
   vertical-align: top;
 }
 
 .admin-shell :deep(.admin-table th) {
-  color: var(--kd-ink-50);
-  font-size: 11px;
+  color: color-mix(in srgb, var(--kd-ink) 72%, #faf8f5);
+  font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+}
+
+.admin-shell :deep(.admin-table td:first-child) {
+  font-weight: 700;
+  font-size: 0.95rem;
 }
 
 .admin-shell :deep(.admin-status) {
-  display: inline-flex;
-  align-items: center;
-  min-height: 22px;
-  padding: 0 8px;
-  border-radius: 999px;
-  background: var(--kd-ink-10);
-  font-size: 11px;
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--kd-ink);
+  font-size: 0.75rem;
   font-weight: 700;
-  text-transform: uppercase;
 }
 
 .admin-shell :deep(.admin-status--approved),
 .admin-shell :deep(.admin-status--current),
-.admin-shell :deep(.admin-status--admin) {
-  background: var(--kd-primary-25);
+.admin-shell :deep(.admin-status--admin),
+.admin-shell :deep(.admin-status--cafe-owner),
+.admin-shell :deep(.admin-status--verified) {
+  color: var(--kd-primary);
 }
 
 .admin-shell :deep(.admin-status--pending),
 .admin-shell :deep(.admin-status--scheduled) {
-  background: var(--kd-accent-25);
+  color: var(--kd-ink);
 }
 
 .admin-shell :deep(.admin-status--rejected),
 .admin-shell :deep(.admin-status--ended),
 .admin-shell :deep(.admin-status--banned) {
-  background: color-mix(in srgb, var(--kd-destructive) 18%, transparent);
+  color: var(--kd-destructive);
+}
+
+.admin-shell :deep(.admin-facts) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 0 0 16px;
+  color: var(--kd-ink);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-shell :deep(.admin-facts span) {
+  color: color-mix(in srgb, var(--kd-ink) 72%, #faf8f5);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.admin-shell :deep(.admin-rail) {
+  margin: 0 0 20px;
+}
+
+.admin-shell :deep(.admin-rail__head) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+  margin-bottom: 8px;
+}
+
+.admin-shell :deep(.admin-rail__head h2) {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.admin-shell :deep(.admin-rail__head p),
+.admin-shell :deep(.admin-rail__empty) {
+  margin: 0;
+  color: color-mix(in srgb, var(--kd-ink) 72%, #faf8f5);
+  font-size: 0.75rem;
+}
+
+.admin-shell :deep(.admin-rail__scroller) {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-color: color-mix(in srgb, var(--kd-ink) 28%, transparent) #f2f2f2;
+}
+
+.admin-shell :deep(.admin-ticket) {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 160px;
+  max-width: 220px;
+  min-height: 64px;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--kd-accent);
+  color: var(--kd-ink);
+  text-decoration: none;
+  animation: admin-stamp 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.admin-shell :deep(.admin-ticket__name) {
+  overflow: hidden;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-shell :deep(.admin-ticket__addr) {
+  overflow: hidden;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-shell :deep(.admin-ledger) {
+  padding: 8px 16px 4px;
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 16px;
+  background: #faf8f5;
 }
 
 .admin-shell :deep(.admin-cards) {
@@ -445,16 +582,64 @@ onBeforeUnmount(() => {
 .admin-shell :deep(.admin-row-actions) {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
 }
 
 .admin-shell :deep(.admin-link) {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--kd-primary);
+  font: inherit;
   font-weight: 700;
   text-decoration: none;
+  cursor: pointer;
+}
+
+@keyframes admin-stamp {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .admin-shell__link:hover {
+    color: var(--kd-primary);
+  }
+
+  .admin-shell :deep(.admin-btn--quiet:hover),
+  .admin-shell :deep(.admin-link:hover) {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .admin-shell :deep(.admin-ticket:hover) {
+    filter: brightness(0.97);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-shell :deep(.admin-ticket) {
+    animation: none;
+  }
 }
 
 @media (max-width: 767px) {
+  .admin-shell :deep(.admin-ledger) {
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
   .admin-shell :deep(.admin-table-wrap) {
     display: none;
   }
@@ -530,6 +715,9 @@ onBeforeUnmount(() => {
 .admin-shell :deep(.admin-search:focus-visible),
 .admin-shell :deep(.admin-field input:focus-visible),
 .admin-shell :deep(.admin-field select:focus-visible),
+.admin-shell :deep(.admin-field textarea:focus-visible),
+.admin-shell :deep(.admin-picker__trigger:focus-visible),
+.admin-shell :deep(.admin-ticket:focus-visible),
 .admin-shell__link:focus-visible,
 .admin-shell__menu:focus-visible {
   outline: 2px solid var(--kd-primary);

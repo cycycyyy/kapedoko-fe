@@ -161,7 +161,7 @@ Deno.serve(async (req): Promise<Response> => {
             id: user.id,
             email: user.email ?? null,
             displayName: profile?.display_name ?? null,
-            role: profile?.role === 'admin' ? 'admin' : 'user',
+            role: profile?.role === 'admin' ? 'admin' : profile?.role === 'cafe-owner' ? 'cafe-owner' : 'user',
             banned: isBanned(user),
             createdAt: user.created_at ?? profile?.created_at ?? null,
             lastSignInAt: user.last_sign_in_at ?? null,
