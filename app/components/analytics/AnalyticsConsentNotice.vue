@@ -1,28 +1,30 @@
 <template>
-  <div
-    v-if="open"
-    class="analytics-consent"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="analytics-consent-title"
-    aria-describedby="analytics-consent-copy"
-  >
-    <div class="analytics-consent__card">
-      <h2 id="analytics-consent-title">Help us improve KapéDoko?</h2>
-      <p id="analytics-consent-copy">
-        We record taps like search, filters, and café opens so we can see whether Marikina cafés are easy to find.
-        We do not record your email, your exact location, or what you type into search.
-        You can change this later in Profile.
-      </p>
-      <p class="analytics-consent__legal">
-        <NuxtLink to="/privacy">Privacy policy</NuxtLink>
-      </p>
-      <div class="analytics-consent__actions">
-        <button type="button" class="analytics-consent__allow" @click="allow">Allow analytics</button>
-        <button type="button" class="analytics-consent__skip" @click="decline">Not now</button>
+  <Teleport to="body">
+    <div
+      v-if="open"
+      class="analytics-consent"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="analytics-consent-title"
+      aria-describedby="analytics-consent-copy"
+    >
+      <div class="analytics-consent__card">
+        <h2 id="analytics-consent-title">Help us improve KapéDoko?</h2>
+        <p id="analytics-consent-copy">
+          We record taps like search, filters, and café opens so we can see whether Marikina cafés are easy to find.
+          We do not record your email, your exact location, or what you type into search.
+          You can change this later in Profile.
+        </p>
+        <p class="analytics-consent__legal">
+          <NuxtLink to="/privacy">Privacy policy</NuxtLink>
+        </p>
+        <div class="analytics-consent__actions">
+          <button type="button" class="analytics-consent__allow" @click="allow">Allow analytics</button>
+          <button type="button" class="analytics-consent__skip" @click="decline">Not now</button>
+        </div>
       </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <script lang="ts" setup>

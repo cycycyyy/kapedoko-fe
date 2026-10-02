@@ -3,6 +3,7 @@ import {
   activeAppTab,
   isAppTabRoute,
   isForeignSurface,
+  isOnboardingPath,
   isSameAppPath,
   isVisibleIonPageClass,
   normalizeAppPath,
@@ -61,6 +62,15 @@ describe('app tab paths', () => {
     expect(shouldShowAppTabs('/app/profile', '/app/profile#/admin')).toBe(false)
     expect(shouldShowAppTabs('/app/profile', '/app/map')).toBe(true)
     expect(shouldShowAppTabs('/app', '/app')).toBe(true)
+  })
+
+  test('hides the app tab bar on onboarding even if Home is still in the stack', () => {
+    expect(isOnboardingPath('/app/onboarding')).toBe(true)
+    expect(isOnboardingPath('/#/app/onboarding')).toBe(true)
+    expect(shouldShowAppTabs('/app/onboarding')).toBe(false)
+    expect(shouldShowAppTabs('/app', '/app/onboarding')).toBe(false)
+    expect(shouldShowAppTabs('/app', '/#/app/onboarding')).toBe(false)
+    expect(shouldShowAppTabs('/app/onboarding', '/app')).toBe(false)
   })
 
   test('treats hidden Ionic pages as not the visible admin surface', () => {

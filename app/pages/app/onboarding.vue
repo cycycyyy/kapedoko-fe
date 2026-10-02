@@ -1,7 +1,7 @@
 <template>
   <IonPage>
     <IonContent :scroll-y="false" class="onboarding-content">
-      <div class="onboarding">
+      <div ref="shellRef" class="onboarding">
         <div class="onboarding__frame">
           <button type="button" class="onboarding__skip" @click="skip">Skip</button>
           <div
@@ -51,6 +51,9 @@ import { markOnboardingDone } from '~/utils/onboarding'
 
 const { track } = useAnalytics()
 const STEP_COUNT = 3
+
+const shellRef = ref<HTMLElement | null>(null)
+useHideAppTabs(shellRef, 'onboarding')
 
 const trackRef = ref<HTMLElement | null>(null)
 const activeStep = ref(0)

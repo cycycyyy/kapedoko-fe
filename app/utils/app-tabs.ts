@@ -60,11 +60,16 @@ export function isForeignSurface(path: string): boolean {
   return FOREIGN_PREFIXES.some((prefix) => current === prefix || current.startsWith(`${prefix}/`))
 }
 
+export function isOnboardingPath(path: string): boolean {
+  const current = pathFromHref(path)
+  return current === '/app/onboarding' || current.startsWith('/app/onboarding/')
+}
+
 export function shouldShowAppTabs(...values: Array<string | null | undefined>): boolean {
   const paths = values
     .map((value) => (value ? pathFromHref(value) : ''))
     .filter((path) => path && path !== '/')
-  if (paths.some(isForeignSurface)) return false
+  if (paths.some((path) => isForeignSurface(path) || isOnboardingPath(path))) return false
   const routePath = paths[0]
   return Boolean(routePath && isAppTabRoute(routePath))
 }

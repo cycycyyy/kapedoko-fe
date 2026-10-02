@@ -1,7 +1,7 @@
 import { isVisibleIonPageClass } from '~/utils/app-tabs'
 
-const visibleAdminPages = new Set<Element>()
-let pendingAdminShells = 0
+const tabFreePages = new Set<Element>()
+let pendingTabFreeShells = 0
 
 export function useAppTabsLock() {
   const locked = useState('kd-app-tabs-locked', () => false)
@@ -21,27 +21,27 @@ export function useAppTabsLock() {
   return { locked, setLocked }
 }
 
-export function useAdminPageTabLock(shellEl: Ref<HTMLElement | null>) {
+export function useHideAppTabs(shellEl: Ref<HTMLElement | null>, surface: string) {
   const { setLocked } = useAppTabsLock()
   let page: Element | null = null
   let observer: MutationObserver | null = null
   let pending = false
 
   const publish = () => {
-    setLocked(visibleAdminPages.size > 0 || pendingAdminShells > 0)
+    setLocked(tabFreePages.size > 0 || pendingTabFreeShells > 0)
   }
 
   const beginPending = () => {
     if (pending) return
     pending = true
-    pendingAdminShells += 1
+    pendingTabFreeShells += 1
     publish()
   }
 
   const endPending = () => {
     if (!pending) return
     pending = false
-    pendingAdminShells = Math.max(0, pendingAdminShells - 1)
+    pendingTabFreeShells = Math.max(0, pendingTabFreeShells - 1)
     publish()
   }
 
@@ -49,15 +49,15 @@ export function useAdminPageTabLock(shellEl: Ref<HTMLElement | null>) {
     const nextPage = el.closest('.ion-page')
     if (!nextPage) return
     page = nextPage
-    page.setAttribute('data-app-surface', 'admin')
+    page.setAttribute('data-app-surface', surface)
     const syncPage = () => {
       if (!page) return
       if (isVisibleIonPageClass(page.className)) {
-        visibleAdminPages.add(page)
+        tabFreePages.add(page)
         endPending()
       }
       else {
-        visibleAdminPages.delete(page)
+        tabFreePages.delete(page)
       }
       publish()
     }
@@ -81,11 +81,15 @@ export function useAdminPageTabLock(shellEl: Ref<HTMLElement | null>) {
     observer?.disconnect()
     observer = null
     if (page) {
-      visibleAdminPages.delete(page)
+      tabFreePages.delete(page)
       page.removeAttribute('data-app-surface')
       page = null
     }
     endPending()
     publish()
   })
+}
+
+export function useAdminPageTabLock(shellEl: Ref<HTMLElement | null>) {
+  useHideAppTabs(shellEl, 'admin')
 }
