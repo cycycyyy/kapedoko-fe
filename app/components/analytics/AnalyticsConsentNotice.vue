@@ -49,7 +49,8 @@ const decline = async () => {
 .analytics-consent {
   position: fixed;
   inset: 0;
-  z-index: 9000;
+  z-index: 20000;
+  transform: translateZ(0);
   display: grid;
   place-items: end center;
   padding:
@@ -57,6 +58,10 @@ const decline = async () => {
     16px
     calc(20px + env(safe-area-inset-bottom));
   background: color-mix(in srgb, #1c1917 36%, transparent);
+}
+
+html:has(nav.app-tabbar) .analytics-consent {
+  padding-bottom: calc(72px + 20px + env(safe-area-inset-bottom));
 }
 
 .analytics-consent__card {

@@ -1,11 +1,11 @@
 <template>
   <IonPage>
     <IonContent :scroll-y="false" class="onboarding-content">
-      <div ref="shellRef" class="onboarding">
+      <div class="onboarding">
         <div class="onboarding__frame">
           <button type="button" class="onboarding__skip" @click="skip">Skip</button>
           <div
-            ref="trackRef"
+            ref="shellRef"
             class="onboarding__track"
             tabindex="0"
             role="region"
@@ -43,6 +43,7 @@
 </template>
 
 <script lang="ts" setup>
+import { useIonRouter } from '@ionic/vue'
 import OnboardingStep1 from '~/components/onboarding/OnboardingStep1.vue'
 import OnboardingStep2 from '~/components/onboarding/OnboardingStep2.vue'
 import OnboardingStep3 from '~/components/onboarding/OnboardingStep3.vue'
@@ -50,19 +51,19 @@ import { ANALYTICS_EVENTS, type OnboardingStep } from '~/utils/analytics'
 import { markOnboardingDone } from '~/utils/onboarding'
 
 const { track } = useAnalytics()
+const ionRouter = useIonRouter()
 const STEP_COUNT = 3
 
 const shellRef = ref<HTMLElement | null>(null)
-useHideAppTabs(shellRef, 'onboarding')
-
-const trackRef = ref<HTMLElement | null>(null)
 const activeStep = ref(0)
+
+useHideAppTabs(shellRef, 'onboarding')
 
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 const goTo = (index: number) => {
-  const track = trackRef.value
+  const track = shellRef.value
   if (!track) return
 
   const next = Math.max(0, Math.min(STEP_COUNT - 1, index))
@@ -74,7 +75,7 @@ const goTo = (index: number) => {
 }
 
 const onScroll = () => {
-  const track = trackRef.value
+  const track = shellRef.value
   if (!track || track.clientWidth === 0) return
 
   const index = Math.round(track.scrollLeft / track.clientWidth)
@@ -95,17 +96,27 @@ const onKeydown = (event: KeyboardEvent) => {
   }
 }
 
+const leave = async () => {
+  const page = shellRef.value?.closest('.ion-page')
+  if (page) {
+    page.classList.add('ion-page-hidden')
+    page.setAttribute('aria-hidden', 'true')
+  }
+  await navigateTo('/app', { replace: true })
+  ionRouter.navigate('/app', 'root', 'replace')
+}
+
 const finish = async () => {
   track(ANALYTICS_EVENTS.ONBOARDING_COMPLETED, { step_reached: 3 })
   await markOnboardingDone()
-  await navigateTo('/app')
+  await leave()
 }
 
 const skip = async () => {
   const step = Math.min(3, Math.max(1, activeStep.value + 1)) as OnboardingStep
   track(ANALYTICS_EVENTS.ONBOARDING_SKIPPED, { step_reached: step })
   await markOnboardingDone()
-  await navigateTo('/app')
+  await leave()
 }
 </script>
 

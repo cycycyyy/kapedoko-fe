@@ -69,9 +69,10 @@ export function shouldShowAppTabs(...values: Array<string | null | undefined>): 
   const paths = values
     .map((value) => (value ? pathFromHref(value) : ''))
     .filter((path) => path && path !== '/')
-  if (paths.some((path) => isForeignSurface(path) || isOnboardingPath(path))) return false
+  if (paths.some(isForeignSurface)) return false
   const routePath = paths[0]
-  return Boolean(routePath && isAppTabRoute(routePath))
+  if (!routePath || isOnboardingPath(routePath)) return false
+  return isAppTabRoute(routePath)
 }
 
 export function isVisibleIonPageClass(className: string): boolean {

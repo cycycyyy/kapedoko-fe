@@ -46,6 +46,10 @@
   align-items: stretch;
 }
 
+html:has(nav.app-tabbar) .onboarding-step {
+  padding-bottom: calc(72px + 1.5rem + env(safe-area-inset-bottom));
+}
+
 .onboarding-step__copy {
   margin: 16px 0 0;
   color: var(--kd-ink);

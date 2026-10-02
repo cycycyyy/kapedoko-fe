@@ -67,6 +67,18 @@ export function useHideAppTabs(shellEl: Ref<HTMLElement | null>, surface: string
     observer.observe(page, { attributes: true, attributeFilter: ['class'] })
   }
 
+  const release = () => {
+    observer?.disconnect()
+    observer = null
+    if (page) {
+      tabFreePages.delete(page)
+      page.removeAttribute('data-app-surface')
+      page = null
+    }
+    endPending()
+    publish()
+  }
+
   if (import.meta.client) beginPending()
 
   watch(shellEl, (el) => {
@@ -77,17 +89,9 @@ export function useHideAppTabs(shellEl: Ref<HTMLElement | null>, surface: string
     if (shellEl.value) bind(shellEl.value)
   })
 
-  onBeforeUnmount(() => {
-    observer?.disconnect()
-    observer = null
-    if (page) {
-      tabFreePages.delete(page)
-      page.removeAttribute('data-app-surface')
-      page = null
-    }
-    endPending()
-    publish()
-  })
+  onBeforeUnmount(release)
+
+  return { release }
 }
 
 export function useAdminPageTabLock(shellEl: Ref<HTMLElement | null>) {

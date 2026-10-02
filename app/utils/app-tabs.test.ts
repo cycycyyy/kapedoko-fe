@@ -68,9 +68,11 @@ describe('app tab paths', () => {
     expect(isOnboardingPath('/app/onboarding')).toBe(true)
     expect(isOnboardingPath('/#/app/onboarding')).toBe(true)
     expect(shouldShowAppTabs('/app/onboarding')).toBe(false)
-    expect(shouldShowAppTabs('/app', '/app/onboarding')).toBe(false)
-    expect(shouldShowAppTabs('/app', '/#/app/onboarding')).toBe(false)
     expect(shouldShowAppTabs('/app/onboarding', '/app')).toBe(false)
+  })
+
+  test('shows the app tab bar on Home when Ionic and Vue Router disagree', () => {
+    expect(shouldShowAppTabs(resolveAppPath('/app/onboarding', '/app'))).toBe(true)
   })
 
   test('treats hidden Ionic pages as not the visible admin surface', () => {

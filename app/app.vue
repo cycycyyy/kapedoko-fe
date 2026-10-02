@@ -15,7 +15,7 @@ import { IonApp, IonRouterOutlet } from '@ionic/vue'
 import AnalyticsConsentNotice from '~/components/analytics/AnalyticsConsentNotice.vue'
 import LoadingScreen from '~/components/LoadingScreen.vue'
 import AppTabBar from '~/components/navigation/AppTabBar.vue'
-import { shouldShowAppTabs } from '~/utils/app-tabs'
+import { resolveAppPath, shouldShowAppTabs } from '~/utils/app-tabs'
 import { hasFinishedOnboarding, shouldShowOnboarding } from '~/utils/onboarding'
 
 const supabase = useSupabaseClient()
@@ -31,7 +31,12 @@ const syncLocationHint = () => {
 
 const showAppTabs = computed(() => {
   if (isLoading.value) return false
-  return shouldShowAppTabs(route.path, route.fullPath, locationHint.value)
+  void route.fullPath
+  const locationPath = import.meta.client
+    ? `${window.location.pathname}${window.location.hash}`
+    : locationHint.value
+  const resolved = resolveAppPath(route.path, locationPath)
+  return shouldShowAppTabs(resolved, locationPath, locationHint.value)
 })
 
 useFavorites()
