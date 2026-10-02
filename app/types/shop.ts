@@ -226,6 +226,7 @@ export interface ContentReportRow {
   created_at: string
   resolved_at: string | null
   resolved_by: string | null
+  review_text?: string | null
 }
 
 export interface ShopInsert {

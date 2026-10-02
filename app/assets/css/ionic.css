@@ -13,3 +13,10 @@
 .ion-page-invisible {
   pointer-events: none !important;
 }
+
+/* AdminShell toggles this when a visible admin ion-page is in the stack.
+   The tab bar is teleported onto body, so route-based v-if is not enough. */
+html.kd-hide-app-tabs nav.app-tabbar {
+  display: none !important;
+  pointer-events: none !important;
+}

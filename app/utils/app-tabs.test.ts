@@ -1,5 +1,15 @@
 import { describe, expect, test } from 'bun:test'
-import { activeAppTab, isAppTabRoute, isSameAppPath, normalizeAppPath, resolveAppPath } from './app-tabs'
+import {
+  activeAppTab,
+  isAppTabRoute,
+  isForeignSurface,
+  isSameAppPath,
+  isVisibleIonPageClass,
+  normalizeAppPath,
+  pathFromHref,
+  resolveAppPath,
+  shouldShowAppTabs,
+} from './app-tabs'
 
 describe('app tab paths', () => {
   test('does not treat profile as already being home', () => {
@@ -27,11 +37,42 @@ describe('app tab paths', () => {
     expect(isAppTabRoute('/app/cafes/abc')).toBe(false)
     expect(isAppTabRoute('/app/onboarding')).toBe(false)
     expect(isAppTabRoute('/login')).toBe(false)
+    expect(isAppTabRoute('/admin')).toBe(false)
+    expect(isAppTabRoute('/admin/cafes')).toBe(false)
+    expect(isAppTabRoute('/admin/audits/new')).toBe(false)
+  })
+
+  test('reads Ionic hash paths from the browser location', () => {
+    expect(pathFromHref('/#/admin')).toBe('/admin')
+    expect(pathFromHref('/app/profile#/admin')).toBe('/admin')
+    expect(pathFromHref('/app/profile#/admin/cafes')).toBe('/admin/cafes')
+    expect(pathFromHref('http://localhost:3000/#/admin')).toBe('/admin')
+    expect(pathFromHref('/app/profile')).toBe('/app/profile')
+    expect(isForeignSurface('/admin/cafes')).toBe(true)
+    expect(isForeignSurface('/#/admin')).toBe(true)
+    expect(isForeignSurface('/app/profile')).toBe(false)
+  })
+
+  test('hides the app tab bar on admin even if Profile is still in the stack', () => {
+    expect(shouldShowAppTabs('/admin')).toBe(false)
+    expect(shouldShowAppTabs('/admin/cafes', '/app/profile')).toBe(false)
+    expect(shouldShowAppTabs('/app/profile', '/admin')).toBe(false)
+    expect(shouldShowAppTabs('/app/profile', '/#/admin')).toBe(false)
+    expect(shouldShowAppTabs('/app/profile', '/app/profile#/admin')).toBe(false)
+    expect(shouldShowAppTabs('/app/profile', '/app/map')).toBe(true)
+    expect(shouldShowAppTabs('/app', '/app')).toBe(true)
+  })
+
+  test('treats hidden Ionic pages as not the visible admin surface', () => {
+    expect(isVisibleIonPageClass('ion-page')).toBe(true)
+    expect(isVisibleIonPageClass('ion-page ion-page-hidden')).toBe(false)
+    expect(isVisibleIonPageClass('ion-page ion-page-invisible')).toBe(false)
   })
 
   test('prefers the browser path when Vue and Ionic disagree', () => {
     expect(resolveAppPath('/app/map', '/app/profile')).toBe('/app/profile')
     expect(resolveAppPath('/app/profile', '/app/profile')).toBe('/app/profile')
     expect(resolveAppPath('/app/profile', '')).toBe('/app/profile')
+    expect(resolveAppPath('/app/profile', '/#/admin')).toBe('/admin')
   })
 })

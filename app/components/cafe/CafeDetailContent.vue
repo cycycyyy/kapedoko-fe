@@ -256,7 +256,12 @@
             </span>
           </header>
           <p>{{ review.quote }}</p>
-          <button type="button" class="cafe-detail__report" @click="reportTarget('review', review.id)">
+          <button
+            v-if="canReportReview(review.id)"
+            type="button"
+            class="cafe-detail__report"
+            @click="reportTarget('review', review.id)"
+          >
             Report review
           </button>
         </article>
@@ -283,6 +288,7 @@ import {
   confidenceBucketFromCafe,
   type CafeActionType,
 } from '~/utils/analytics'
+import { fetchOwnShopReview } from '~/utils/approved-shops'
 
 const props = withDefaults(
   defineProps<{
@@ -297,14 +303,50 @@ const emit = defineEmits<{
 }>()
 
 const favorites = useFavorites()
-const { currentUserId, goToLogin } = useAuth()
+const { currentUserId, goToLogin, user } = useAuth()
 const { track } = useAnalytics()
 const supabase = useSupabaseClient()
 const route = useRoute()
 const broken = ref<Record<string, boolean>>({})
 const activePhoto = ref(0)
 const reportNotice = ref('')
+const ownReviewId = ref<string | null>(null)
+const ownReviewChecked = ref(false)
+let ownReviewRequest = 0
 const saved = computed(() => favorites.isSaved(props.cafe.id))
+
+const refreshOwnReview = async () => {
+  const request = ++ownReviewRequest
+  const shopId = props.cafe.id
+  ownReviewChecked.value = false
+  ownReviewId.value = null
+  const userId = user.value?.id ?? await currentUserId()
+  if (request !== ownReviewRequest) return
+  if (!userId) {
+    ownReviewChecked.value = true
+    return
+  }
+  try {
+    const row = await fetchOwnShopReview(supabase, shopId, userId)
+    if (request !== ownReviewRequest) return
+    ownReviewId.value = row?.id ?? null
+  } catch {
+    if (request !== ownReviewRequest) return
+    ownReviewId.value = null
+  } finally {
+    if (request === ownReviewRequest) ownReviewChecked.value = true
+  }
+}
+
+watch(
+  () => [props.cafe.id, user.value?.id ?? ''] as const,
+  () => {
+    void refreshOwnReview()
+  },
+  { immediate: true },
+)
+
+const canReportReview = (reviewId: string) => ownReviewChecked.value && ownReviewId.value !== reviewId
 
 const onSave = () => {
   void favorites.toggle(props.cafe.id)
@@ -329,14 +371,29 @@ const reportTarget = async (target: 'review' | 'shop_photo', reviewId?: string) 
     await goToLogin(route.fullPath)
     return
   }
+  if (target === 'review' && reviewId) {
+    try {
+      const row = await fetchOwnShopReview(supabase, props.cafe.id, userId)
+      ownReviewId.value = row?.id ?? null
+      ownReviewChecked.value = true
+      if (row?.id === reviewId) {
+        reportNotice.value = 'You cannot report your own review.'
+        return
+      }
+    } catch {
+      reportNotice.value = 'Could not send that report. Try again.'
+      return
+    }
+  }
   const { error } = await supabase.rpc('report_content', {
     p_target_type: target,
     p_review_id: reviewId ?? null,
     p_shop_id: props.cafe.id,
     p_reason: target === 'review' ? 'Reported from cafe detail' : 'Reported photo',
   })
+  const deniedOwn = typeof error?.message === 'string' && /own review/i.test(error.message)
   reportNotice.value = error
-    ? 'Could not send that report. Try again.'
+    ? (deniedOwn ? 'You cannot report your own review.' : 'Could not send that report. Try again.')
     : 'Reported. It stays hidden from the public list while an admin checks it.'
 }
 

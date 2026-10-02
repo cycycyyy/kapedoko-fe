@@ -1,6 +1,6 @@
 <template>
   <IonContent class="admin-shell-content">
-    <div class="admin-shell" :class="{ 'is-nav-open': navOpen }">
+    <div ref="shellEl" class="admin-shell" :class="{ 'is-nav-open': navOpen }">
       <div
         v-if="navOpen"
         class="admin-shell__scrim"
@@ -87,8 +87,10 @@ const props = withDefaults(
 const route = useRoute()
 const navOpen = ref(false)
 const desktop = ref(true)
+const shellEl = ref<HTMLElement | null>(null)
 const items = computed(() => staffNav(props.navRole))
 const active = computed(() => adminNavIdFromPath(route.path))
+useAdminPageTabLock(shellEl)
 
 const onResize = () => {
   desktop.value = window.innerWidth >= 1024
@@ -314,6 +316,17 @@ onBeforeUnmount(() => {
   color: color-mix(in srgb, var(--kd-ink) 72%, #faf8f5);
   font-size: 0.7875rem;
   line-height: 1.3;
+}
+
+.admin-shell :deep(.report-quote) {
+  margin: 10px 0 0;
+  padding: 0;
+  border: 0;
+  color: var(--kd-ink);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .admin-shell :deep(.admin-toolbar) {

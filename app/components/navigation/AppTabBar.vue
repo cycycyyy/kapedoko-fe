@@ -1,5 +1,10 @@
 <template>
-  <nav class="app-tabbar" aria-label="Primary">
+  <nav
+    v-show="!tabsLocked"
+    class="app-tabbar"
+    aria-label="Primary"
+    :aria-hidden="tabsLocked ? 'true' : undefined"
+  >
     <span
       class="app-tabbar__mark"
       aria-hidden="true"
@@ -38,6 +43,7 @@ const props = defineProps<{
 
 const route = useRoute()
 const ionRouter = useIonRouter()
+const { locked: tabsLocked } = useAppTabsLock()
 const pendingPath = ref<string | null>(null)
 
 const livePath = computed(() => {
@@ -118,6 +124,11 @@ watch(
   border-top: 1px solid color-mix(in srgb, var(--kd-ink) 16%, transparent);
   pointer-events: auto;
   isolation: isolate;
+}
+
+.app-tabbar[aria-hidden="true"] {
+  display: none !important;
+  pointer-events: none !important;
 }
 
 .app-tabbar__mark {

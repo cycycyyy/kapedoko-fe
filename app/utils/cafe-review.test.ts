@@ -259,7 +259,12 @@ describe('review route shop id', () => {
     expect(shopIdFromRoute(`/app/cafes/${id}/edit`)).toBe(id)
     expect(shopIdFromRoute(`/admin/cafes/${id}`)).toBe(id)
     expect(shopIdFromRoute(`/#/admin/cafes/${id}`)).toBe(id)
+    expect(shopIdFromRoute(`/admin/audits/${id}`)).toBe(id)
+    expect(shopIdFromRoute(`/#/admin/audits/${id}`)).toBe(id)
     expect(shopIdFromRoute('/app/map', undefined)).toBe('')
+    expect(resolveLiveShopId('/admin/audits', '/admin/audits', undefined, {
+      href: `/#/admin/audits/${id}`,
+    })).toBe(id)
     expect(isShopId(id)).toBe(true)
     expect(isShopId('')).toBe(false)
     expect(isShopId('review')).toBe(false)

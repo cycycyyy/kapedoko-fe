@@ -106,4 +106,35 @@ describe('live cafe filters', () => {
       radiusMeters: 5_000,
     }).map((item) => item.id)).toEqual(['far', 'near'])
   })
+
+  test('limits another filter to nearby shops and sorts those by distance', () => {
+    const origin = { lat: 14.5547, lng: 121.0244 }
+    const atTwo = destinationPoint(origin, 2_000, 45)
+    const shopsWithRange = [
+      shops[1]!,
+      cafe({
+        id: 'edge',
+        name: 'Edge Plug',
+        lat: atTwo.lat,
+        lng: atTwo.lng,
+        work: { ...UNKNOWN_WORK, known: true, plug: true },
+        amenities: ['plug'],
+      }),
+      shops[0]!,
+    ]
+
+    expect(filterCafes(shopsWithRange, {
+      filter: 'plugs',
+      origin,
+      radiusMeters: 5_000,
+      nearby: true,
+    }).map((item) => item.id)).toEqual(['near', 'edge'])
+
+    expect(filterCafes(shopsWithRange, {
+      filter: 'popular',
+      origin,
+      radiusMeters: 5_000,
+      nearby: true,
+    }).map((item) => item.id)).toEqual(['near'])
+  })
 })

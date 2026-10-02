@@ -100,7 +100,25 @@
             <span>{{ locationNote }}</span>
           </template>
         </p>
-        <p v-if="status === 'ready' && amenityHint" class="home-state">{{ amenityHint }}</p>
+        <div v-if="showNearbyTicket" class="home-aside">
+          <p v-if="amenityHint" class="home-state home-state--note">{{ amenityHint }}</p>
+          <button
+            type="button"
+            class="home-ticket"
+            :class="{ 'is-on': nearbyOn, 'is-busy': nearbyBusy }"
+            :aria-pressed="nearbyOn"
+            :aria-busy="nearbyBusy"
+            @click="toggleNearby"
+          >
+            <span class="home-ticket__seal" aria-hidden="true">
+              <Navigation :size="16" :stroke-width="2.25" />
+            </span>
+            <span class="home-ticket__copy">
+              <span class="home-ticket__title">{{ nearbyTitle }}</span>
+              <span class="home-ticket__detail">{{ nearbyDetail }}</span>
+            </span>
+          </button>
+        </div>
 
         <Transition name="cafe-list" mode="out-in">
           <section :key="listKey" class="home-list" aria-label="Cafes">
@@ -133,13 +151,22 @@
               @select="openCafe"
             />
             <p v-if="hasMoreCafes" ref="moreCafes" class="home-more">Scroll for more</p>
+            <button
+              v-if="status === 'ready'"
+              type="button"
+              class="home-spot"
+              @click="addCafe"
+            >
+              <span class="home-spot__mark" aria-hidden="true">
+                <Plus :size="18" :stroke-width="2.25" />
+              </span>
+              <span class="home-spot__copy">
+                <span class="home-spot__title">Know a shop we missed?</span>
+                <span class="home-spot__action">Add a cafe</span>
+              </span>
+            </button>
           </section>
         </Transition>
-
-        <button type="button" class="home-add" @click="addCafe">
-          <Plus :size="18" :stroke-width="2.25" aria-hidden="true" />
-          Add a cafe
-        </button>
         </div>
       </div>
     </IonContent>
@@ -187,9 +214,20 @@ const { user, loadProfile } = useAuth()
 const { track, once, consent } = useAnalytics()
 const cafes = computed(() => liveCafes.value)
 
+const NEARBY_EMPTY: Record<Exclude<CafeFilterId, 'near'>, string> = {
+  popular: 'popular shops',
+  wifi: 'WiFi shops',
+  plugs: 'shops with plugs',
+  'long-stay': 'long-stay WiFi shops',
+  'fast-wifi': 'fast WiFi shops',
+  'reliable-outlets': 'shops with reliable outlets',
+}
+
 const query = ref('')
 const submittedQuery = ref('')
 const activeFilter = ref<CafeFilterId>('near')
+const nearbyUnderFilter = ref(false)
+const nearbyBusy = ref(false)
 const greeting = ref('Good morning')
 const firstName = ref('')
 
@@ -255,9 +293,25 @@ const origin = computed(() => (
 
 const activeFilterMeta = computed(() => filters.find((filter) => filter.id === activeFilter.value) ?? filters[0]!)
 const amenityHint = computed(() => amenityFilterHint(activeFilter.value))
+const showNearbyTicket = computed(() => status.value === 'ready' && activeFilter.value !== 'near')
+const nearbyOn = computed(() => nearbyUnderFilter.value && activeFilter.value !== 'near')
+
+const nearbyTitle = computed(() => {
+  const label = activeFilterMeta.value.label
+  return nearbyOn.value ? `${label} near you` : `See ${label} near you`
+})
+
+const nearbyDetail = computed(() => {
+  if (nearbyBusy.value) return 'Finding you…'
+  if (locationStatus.value === 'denied') return 'Turn on location'
+  if (locationStatus.value === 'unavailable') return 'Location is unavailable'
+  if (!origin.value) return 'Uses your location'
+  return nearbyOn.value ? 'Closest first' : `Within ${nearbyRadiusKm.value} km`
+})
 
 const locationNote = computed(() => {
-  if (activeFilter.value !== 'near') return ''
+  const scoped = activeFilter.value === 'near' || nearbyOn.value
+  if (!scoped) return ''
   if (locationStatus.value === 'denied') return 'Location is off, so this list is not sorted by distance.'
   if (locationStatus.value === 'unavailable') return 'Location is unavailable, so this list is not sorted by distance.'
   if (origin.value) return `within ${nearbyRadiusKm.value} km`
@@ -265,15 +319,18 @@ const locationNote = computed(() => {
 })
 
 const listKey = computed(() => (
-  `${activeFilter.value}|${submittedQuery.value}|${status.value}|${nearbyRadiusKm.value}|${origin.value ? 'geo' : 'nogeo'}`
+  `${activeFilter.value}|${submittedQuery.value}|${status.value}|${nearbyRadiusKm.value}|${origin.value ? 'geo' : 'nogeo'}|${nearbyOn.value ? 'nearby' : 'all'}`
 ))
 
-const visibleCafes = computed(() => filterCafes(cafes.value, {
+const cafeQuery = (filter: CafeFilterId) => ({
   query: submittedQuery.value,
-  filter: activeFilter.value,
+  filter,
   origin: origin.value,
   radiusMeters: radiusMeters.value,
-}))
+  nearby: nearbyUnderFilter.value && filter !== 'near',
+})
+
+const visibleCafes = computed(() => filterCafes(cafes.value, cafeQuery(activeFilter.value)))
 
 const shopCountLabel = computed(() => {
   const count = visibleCafes.value.length
@@ -282,6 +339,10 @@ const shopCountLabel = computed(() => {
 
 const emptyCopy = computed(() => {
   if (cafes.value.length === 0) return 'No coffee shops yet.'
+  if (nearbyOn.value && origin.value && activeFilter.value !== 'near') {
+    const noun = NEARBY_EMPTY[activeFilter.value]
+    return `No ${noun} within ${nearbyRadiusKm.value} km.`
+  }
   if (activeFilter.value === 'near' && origin.value) {
     return `No coffee shops within ${nearbyRadiusKm.value} km.`
   }
@@ -306,21 +367,39 @@ const submitSearch = async () => {
   await navigateTo(path)
 }
 
-const setFilter = (id: CafeFilterId) => {
-  if (id === activeFilter.value) return
-  activeFilter.value = id
-  if (status.value !== 'ready') return
-  const results = filterCafes(cafes.value, {
-    query: submittedQuery.value,
-    filter: id,
-    origin: origin.value,
-    radiusMeters: radiusMeters.value,
-  })
+const trackFilter = (id: CafeFilterId, results: Cafe[]) => {
   track(ANALYTICS_EVENTS.FILTER_APPLIED, {
     filter_name: id,
     result_count: results.length,
     confidence_bucket: modalConfidenceBucket(results.map((cafe) => confidenceBucketFromCafe(cafe))),
   })
+}
+
+const setFilter = (id: CafeFilterId) => {
+  if (id === activeFilter.value) return
+  activeFilter.value = id
+  if (status.value !== 'ready') return
+  trackFilter(id, filterCafes(cafes.value, cafeQuery(id)))
+}
+
+const toggleNearby = async () => {
+  if (!showNearbyTicket.value || nearbyBusy.value) return
+  if (nearbyUnderFilter.value) {
+    nearbyUnderFilter.value = false
+    trackFilter(activeFilter.value, filterCafes(cafes.value, cafeQuery(activeFilter.value)))
+    return
+  }
+  if (!origin.value) {
+    nearbyBusy.value = true
+    try {
+      await requestLocation()
+    } finally {
+      nearbyBusy.value = false
+    }
+  }
+  if (!origin.value) return
+  nearbyUnderFilter.value = true
+  trackFilter(activeFilter.value, filterCafes(cafes.value, cafeQuery(activeFilter.value)))
 }
 
 const openCafe = async (id: string) => {
@@ -749,6 +828,103 @@ onMounted(() => {
   letter-spacing: 0;
 }
 
+.home-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 20px 12px;
+}
+
+.home-state--note {
+  padding: 0;
+}
+
+.home-ticket {
+  --ticket-notch: radial-gradient(circle at left, transparent 5px, #000 5.5px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  margin: 0;
+  padding: 8px 16px 8px 16px;
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 16px;
+  background: #faf8f5;
+  color: var(--kd-ink);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-mask-image: var(--ticket-notch);
+  mask-image: var(--ticket-notch);
+  -webkit-mask-size: 100% 14px;
+  mask-size: 100% 14px;
+  -webkit-mask-repeat: repeat-y;
+  mask-repeat: repeat-y;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 180ms cubic-bezier(0.16, 1, 0.3, 1), border-color 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.home-ticket__seal {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--kd-accent);
+  color: var(--kd-ink);
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), background-color 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.home-ticket__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.home-ticket__title,
+.home-ticket__detail {
+  min-width: 0;
+}
+
+.home-ticket__title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.home-ticket__detail {
+  color: color-mix(in srgb, var(--kd-ink) 78%, #faf8f5);
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.home-ticket.is-on {
+  background: var(--kd-accent);
+  border-color: var(--kd-accent);
+}
+
+.home-ticket.is-on .home-ticket__seal {
+  background: #faf8f5;
+  transform: rotate(-12deg);
+}
+
+.home-ticket.is-on .home-ticket__detail {
+  color: var(--kd-ink);
+}
+
+.home-ticket:active {
+  box-shadow: inset 0 3px 0 color-mix(in srgb, var(--kd-ink) 22%, transparent);
+}
+
+.home-ticket.is-busy {
+  cursor: progress;
+}
+
 .home-empty {
   display: flex;
   align-items: center;
@@ -803,7 +979,8 @@ onMounted(() => {
 }
 
 .home-retry:focus-visible,
-.home-add:focus-visible {
+.home-spot:focus-visible,
+.home-ticket:focus-visible {
   outline: 2px solid var(--kd-primary);
   outline-offset: 3px;
 }
@@ -834,28 +1011,63 @@ onMounted(() => {
   border: 0;
 }
 
-.home-add {
-  display: inline-flex;
+.home-spot {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin: 8px 20px 16px;
+  gap: 10px;
   width: calc(100% - 40px);
-  min-height: 44px;
-  padding: 0 16px;
-  border: 1px solid var(--kd-accent);
+  min-height: 72px;
+  margin: 0 20px 16px;
+  padding: 16px;
+  border: 1px solid rgba(28, 25, 23, 0.34);
   border-radius: 16px;
-  background: var(--kd-accent);
-  color: var(--kd-ink);
+  background: #faf8f5;
+  color: #1c1917;
   font-family: inherit;
-  font-size: 0.95rem;
-  font-weight: 700;
+  text-align: left;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 
-.home-add:active {
+.home-spot__mark {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  background: var(--kd-accent);
+  color: var(--kd-ink);
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.home-spot__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.home-spot__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.home-spot__action {
+  color: color-mix(in srgb, var(--kd-ink) 78%, #faf8f5);
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.home-spot:active {
   box-shadow: inset 0 3px 0 color-mix(in srgb, var(--kd-ink) 22%, transparent);
+}
+
+.home-spot:active .home-spot__mark {
+  transform: rotate(-8deg);
 }
 
 .cafe-list-enter-active,
@@ -888,16 +1100,25 @@ onMounted(() => {
 
 @media (prefers-reduced-motion: reduce) {
   .home-filters__chip,
-  .home-add,
+  .home-spot,
+  .home-spot__mark,
   .home-retry,
+  .home-ticket,
+  .home-ticket__seal,
   .cafe-list-enter-active,
   .cafe-list-leave-active {
     transition: none;
   }
 
+  .home-ticket.is-on .home-ticket__seal,
+  .home-spot:active .home-spot__mark {
+    transform: none;
+  }
+
   .home-skeleton,
   .home-filters__chip:active,
-  .home-add:active {
+  .home-spot:active,
+  .home-ticket:active {
     animation: none;
     box-shadow: none;
   }

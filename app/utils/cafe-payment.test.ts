@@ -79,7 +79,7 @@ describe('cafe payment facts', () => {
       accepts_cash: 'unavailable',
       source_at: '2026-10-02T00:00:00.000Z',
     }))?.unavailable).toBe(true)
-    expect(paymentTeamPress(mixed)).toBe('KapeDoko team · Oct 2, 2026')
+    expect(paymentTeamPress(mixed)).toBe('Verified by KapeDoko team · Oct 2, 2026')
     expect(paymentCard(null)).toBeNull()
   })
 })

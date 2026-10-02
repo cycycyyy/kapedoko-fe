@@ -300,7 +300,7 @@ describe('trusted filters and labels', () => {
     expect(amenityEvidenceLabel(resolveAmenity({ votes: votes(['yes', 'yes', 'yes']) }))).toBe('3 KapéBeans')
     expect(amenityStampKind(unknownAmenityStatus())).toBe('unknown')
     expect(amenityBagValue('wifi', verified)).toBe('Yes')
-    expect(amenityBagPress(verified, verified)).toBe('KapeDoko team · Oct 2, 2026')
+    expect(amenityBagPress(verified, verified)).toBe('Verified by KapeDoko team · Oct 2, 2026')
     expect(amenityBagPress(
       resolveAmenity({ votes: votes(['yes', 'yes', 'yes']) }),
       resolveAmenity({ votes: votes(['yes', 'yes', 'yes']) }),

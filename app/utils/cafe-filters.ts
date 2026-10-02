@@ -70,12 +70,15 @@ export function filterCafes(
     filter?: CafeFilterId
     origin?: LatLng | null
     radiusMeters?: number | null
+    /** Keep the active filter, and also limit it to the Near You radius. */
+    nearby?: boolean
   },
 ): Cafe[] {
   const term = options.query?.trim().toLowerCase() ?? ''
   const filter = options.filter ?? 'near'
   const origin = options.origin
-  const radiusMeters = filter === 'near' ? options.radiusMeters : null
+  const nearby = filter === 'near' || options.nearby === true
+  const radiusMeters = nearby ? options.radiusMeters : null
   const matched = cafes.filter((cafe) => {
     const matchesQuery =
       !term
@@ -85,5 +88,6 @@ export function filterCafes(
       && cafeMatchesFilter(cafe, filter)
       && cafeWithinRadius(cafe, origin, radiusMeters)
   })
-  return sortCafes(matched, filter, origin)
+  const sortAs = nearby && origin ? 'near' : filter
+  return sortCafes(matched, sortAs, origin)
 }

@@ -351,7 +351,7 @@ export function amenityBagPress(
   const team = rows.filter((row) => amenityStampKind(row) === 'team')
   if (team.length) {
     const dates = [...new Set(team.map((row) => amenityDateLabel(row)).filter(Boolean))]
-    return ['KapeDoko team', dates[0] ?? null].filter(Boolean).join(' · ')
+    return ['Verified by KapeDoko team', dates[0] ?? null].filter(Boolean).join(' · ')
   }
   if (rows.some((row) => amenityStampKind(row) === 'community')) return 'KapéBeans'
   return null

@@ -57,7 +57,7 @@ export function paymentDateLabel(payment?: CafePayment | null): string | null {
 export function paymentTeamPress(payment?: CafePayment | null): string | null {
   if (!paymentKnown(payment)) return null
   const date = paymentDateLabel(payment)
-  return ['KapeDoko team', date].filter(Boolean).join(' · ')
+  return ['Verified by KapeDoko team', date].filter(Boolean).join(' · ')
 }
 
 export function paymentCardLabel(payment?: CafePayment | null): string {

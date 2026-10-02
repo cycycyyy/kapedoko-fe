@@ -5,6 +5,7 @@ import { adminLogoPayload } from '~/utils/admin-logos'
 import { effectiveMarkerTier } from '~/utils/marker-tier'
 import { parseProfileRole } from '~/utils/profile-role'
 import { edgeFunctionErrorMessage } from '~/utils/admin-users'
+import { withReportedReviewText, type ReportedReviewSource } from '~/utils/moderation'
 
 export async function requireAdminUserId(): Promise<string> {
   const supabase = useSupabaseClient()
@@ -82,7 +83,17 @@ export function useAdminData() {
       reports.value = []
       return
     }
-    reports.value = (data ?? []) as ContentReportRow[]
+    const rows = (data ?? []) as ContentReportRow[]
+    const reviewIds = [...new Set(rows.flatMap((row) => row.review_id ? [row.review_id] : []))]
+    let reviewRows: ReportedReviewSource[] = []
+    if (reviewIds.length > 0) {
+      const { data: reviewData, error: reviewError } = await supabase
+        .from('reviews')
+        .select('id, comment, wifi_available, wifi_speed, power_available, power_access, recommend')
+        .in('id', reviewIds)
+      if (!reviewError) reviewRows = (reviewData ?? []) as ReportedReviewSource[]
+    }
+    reports.value = withReportedReviewText(rows, reviewRows)
   }
 
   const loadAds = async () => {
