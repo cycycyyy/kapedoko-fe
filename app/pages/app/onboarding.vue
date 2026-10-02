@@ -57,7 +57,7 @@ const STEP_COUNT = 3
 const shellRef = ref<HTMLElement | null>(null)
 const activeStep = ref(0)
 
-useHideAppTabs(shellRef, 'onboarding')
+useAppTabBar('hide')
 
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches

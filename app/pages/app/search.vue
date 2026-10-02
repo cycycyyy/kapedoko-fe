@@ -107,6 +107,8 @@ import {
 } from '~/utils/analytics'
 import { distanceMeters, formatDistance } from '~/utils/geo'
 
+useAppTabBar('hide')
+
 const { cafes, status, error, refresh } = useApprovedShops()
 const { status: locationStatus, location, usingFallback, requestLocation } = useDeviceLocation()
 const { track } = useAnalytics()

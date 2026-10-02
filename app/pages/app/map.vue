@@ -237,6 +237,8 @@ import { trustedPositive } from '~/utils/amenity-status'
 import { distanceMeters, formatDistance } from '~/utils/geo'
 import { ANALYTICS_EVENTS, confidenceBucketFromStatus, detailViewKey } from '~/utils/analytics'
 
+useAppTabBar('hide')
+
 const ionRouter = useIonRouter()
 const { track, once, consent } = useAnalytics()
 const { status: locationStatus, location, usingFallback, center, requestLocation } =
@@ -333,7 +335,7 @@ const bottomPad = computed(() => {
   if (sheetOpen.value || detailOpen.value) {
     return Math.round(window.innerHeight * 0.52)
   }
-  return 108
+  return 36
 })
 
 const goBack = async () => {
@@ -991,7 +993,7 @@ onMounted(() => {
 .map-locate {
   position: absolute;
   right: 20px;
-  bottom: calc(72px + env(safe-area-inset-bottom) + 76px);
+  bottom: calc(env(safe-area-inset-bottom) + 76px);
   display: grid;
   place-items: center;
   width: 48px;
@@ -1014,7 +1016,7 @@ onMounted(() => {
   position: absolute;
   left: 20px;
   right: 20px;
-  bottom: calc(72px + env(safe-area-inset-bottom) + 16px);
+  bottom: calc(env(safe-area-inset-bottom) + 16px);
   display: flex;
   align-items: center;
   justify-content: center;

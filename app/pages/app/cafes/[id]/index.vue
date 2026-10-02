@@ -82,6 +82,8 @@ import {
   takeDetailSource,
 } from '~/utils/analytics'
 
+useAppTabBar('hide')
+
 const route = useRoute()
 const ionRouter = useIonRouter()
 const supabase = useSupabaseClient()

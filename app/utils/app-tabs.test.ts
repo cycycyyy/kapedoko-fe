@@ -9,6 +9,7 @@ import {
   normalizeAppPath,
   pathFromHref,
   resolveAppPath,
+  resolveTabBarVisible,
   shouldShowAppTabs,
 } from './app-tabs'
 
@@ -30,17 +31,25 @@ describe('app tab paths', () => {
     expect(normalizeAppPath('/app/profile/')).toBe('/app/profile')
   })
 
-  test('shows the shell tab bar only on the four tab roots', () => {
+  test('shows the shell tab bar only on home, saved, and profile', () => {
     expect(isAppTabRoute('/app')).toBe(true)
-    expect(isAppTabRoute('/app/map')).toBe(true)
     expect(isAppTabRoute('/app/favorites')).toBe(true)
     expect(isAppTabRoute('/app/profile')).toBe(true)
+    expect(isAppTabRoute('/app/map')).toBe(false)
+    expect(isAppTabRoute('/app/search')).toBe(false)
     expect(isAppTabRoute('/app/cafes/abc')).toBe(false)
+    expect(isAppTabRoute('/app/cafes/abc/review')).toBe(false)
+    expect(isAppTabRoute('/app/cafes/abc/claim')).toBe(false)
     expect(isAppTabRoute('/app/onboarding')).toBe(false)
     expect(isAppTabRoute('/login')).toBe(false)
     expect(isAppTabRoute('/admin')).toBe(false)
     expect(isAppTabRoute('/admin/cafes')).toBe(false)
     expect(isAppTabRoute('/admin/audits/new')).toBe(false)
+    expect(shouldShowAppTabs('/app/map')).toBe(false)
+    expect(shouldShowAppTabs('/app/search')).toBe(false)
+    expect(shouldShowAppTabs('/app/cafes/abc')).toBe(false)
+    expect(shouldShowAppTabs('/app/cafes/abc/review')).toBe(false)
+    expect(shouldShowAppTabs('/app/cafes/abc/claim')).toBe(false)
   })
 
   test('reads Ionic hash paths from the browser location', () => {
@@ -71,8 +80,47 @@ describe('app tab paths', () => {
     expect(shouldShowAppTabs('/app/onboarding', '/app')).toBe(false)
   })
 
-  test('shows the app tab bar on Home when Ionic and Vue Router disagree', () => {
-    expect(shouldShowAppTabs(resolveAppPath('/app/onboarding', '/app'))).toBe(true)
+  test('shows the app tab bar on Home when the home page has entered', () => {
+    expect(resolveTabBarVisible({
+      pageMode: 'show',
+      pageStamp: 1,
+      routeMode: 'hide',
+      routeStamp: 1,
+      foreign: false,
+    })).toBe(true)
+  })
+
+  test('hides the app tab bar as soon as a tab-free page enters, even if the route is still Home', () => {
+    expect(resolveTabBarVisible({
+      pageMode: 'hide',
+      pageStamp: 2,
+      routeMode: 'show',
+      routeStamp: 1,
+      foreign: false,
+    })).toBe(false)
+    expect(shouldShowAppTabs('/app/cafes/abc')).toBe(false)
+    expect(shouldShowAppTabs('/app/map')).toBe(false)
+    expect(shouldShowAppTabs('/app/search')).toBe(false)
+  })
+
+  test('shows the app tab bar again as soon as the route returns to Home', () => {
+    expect(resolveTabBarVisible({
+      pageMode: 'hide',
+      pageStamp: 2,
+      routeMode: 'show',
+      routeStamp: 3,
+      foreign: false,
+    })).toBe(true)
+  })
+
+  test('keeps the tab bar hidden when onboarding is the page on screen', () => {
+    expect(resolveTabBarVisible({
+      pageMode: 'hide',
+      pageStamp: 2,
+      routeMode: 'show',
+      routeStamp: 1,
+      foreign: false,
+    })).toBe(false)
   })
 
   test('treats hidden Ionic pages as not the visible admin surface', () => {

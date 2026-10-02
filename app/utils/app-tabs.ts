@@ -47,11 +47,11 @@ export function resolveAppPath(routePath: string, locationPath?: string | null):
   return fromLocation && fromLocation !== '/' ? fromLocation : fromRoute
 }
 
+/** Routes where the shell tab bar is visible (Map is a tab target but full-screen without the bar). */
 export function isAppTabRoute(path: string): boolean {
   const current = normalizeAppPath(path)
   return current === APP_TAB_PATHS.home
     || current === APP_TAB_PATHS.saved
-    || current === APP_TAB_PATHS.map
     || current === APP_TAB_PATHS.profile
 }
 
@@ -65,14 +65,53 @@ export function isOnboardingPath(path: string): boolean {
   return current === '/app/onboarding' || current.startsWith('/app/onboarding/')
 }
 
-export function shouldShowAppTabs(...values: Array<string | null | undefined>): boolean {
-  const paths = values
+/** App routes where the shell tab bar must stay hidden (everything except home, saved, profile). */
+export function isAppTabBarHiddenRoute(path: string): boolean {
+  const current = pathFromHref(path)
+  if (isOnboardingPath(current)) return true
+  if (!current.startsWith('/app')) return false
+  return !isAppTabRoute(current)
+}
+
+export type AppTabBarMode = 'show' | 'hide'
+
+/** Tab bar for a single current path. `/` is undecided (splash / redirect). */
+export function tabBarModeForPath(path: string): AppTabBarMode | null {
+  const current = pathFromHref(path)
+  if (!current || current === '/') return null
+  if (isForeignSurface(current) || isOnboardingPath(current) || isAppTabBarHiddenRoute(current)) return 'hide'
+  if (isAppTabRoute(current)) return 'show'
+  return 'hide'
+}
+
+/**
+ * Page enter wins when it is at least as new as the route change, so the bar
+ * updates on the first navigation even if Ionic and Vue disagree.
+ * A newer route change wins so leaving that page updates the bar immediately.
+ */
+export function resolveTabBarVisible(input: {
+  pageMode: AppTabBarMode | null
+  pageStamp: number
+  routeMode: AppTabBarMode | null
+  routeStamp: number
+  foreign: boolean
+}): boolean {
+  if (input.foreign) return false
+  const pageWins = input.pageMode != null && input.pageStamp >= input.routeStamp
+  const mode = pageWins ? input.pageMode : input.routeMode
+  return mode === 'show'
+}
+
+/**
+ * Whether the tab bar should show for `path`. Extra hints only hide the bar
+ * when one of them is a foreign surface (admin, auth). A stale app path does not.
+ */
+export function shouldShowAppTabs(path: string, ...peerPaths: Array<string | null | undefined>): boolean {
+  const hints = [path, ...peerPaths]
     .map((value) => (value ? pathFromHref(value) : ''))
-    .filter((path) => path && path !== '/')
-  if (paths.some(isForeignSurface)) return false
-  const routePath = paths[0]
-  if (!routePath || isOnboardingPath(routePath)) return false
-  return isAppTabRoute(routePath)
+    .filter((entry) => entry && entry !== '/')
+  if (hints.some(isForeignSurface)) return false
+  return tabBarModeForPath(path) === 'show'
 }
 
 export function isVisibleIonPageClass(className: string): boolean {

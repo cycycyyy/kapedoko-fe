@@ -194,6 +194,8 @@ import { CAFE_FILTERS, filterCafes, type CafeFilterIcon, type CafeFilterId } fro
 import { amenityFilterHint } from '~/utils/amenity-status'
 import { distanceMeters, formatDistance } from '~/utils/geo'
 
+useAppTabBar('show')
+
 const filterIcons: Record<CafeFilterIcon, typeof Navigation> = {
   navigation: Navigation,
   flame: Flame,

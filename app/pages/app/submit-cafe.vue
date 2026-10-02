@@ -135,6 +135,8 @@ definePageMeta({
   middleware: 'auth',
 })
 
+useAppTabBar('hide')
+
 const ionRouter = useIonRouter()
 const route = useRoute()
 const { submitShop, submitting } = useShopSubmission()

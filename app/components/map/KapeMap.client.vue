@@ -492,7 +492,7 @@ defineExpose({
 }
 
 .kape-map :deep(.leaflet-bottom) {
-  bottom: calc(env(safe-area-inset-bottom) + 72px);
+  bottom: calc(env(safe-area-inset-bottom) + 132px);
   z-index: 1;
   pointer-events: auto;
 }

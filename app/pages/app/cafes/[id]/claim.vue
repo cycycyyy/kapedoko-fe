@@ -78,6 +78,8 @@ definePageMeta({
   middleware: ['auth'],
 })
 
+useAppTabBar('hide')
+
 const route = useRoute()
 const ionRouter = useIonRouter()
 const supabase = useSupabaseClient()

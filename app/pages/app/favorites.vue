@@ -77,6 +77,8 @@ import type { Cafe } from '~/types/cafe'
 import { ANALYTICS_EVENTS, rememberDetailSource } from '~/utils/analytics'
 import { fetchApprovedCafesByIds } from '~/utils/approved-shops'
 
+useAppTabBar('show')
+
 const favorites = useFavorites()
 const user = useSupabaseUser()
 const supabase = useSupabaseClient()
@@ -182,7 +184,7 @@ const goBack = async () => {
   min-height: 100%;
   background-color: #f2f2f2;
   color: var(--kd-ink);
-  padding-bottom: calc(8.5rem + env(safe-area-inset-bottom));
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
 }
 
 .favorites-hero {

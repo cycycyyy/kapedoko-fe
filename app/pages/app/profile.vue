@@ -293,6 +293,8 @@ import type { ShopRow } from '~/types/shop'
 import { NEARBY_RADIUS_PRESETS_KM } from '~/utils/nearby-radius'
 import { canWithdrawClaim, claimStatusCopy, profileClaimsEmptyCopy } from '~/utils/shop-claims'
 
+useAppTabBar('show')
+
 const { user, currentUserId, loadProfile, updateDisplayName, signOut, goToLogin } = useAuth()
 const { consent, setConsent: setAnalyticsConsent } = useAnalytics()
 const analyticsOn = computed(() => consent.value === 'granted')
@@ -489,7 +491,7 @@ const onWithdraw = async (claimId: string) => {
 
 .profile {
   min-height: 100%;
-  padding: max(2.75rem, calc(env(safe-area-inset-top) + 16px)) 20px calc(8.5rem + env(safe-area-inset-bottom));
+  padding: max(2.75rem, calc(env(safe-area-inset-top) + 16px)) 20px calc(72px + env(safe-area-inset-bottom));
   background: #f2f2f2;
   color: var(--kd-ink);
   font-family: 'Kumbh Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
