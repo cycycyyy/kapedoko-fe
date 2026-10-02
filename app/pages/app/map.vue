@@ -238,6 +238,7 @@ import CafeDetailSheet from '~/components/map/CafeDetailSheet.vue'
 import AppTabBar from '~/components/navigation/AppTabBar.vue'
 import type { Cafe } from '~/types/cafe'
 import { cafeMatchesQuery } from '~/utils/cafe-search'
+import { trustedPositive } from '~/utils/amenity-status'
 import { distanceMeters, formatDistance } from '~/utils/geo'
 import { pointInBounds, type GeoBounds } from '~/utils/geography'
 
@@ -311,11 +312,11 @@ const suggestionDistances = computed(() => {
 })
 
 function hasConfirmedWifi(cafe: Cafe) {
-  return Boolean(cafe.work?.known && cafe.work.wifi)
+  return trustedPositive(cafe.work.wifiStatus)
 }
 
 function hasConfirmedPlug(cafe: Cafe) {
-  return Boolean(cafe.work?.known && cafe.work.plug)
+  return trustedPositive(cafe.work.outletsStatus)
 }
 
 const selectedCafe = computed(() => cafeById(selectedId.value))

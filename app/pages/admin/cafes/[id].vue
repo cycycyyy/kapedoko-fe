@@ -7,6 +7,9 @@
       :error="pageError"
     >
       <template v-if="shop" #actions>
+        <NuxtLink v-if="shop.status === 'approved'" class="admin-btn admin-btn--ghost" :to="`/admin/audits/${shop.id}`">
+          Audits
+        </NuxtLink>
         <button
           v-if="shop.status === 'approved'"
           type="button"

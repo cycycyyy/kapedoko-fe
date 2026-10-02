@@ -14,6 +14,7 @@
     "preview": "nuxt preview",
     "test": "bun test",
     "import:osm": "bun scripts/import-osm-cafes.ts",
+    "import:amenities": "bun scripts/import-amenity-reports.ts",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {

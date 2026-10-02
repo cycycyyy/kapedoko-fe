@@ -51,7 +51,7 @@
         </header>
         <div class="admin-shell__body">
           <p v-if="!status || status === 'idle' || status === 'loading'" class="admin-shell__state">Loading…</p>
-          <p v-else-if="status === 'forbidden'" class="admin-shell__state">This portal is for admins.</p>
+          <p v-else-if="status === 'forbidden'" class="admin-shell__state">This portal is for KapeDoko staff.</p>
           <p v-else-if="status === 'error'" class="admin-shell__state admin-shell__state--error">{{ error }}</p>
           <template v-else>
             <p v-if="error" class="admin-shell__state admin-shell__state--error" role="alert">{{ error }}</p>
@@ -65,24 +65,29 @@
 
 <script lang="ts" setup>
 import { IonContent } from '@ionic/vue'
-import { ADMIN_NAV, adminNavIdFromPath } from '~/utils/admin-nav'
+import { adminNavIdFromPath, staffNav } from '~/utils/admin-nav'
 
-const props = withDefaults(defineProps<{
-  title: string
-  lede?: string
-  status?: 'idle' | 'loading' | 'ready' | 'forbidden' | 'error'
-  error?: string
-  pendingCount?: number
-  claimCount?: number
-}>(), {
-  pendingCount: 0,
-  claimCount: 0,
-})
+const props = withDefaults(
+  defineProps<{
+    title: string
+    lede?: string
+    status?: 'idle' | 'loading' | 'ready' | 'forbidden' | 'error'
+    error?: string
+    pendingCount?: number
+    claimCount?: number
+    navRole?: 'admin' | 'auditor'
+  }>(),
+  {
+    pendingCount: 0,
+    claimCount: 0,
+    navRole: 'admin',
+  },
+)
 
 const route = useRoute()
 const navOpen = ref(false)
 const desktop = ref(true)
-const items = ADMIN_NAV
+const items = computed(() => staffNav(props.navRole))
 const active = computed(() => adminNavIdFromPath(route.path))
 
 const onResize = () => {
@@ -382,6 +387,7 @@ onBeforeUnmount(() => {
   color: var(--kd-ink);
   font-size: 0.7875rem;
   font-weight: 700;
+  text-decoration: none;
   cursor: pointer;
 }
 
@@ -416,6 +422,7 @@ onBeforeUnmount(() => {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.7875rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .admin-shell :deep(.admin-table th),
@@ -584,6 +591,39 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+}
+
+.admin-shell :deep(.admin-label) {
+  display: block;
+  font-size: 0.7875rem;
+  font-weight: 700;
+}
+
+.admin-shell :deep(.admin-pay) {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.admin-shell :deep(.admin-pay legend) {
+  padding: 0;
+  margin: 0 0 6px;
+}
+
+.admin-shell :deep(.admin-pay__row) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.admin-shell :deep(.admin-pay__name) {
+  min-width: 44px;
+  font-size: 0.7875rem;
+  font-weight: 700;
 }
 
 .admin-shell :deep(.admin-link) {

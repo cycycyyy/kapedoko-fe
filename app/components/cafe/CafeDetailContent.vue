@@ -36,18 +36,6 @@
         <span>· {{ cafe.busyness.count }} check-ins</span>
       </p>
 
-      <p v-if="amenityGap" class="cafe-detail__prompt">{{ amenityGap }}</p>
-      <p v-else-if="hasWifi || hasPlug" class="cafe-detail__amenities-inline">
-        <span v-if="hasWifi" class="cafe-detail__amenity">
-          <Wifi :size="14" :stroke-width="2" aria-hidden="true" />
-          WiFi
-        </span>
-        <span v-if="hasPlug" class="cafe-detail__amenity">
-          <Plug :size="14" :stroke-width="2" aria-hidden="true" />
-          Outlets
-        </span>
-      </p>
-
       <p v-if="variant !== 'page' && cafe.reviews.length === 0" class="cafe-detail__prompt">
         Not yet reviewed, add your review?
       </p>
@@ -89,6 +77,28 @@
           </span>
         </a>
       </div>
+
+      <ul class="cafe-detail__presses" aria-label="WiFi, outlets, and payments">
+        <li
+          v-for="(row, index) in pressFacts"
+          :key="row.kind"
+          class="cafe-detail__press"
+          :class="{ 'is-soft': row.soft, 'is-no': row.unavailable }"
+          :data-stamp="row.stamp"
+          :style="{ '--i': index, '--tilt': index % 2 ? '2.4deg' : '-2.2deg' }"
+          :aria-label="row.aria"
+        >
+          <span class="cafe-detail__press-seal" aria-hidden="true">
+            <component :is="row.stampIcon" :size="13" :stroke-width="2.4" />
+          </span>
+          <span class="cafe-detail__press-amenity">
+            <component :is="row.icon" :size="15" :stroke-width="2.25" aria-hidden="true" />
+            {{ row.noun }}
+          </span>
+          <span class="cafe-detail__press-mark">{{ row.label }}</span>
+          <span v-if="row.meta" class="cafe-detail__press-date">{{ row.meta }}</span>
+        </li>
+      </ul>
 
       <div v-if="variant === 'page'" class="cafe-detail__page-actions">
         <a
@@ -252,11 +262,19 @@
 </template>
 
 <script lang="ts" setup>
-import { Coffee, Heart, Leaf, Navigation, Phone, Plug, Star, Wifi } from 'lucide-vue-next'
+import { BadgeAlert, BadgeCheck, CircleHelp, Coffee, Heart, Leaf, MessageCircle, Navigation, Phone, Plug, Split, Star, Unplug, Users, Wallet, Wifi, WifiOff } from 'lucide-vue-next'
 import type { Cafe } from '~/types/cafe'
 import { isKapedokoMark, KAPEDOKO_BEAN_PIN_SRC } from '~/utils/logo'
 import { googleMapsDirectionsUrl } from '~/utils/maps'
-import { amenityGapCopy } from '~/utils/shop-mapper'
+import {
+  amenityAriaLabel,
+  amenityFactMeta,
+  amenityPressLabel,
+  amenitySoft,
+  amenityStampKind,
+  type AmenityStampKind,
+} from '~/utils/amenity-status'
+import { paymentCard, paymentDateLabel } from '~/utils/cafe-payment'
 
 const props = withDefaults(
   defineProps<{
@@ -278,7 +296,6 @@ const broken = ref<Record<string, boolean>>({})
 const activePhoto = ref(0)
 const reportNotice = ref('')
 const saved = computed(() => favorites.isSaved(props.cafe.id))
-const amenityGap = computed(() => amenityGapCopy(props.cafe.work, props.cafe.amenities))
 
 const onSave = () => {
   void favorites.toggle(props.cafe.id)
@@ -317,12 +334,56 @@ const onHeroError = () => {
   if (!isKapedokoMark(heroPhoto.value)) broken.value.hero = true
 }
 
-const hasWifi = computed(
-  () => props.cafe.amenities !== 'none' && props.cafe.amenities.includes('wifi'),
-)
-const hasPlug = computed(
-  () => props.cafe.amenities !== 'none' && props.cafe.amenities.includes('plug'),
-)
+const stampIcon = (kind: AmenityStampKind) => {
+  if (kind === 'team') return BadgeCheck
+  if (kind === 'community') return Users
+  if (kind === 'reported') return MessageCircle
+  if (kind === 'recheck') return BadgeAlert
+  if (kind === 'mixed') return Split
+  return CircleHelp
+}
+
+const amenityFacts = computed(() => {
+  const rows = [
+    { kind: 'wifi' as const, noun: 'WiFi', status: props.cafe.work.wifiStatus },
+    { kind: 'outlets' as const, noun: 'Outlets', status: props.cafe.work.outletsStatus },
+  ]
+  return rows.map((row) => {
+    const stamp = amenityStampKind(row.status)
+    return {
+      ...row,
+      icon: row.kind === 'wifi'
+        ? (row.status.availability === 'unavailable' ? WifiOff : Wifi)
+        : (row.status.availability === 'unavailable' ? Unplug : Plug),
+      stamp,
+      stampIcon: stampIcon(stamp),
+      label: amenityPressLabel(row.kind, row.status),
+      meta: amenityFactMeta(row.status),
+      aria: amenityAriaLabel(row.kind, row.status),
+      soft: amenitySoft(row.status),
+      unavailable: row.status.availability === 'unavailable',
+    }
+  })
+})
+
+const pressFacts = computed(() => {
+  const pay = paymentCard(props.cafe.payment)
+  const payments = pay
+    ? [{
+        kind: 'pay' as const,
+        noun: 'Pay',
+        icon: Wallet,
+        stamp: pay.stamp,
+        stampIcon: pay.stamp === 'team' ? BadgeCheck : CircleHelp,
+        label: pay.label,
+        meta: paymentDateLabel(props.cafe.payment),
+        aria: pay.aria,
+        soft: pay.stamp === 'unknown',
+        unavailable: pay.unavailable,
+      }]
+    : []
+  return [...amenityFacts.value, ...payments]
+})
 
 const mapsHref = computed(() => googleMapsDirectionsUrl(props.cafe.lat, props.cafe.lng))
 
@@ -372,7 +433,7 @@ const selectPhoto = (index: number) => {
   background: #faf8f5;
 }
 
-.cafe-detail--page .cafe-detail__header > * {
+.cafe-detail--page .cafe-detail__header > :not(.cafe-detail__presses) {
   min-width: 0;
   max-width: 100%;
 }
@@ -380,11 +441,11 @@ const selectPhoto = (index: number) => {
 .cafe-detail--page .cafe-detail__title-row { order: 1; }
 .cafe-detail--page .cafe-detail__address { order: 2; }
 .cafe-detail--page .cafe-detail__actions { order: 3; }
+.cafe-detail--page .cafe-detail__presses { order: 4; }
 .cafe-detail--page .cafe-detail__crowd,
-.cafe-detail--page .cafe-detail__prompt,
-.cafe-detail--page .cafe-detail__amenities-inline { order: 4; }
-.cafe-detail--page .cafe-detail__rating { order: 5; }
-.cafe-detail--page .cafe-detail__page-actions { order: 6; }
+.cafe-detail--page .cafe-detail__prompt { order: 5; }
+.cafe-detail--page .cafe-detail__rating { order: 6; }
+.cafe-detail--page .cafe-detail__page-actions { order: 7; }
 
 .cafe-detail--page .cafe-detail__title-row {
   display: grid;
@@ -399,8 +460,7 @@ const selectPhoto = (index: number) => {
 
 .cafe-detail--page .cafe-detail__address,
 .cafe-detail--page .cafe-detail__hours,
-.cafe-detail--page .cafe-detail__prompt,
-.cafe-detail--page .cafe-detail__amenities-inline {
+.cafe-detail--page .cafe-detail__prompt {
   white-space: normal;
   overflow-wrap: anywhere;
 }
@@ -541,7 +601,6 @@ const selectPhoto = (index: number) => {
 }
 
 .cafe-detail__prompt,
-.cafe-detail__amenities-inline,
 .cafe-detail__crowd {
   display: flex;
   align-items: center;
@@ -555,9 +614,109 @@ const selectPhoto = (index: number) => {
 }
 
 .cafe-detail__prompt {
+  font-weight: 400;
+}
+
+.cafe-detail__presses {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 12px 14px;
+  margin: 12px 0 2px;
+  padding: 16px 0 18px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  list-style: none;
+  border-top: 1px solid color-mix(in srgb, var(--kd-ink) 12%, transparent);
+}
+
+.cafe-detail__presses::-webkit-scrollbar {
+  display: none;
+}
+
+.cafe-detail__presses::after {
+  content: '';
+  flex: 0 0 6px;
+}
+
+.cafe-detail__press {
+  position: relative;
+  display: grid;
+  flex: 0 0 auto;
+  gap: 2px;
+  min-width: 138px;
+  padding: 12px 28px 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 34%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--kd-accent) 16%, #faf8f5);
   color: var(--kd-ink);
+  transform: rotate(var(--tilt, -2.2deg));
+  transform-origin: 40% 20%;
+  scroll-snap-align: start;
+  animation: cafe-press 640ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+
+.cafe-detail__press[data-stamp='community'] {
+  background: #faf8f5;
+}
+
+.cafe-detail__press[data-stamp='recheck'],
+.cafe-detail__press.is-no {
+  background: color-mix(in srgb, #8c3a2f 10%, #faf8f5);
+  border-color: color-mix(in srgb, #8c3a2f 45%, transparent);
+}
+
+.cafe-detail__press.is-soft {
+  background: #faf8f5;
+  border-style: dashed;
+}
+
+.cafe-detail__press-seal {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  color: var(--kd-accent);
+}
+
+.cafe-detail__press[data-stamp='recheck'] .cafe-detail__press-seal,
+.cafe-detail__press.is-no .cafe-detail__press-seal {
+  color: #8c3a2f;
+}
+
+.cafe-detail__press-amenity {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.cafe-detail__press-amenity :deep(svg) {
+  color: var(--kd-accent);
+}
+
+.cafe-detail__press-mark {
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+}
+
+.cafe-detail__press-date {
+  margin-top: 2px;
+  color: color-mix(in srgb, var(--kd-ink) 72%, #faf8f5);
   font-size: 0.75rem;
   font-weight: 400;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
 }
 
 .cafe-detail__crowd {
@@ -569,17 +728,6 @@ const selectPhoto = (index: number) => {
 
 .cafe-detail__crowd span {
   font-weight: 400;
-}
-
-.cafe-detail__amenity {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--kd-ink);
-}
-
-.cafe-detail__amenity :deep(svg) {
-  color: var(--kd-accent);
 }
 
 .cafe-detail__address {
@@ -942,11 +1090,37 @@ const selectPhoto = (index: number) => {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .cafe-detail__press {
+    animation: none;
+    transform: rotate(var(--tilt, 0deg));
+  }
+
   .cafe-detail__action-face--primary:active,
   .cafe-detail__action-face--quiet:active,
   .cafe-detail__leave:active,
   .cafe-detail__thumb:active {
     box-shadow: none;
+  }
+}
+
+@keyframes cafe-press {
+  0% {
+    opacity: 0.35;
+    filter: blur(2px);
+    clip-path: inset(-30% -30% 72% -30%);
+    transform: rotate(calc(var(--tilt, 0deg) - 18deg)) scale(1.2) translateY(-12px);
+  }
+  58% {
+    opacity: 1;
+    filter: blur(0);
+    clip-path: inset(-30%);
+    transform: rotate(calc(var(--tilt, 0deg) + 1.8deg)) scale(0.97) translateY(1px);
+  }
+  100% {
+    opacity: 1;
+    filter: none;
+    clip-path: inset(-30%);
+    transform: rotate(var(--tilt, 0deg)) scale(1);
   }
 }
 </style>

@@ -8,8 +8,9 @@ const LOGO_TYPES: Record<string, string> = {
 
 const LOGO_MAX_BYTES = 2 * 1024 * 1024
 const BANNER_MAX_BYTES = 4 * 1024 * 1024
+const AUDIT_PHOTO_MAX_BYTES = 4 * 1024 * 1024
 
-type UploadPurpose = 'shop-logo' | 'ad-banner'
+type UploadPurpose = 'shop-logo' | 'ad-banner' | 'audit-photo'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -71,7 +72,9 @@ function readR2Config(): R2Config | null {
 }
 
 function parsePurpose(value: unknown): UploadPurpose {
-  return value === 'ad-banner' ? 'ad-banner' : 'shop-logo'
+  if (value === 'ad-banner') return 'ad-banner'
+  if (value === 'audit-photo') return 'audit-photo'
+  return 'shop-logo'
 }
 
 async function authenticate(req: Request): Promise<Response | AuthUser> {
@@ -106,10 +109,10 @@ async function authenticate(req: Request): Promise<Response | AuthUser> {
   return { id: user.id, jwt }
 }
 
-async function isAdmin(auth: AuthUser): Promise<boolean> {
+async function profileRole(auth: AuthUser): Promise<string | null> {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const supabaseAnon = Deno.env.get('SUPABASE_ANON_KEY')
-  if (!supabaseUrl || !supabaseAnon) return false
+  if (!supabaseUrl || !supabaseAnon) return null
   const res = await fetch(
     `${supabaseUrl}/rest/v1/profiles?id=eq.${auth.id}&select=role`,
     {
@@ -120,9 +123,18 @@ async function isAdmin(auth: AuthUser): Promise<boolean> {
       },
     },
   )
-  if (!res.ok) return false
+  if (!res.ok) return null
   const rows = (await res.json()) as Array<{ role?: string }>
-  return rows[0]?.role === 'admin'
+  return rows[0]?.role ?? null
+}
+
+async function isAdmin(auth: AuthUser): Promise<boolean> {
+  return (await profileRole(auth)) === 'admin'
+}
+
+async function isAuditor(auth: AuthUser): Promise<boolean> {
+  const role = await profileRole(auth)
+  return role === 'admin' || role === 'auditor'
 }
 
 function validateImageMeta(
@@ -134,17 +146,19 @@ function validateImageMeta(
   if (!ext) {
     return { error: 'Use a JPG, PNG, or WebP image.' }
   }
-  const max = purpose === 'ad-banner' ? BANNER_MAX_BYTES : LOGO_MAX_BYTES
+  const max = purpose === 'shop-logo' ? LOGO_MAX_BYTES : purpose === 'ad-banner' ? BANNER_MAX_BYTES : AUDIT_PHOTO_MAX_BYTES
   if (!Number.isFinite(size) || size <= 0 || size > max) {
     return {
-      error: purpose === 'ad-banner' ? 'Keep the banner under 4 MB.' : 'Keep the logo under 2 MB.',
+      error: purpose === 'ad-banner' || purpose === 'audit-photo'
+        ? 'Keep the photo under 4 MB.'
+        : 'Keep the logo under 2 MB.',
     }
   }
   return { ext }
 }
 
 function r2UploadError(status: number, purpose: UploadPurpose): string {
-  const noun = purpose === 'ad-banner' ? 'Banner' : 'Logo'
+  const noun = purpose === 'ad-banner' ? 'Banner' : purpose === 'audit-photo' ? 'Photo' : 'Logo'
   if (status === 403) {
     return `${noun} upload credentials are invalid. Check R2 secrets on presign-upload.`
   }
@@ -162,7 +176,7 @@ async function uploadToR2(
   ext: string,
   body: ArrayBuffer,
 ): Promise<Response> {
-  const folder = purpose === 'ad-banner' ? 'ad-banners' : 'shop-logos'
+  const folder = purpose === 'ad-banner' ? 'ad-banners' : purpose === 'audit-photo' ? 'audit-photos' : 'shop-logos'
   const objectKey = `${folder}/${userId}/${crypto.randomUUID()}.${ext}`
   const endpoint = r2Endpoint(config, objectKey)
   const client = r2Client(config)
@@ -206,6 +220,9 @@ async function handleMultipartUpload(
   if (purpose === 'ad-banner' && !(await isAdmin(auth))) {
     return json(403, { error: 'Admin only' })
   }
+  if (purpose === 'audit-photo' && !(await isAuditor(auth))) {
+    return json(403, { error: 'Auditor only' })
+  }
 
   const file = form.get('file')
   if (!(file instanceof File)) {
@@ -237,6 +254,9 @@ async function handlePresignRequest(
   if (purpose === 'ad-banner' && !(await isAdmin(auth))) {
     return json(403, { error: 'Admin only' })
   }
+  if (purpose === 'audit-photo' && !(await isAuditor(auth))) {
+    return json(403, { error: 'Auditor only' })
+  }
 
   const contentType = String(payload.contentType ?? '')
   const size = Number(payload.size ?? 0)
@@ -245,7 +265,7 @@ async function handlePresignRequest(
     return json(400, { error: validation.error })
   }
 
-  const folder = purpose === 'ad-banner' ? 'ad-banners' : 'shop-logos'
+  const folder = purpose === 'ad-banner' ? 'ad-banners' : purpose === 'audit-photo' ? 'audit-photos' : 'shop-logos'
   const objectKey = `${folder}/${auth.id}/${crypto.randomUUID()}.${validation.ext}`
   const endpoint = r2Endpoint(config, objectKey)
   const signed = await r2Client(config).sign(

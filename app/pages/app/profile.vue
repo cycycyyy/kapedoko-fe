@@ -149,8 +149,10 @@
             </button>
           </form>
 
-          <section v-if="isAdmin" class="profile__panel" aria-label="Admin">
-            <NuxtLink class="profile__primary" to="/admin">Admin portal</NuxtLink>
+          <section v-if="isAdmin || isAuditor" class="profile__panel" aria-label="Staff">
+            <NuxtLink class="profile__primary" :to="isAdmin ? '/admin' : '/admin/audits'">
+              {{ isAdmin ? 'Admin portal' : 'Cafe audits' }}
+            </NuxtLink>
           </section>
 
           <section class="profile__submissions" aria-labelledby="owned-title">
@@ -313,6 +315,7 @@ const shops = ref<Pick<ShopRow, 'id' | 'name' | 'status' | 'rejection_reason'>[]
 const shopsStatus = ref<'idle' | 'loading' | 'ready' | 'error'>('idle')
 const shopsError = ref('')
 const isAdmin = ref(false)
+const isAuditor = ref(false)
 const ownedCafes = computed(() => ownedShops.value)
 const openClaims = computed(() => ownerClaims.value.filter((claim) => claim.status !== 'verified'))
 const withdrawingId = ref<string | null>(null)
@@ -354,12 +357,14 @@ const loadAccount = async () => {
   email.value = user.value?.email ?? ''
   if (!user.value) {
     isAdmin.value = false
+    isAuditor.value = false
     return
   }
   try {
     const profile = await loadProfile()
     displayName.value = profile?.display_name || ''
     isAdmin.value = profile?.role === 'admin'
+    isAuditor.value = profile?.role === 'auditor' || profile?.role === 'admin'
   } catch (err) {
     nameError.value = err instanceof Error ? err.message : 'Could not load your profile.'
   }

@@ -77,3 +77,5 @@
 -- OSM identity is unique.
 -- insert two pending shops with the same source/osm_type/osm_id.
 -- Expected: unique violation on shops_osm_identity_uidx.
+
+-- Amenity source of truth checks: db/verify/amenity_source_of_truth.sql

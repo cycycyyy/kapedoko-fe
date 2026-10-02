@@ -1,6 +1,15 @@
 import type { BusynessLevel, CafeWorkFacts, MarkerTier } from './shop'
 
 export type Amenity = 'wifi' | 'plug'
+export type PaymentKind = 'qr' | 'card' | 'cash'
+export type PaymentResult = 'available' | 'unavailable' | 'unknown'
+
+export interface CafePayment {
+  qr: PaymentResult
+  card: PaymentResult
+  cash: PaymentResult
+  sourceAt: string | null
+}
 
 export interface LatLng {
   lat: number
@@ -49,4 +58,5 @@ export interface Cafe {
   lng: number
   markerTier: MarkerTier
   source?: 'openstreetmap' | 'user' | 'admin' | null
+  payment?: CafePayment | null
 }

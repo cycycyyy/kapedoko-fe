@@ -9,8 +9,10 @@ import type {
   ShopReviewStatsRow,
   ShopRow,
 } from '../types/shop'
-import { mapPublicReview, matchaInsightFromStats, plugInsightFromStats, statsFromPublicReviews, wifiInsightFromStats } from './cafe-review'
+import { mapPublicReview, matchaInsightFromStats, statsFromPublicReviews } from './cafe-review'
 import { mapShopToCafe, withCafeBusyness, withCafeReviews } from './shop-mapper'
+import type { ShopAmenityResolutionRow } from './amenity-status'
+import { paymentFromRow, type CafePayment, type ShopPaymentRow } from './cafe-payment'
 
 export const APPROVED_SHOP_COLUMNS =
   'id,name,description,address,latitude,longitude,categories,hours,cover_photo_url,logo_object_key,contact_number,status,submitted_by,reviewed_by,reviewed_at,rejection_reason,created_at,updated_at'
@@ -57,6 +59,43 @@ function sanitizeSearch(query: string): string {
   return query.replace(/[%_,()]/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
+async function fetchAmenityResolutions(
+  supabase: { from: (relation: string) => any },
+  ids: string[],
+): Promise<Map<string, ShopAmenityResolutionRow[]> | null> {
+  if (!ids.length) return new Map()
+  const { data, error } = await supabase
+    .from('shop_amenity_resolutions_public')
+    .select('shop_id,amenity_key,availability,confidence,source_at,decided_count,yes_count,no_count,is_stale,needs_recheck,wifi_speed,wifi_time_limit,outlet_reliability')
+    .in('shop_id', ids)
+  if (error) return null
+  const grouped = new Map<string, ShopAmenityResolutionRow[]>()
+  for (const row of (data ?? []) as ShopAmenityResolutionRow[]) {
+    const list = grouped.get(row.shop_id) ?? []
+    list.push(row)
+    grouped.set(row.shop_id, list)
+  }
+  return grouped
+}
+
+async function fetchPayments(
+  supabase: { from: (relation: string) => any },
+  ids: string[],
+): Promise<Map<string, CafePayment> | null> {
+  if (!ids.length) return new Map()
+  const { data, error } = await supabase
+    .from('shop_payment_public')
+    .select('shop_id,accepts_qr,accepts_card,accepts_cash,source_at')
+    .in('shop_id', ids)
+  if (error) return null
+  const byId = new Map<string, CafePayment>()
+  for (const row of (data ?? []) as ShopPaymentRow[]) {
+    const payment = paymentFromRow(row)
+    if (payment) byId.set(row.shop_id, payment)
+  }
+  return byId
+}
+
 export async function fetchApprovedCafes(
   supabase: { from: (relation: string) => any },
   publicBase: string,
@@ -94,9 +133,11 @@ export async function fetchApprovedCafes(
   if (!approved.length) return []
 
   const ids = approved.map((shop) => shop.id)
-  const [{ data: stats }, { data: tiers }] = await Promise.all([
+  const [{ data: stats }, { data: tiers }, amenityById, paymentById] = await Promise.all([
     supabase.from('shop_review_stats').select('*').in('shop_id', ids),
     supabase.from('shop_marker_tiers').select('shop_id, marker_tier').in('shop_id', ids),
+    fetchAmenityResolutions(supabase, ids),
+    fetchPayments(supabase, ids),
   ])
 
   const statsById = new Map(
@@ -107,7 +148,14 @@ export async function fetchApprovedCafes(
   )
 
   return approved.map((shop) =>
-    mapShopToCafe(shop, statsById.get(shop.id), publicBase, tierById.get(shop.id) ?? 'standard'),
+    mapShopToCafe(
+      shop,
+      statsById.get(shop.id),
+      publicBase,
+      tierById.get(shop.id) ?? 'standard',
+      amenityById ? amenityById.get(shop.id) ?? [] : undefined,
+      paymentById?.get(shop.id) ?? null,
+    ),
   )
 }
 
@@ -129,9 +177,11 @@ export async function fetchApprovedCafesByIds(
   const approved = ((shops ?? []) as ShopRow[]).filter((shop) => shop.status === 'approved')
   if (!approved.length) return []
 
-  const [{ data: stats }, { data: tiers }] = await Promise.all([
+  const [{ data: stats }, { data: tiers }, amenityById, paymentById] = await Promise.all([
     supabase.from('shop_review_stats').select('*').in('shop_id', ids),
     supabase.from('shop_marker_tiers').select('shop_id, marker_tier').in('shop_id', ids),
+    fetchAmenityResolutions(supabase, ids),
+    fetchPayments(supabase, ids),
   ])
   const statsById = new Map(
     ((stats ?? []) as ShopReviewStatsRow[]).map((row) => [row.shop_id, row]),
@@ -142,7 +192,14 @@ export async function fetchApprovedCafesByIds(
   const byId = new Map(
     approved.map((shop) => [
       shop.id,
-      mapShopToCafe(shop, statsById.get(shop.id), publicBase, tierById.get(shop.id) ?? 'standard'),
+      mapShopToCafe(
+        shop,
+        statsById.get(shop.id),
+        publicBase,
+        tierById.get(shop.id) ?? 'standard',
+        amenityById ? amenityById.get(shop.id) ?? [] : undefined,
+        paymentById?.get(shop.id) ?? null,
+      ),
     ]),
   )
 
@@ -171,19 +228,25 @@ export async function fetchApprovedCafeById(
 
   let stats: ShopReviewStatsRow | null = null
   let markerTier: MarkerTier = 'standard'
+  let amenityRows: ShopAmenityResolutionRow[] | undefined
+  let payment: CafePayment | null = null
   try {
-    const [statsResult, tiersResult] = await Promise.all([
+    const [statsResult, tiersResult, amenityById, paymentById] = await Promise.all([
       supabase.from('shop_review_stats').select('*').eq('shop_id', shopId).limit(1),
       supabase.from('shop_marker_tiers').select('shop_id, marker_tier').eq('shop_id', shopId).limit(1),
+      fetchAmenityResolutions(supabase, [shopId]),
+      fetchPayments(supabase, [shopId]),
     ])
     stats = statsResult.error ? null : firstRow(statsResult.data as ShopReviewStatsRow[] | ShopReviewStatsRow | null)
     const tierRow = tiersResult.error ? null : firstRow(tiersResult.data as ShopMarkerTierRow[] | ShopMarkerTierRow | null)
     markerTier = (tierRow?.marker_tier as MarkerTier | undefined) ?? 'standard'
+    amenityRows = amenityById ? amenityById.get(shopId) ?? [] : undefined
+    payment = paymentById?.get(shopId) ?? null
   } catch {
     stats = null
   }
 
-  return mapShopToCafe(shop as ShopRow, stats, publicBase, markerTier)
+  return mapShopToCafe(shop as ShopRow, stats, publicBase, markerTier, amenityRows, payment)
 }
 
 export async function fetchPublicCafeReviews(
@@ -271,8 +334,8 @@ export async function hydrateCafeDetail(
   const derived = statsFromPublicReviews(rows)
   const reviewed: Cafe = {
     ...withCafeReviews(cafe, rows.map(mapPublicReview)),
-    wifiInsight: cafe.wifiInsight ?? wifiInsightFromStats(derived),
-    plugInsight: cafe.plugInsight ?? plugInsightFromStats(derived),
+    wifiInsight: cafe.wifiInsight,
+    plugInsight: cafe.plugInsight,
     matchaInsight: cafe.matchaInsight ?? matchaInsightFromStats(derived),
   }
   const busyness = busynessResult.status === 'fulfilled' ? busynessResult.value : null

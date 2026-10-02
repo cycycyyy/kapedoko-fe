@@ -99,6 +99,7 @@
             <span>{{ locationNote }}</span>
           </template>
         </p>
+        <p v-if="status === 'ready' && amenityHint" class="home-state">{{ amenityHint }}</p>
 
         <Transition name="cafe-list" mode="out-in">
           <section :key="listKey" class="home-list" aria-label="Cafes">
@@ -154,6 +155,7 @@ import AppTabBar from '~/components/navigation/AppTabBar.vue'
 import type { Cafe } from '~/types/cafe'
 import { featuredAdCopy } from '~/utils/admin-ads'
 import { CAFE_FILTERS, filterCafes, type CafeFilterIcon, type CafeFilterId } from '~/utils/cafe-filters'
+import { amenityFilterHint } from '~/utils/amenity-status'
 import { distanceMeters, formatDistance } from '~/utils/geo'
 
 const filterIcons: Record<CafeFilterIcon, typeof Navigation> = {
@@ -242,6 +244,7 @@ const origin = computed(() => (
 ))
 
 const activeFilterMeta = computed(() => filters.find((filter) => filter.id === activeFilter.value) ?? filters[0]!)
+const amenityHint = computed(() => amenityFilterHint(activeFilter.value))
 
 const locationNote = computed(() => {
   if (activeFilter.value !== 'near') return ''

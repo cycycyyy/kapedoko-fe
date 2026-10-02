@@ -35,6 +35,7 @@ describe('profile roles', () => {
   test('keeps cafe-owner instead of coercing to user', () => {
     expect(parseProfileRole('cafe-owner')).toBe('cafe-owner')
     expect(parseProfileRole('admin')).toBe('admin')
+    expect(parseProfileRole('auditor')).toBe('auditor')
     expect(parseProfileRole('mod')).toBe('user')
   })
 })

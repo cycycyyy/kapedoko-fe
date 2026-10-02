@@ -46,6 +46,7 @@
                 >
                   <option value="user">User</option>
                   <option value="cafe-owner">Cafe owner</option>
+                  <option value="auditor">Auditor</option>
                   <option value="admin">Admin</option>
                 </select>
               </td>
@@ -85,6 +86,7 @@
           >
             <option value="user">User</option>
             <option value="cafe-owner">Cafe owner</option>
+            <option value="auditor">Auditor</option>
             <option value="admin">Admin</option>
           </select>
           <div class="admin-row-actions">

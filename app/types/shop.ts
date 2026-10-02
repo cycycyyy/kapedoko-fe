@@ -62,6 +62,23 @@ export type WifiSpeed = 'slow' | 'okay' | 'fast'
 export type WifiTimeLimit = 'unlimited' | 'voucher' | 'purchase' | 'unsure'
 export type PowerAccess = 'easy' | 'limited' | 'scarce'
 
+export type AmenityAvailability = 'available' | 'unavailable' | 'mixed' | 'unknown'
+export type AmenityConfidence = 'team_verified' | 'community_confirmed' | 'reported' | 'unknown'
+
+export interface CafeAmenityStatus {
+  availability: AmenityAvailability
+  confidence: AmenityConfidence
+  sourceAt: string | null
+  isStale: boolean
+  needsRecheck: boolean
+  decidedCount: number
+  yesCount: number
+  noCount: number
+  wifiSpeed: WifiSpeed | null
+  wifiTimeLimit: WifiTimeLimit | null
+  outletReliability: PowerAccess | null
+}
+
 export interface CafeWorkFacts {
   known: boolean
   wifi: boolean | null
@@ -70,6 +87,9 @@ export interface CafeWorkFacts {
   wifiTimeLimit: WifiTimeLimit | null
   plug: boolean | null
   outletReliability: PowerAccess | null
+  wifiStatus: CafeAmenityStatus
+  outletsStatus: CafeAmenityStatus
+  longStayWifiStatus: CafeAmenityStatus
 }
 export type NoiseLevel = 'quiet' | 'mixed' | 'loud'
 export type StayFit = 'long' | 'short' | 'unsure'
@@ -176,7 +196,7 @@ export interface ShopClaimRow {
   updated_at: string
 }
 
-export type ProfileRole = 'user' | 'cafe-owner' | 'admin'
+export type ProfileRole = 'user' | 'cafe-owner' | 'admin' | 'auditor'
 
 export interface ProfileRow {
   id: string

@@ -1,4 +1,4 @@
-import type { Amenity, Cafe, CafeReview } from '../types/cafe'
+import type { Amenity, Cafe, CafePayment, CafeReview } from '../types/cafe'
 import type {
   CafeWorkFacts,
   MarkerTier,
@@ -18,6 +18,16 @@ import {
 } from './cafe-review'
 import { formatHoursHint, isOpenNow } from './hours'
 import { isKapedokoMark, KAPEDOKO_MARK_SRC } from './logo'
+import {
+  amenityGapCopyFromStatus,
+  amenityInsight,
+  statusesFromLegacyWork,
+  trustedNegative,
+  trustedPositive,
+  unknownAmenityStatus,
+  workFactsFromResolutions,
+  type ShopAmenityResolutionRow,
+} from './amenity-status'
 
 const REVIEW_THRESHOLD = 3
 const AMENITY_YES_PCT = 50
@@ -30,6 +40,9 @@ export const UNKNOWN_WORK: CafeWorkFacts = {
   wifiTimeLimit: null,
   plug: null,
   outletReliability: null,
+  wifiStatus: unknownAmenityStatus(),
+  outletsStatus: unknownAmenityStatus(),
+  longStayWifiStatus: unknownAmenityStatus(),
 }
 
 function asWifiSpeed(value: string | null | undefined): WifiSpeed | null {
@@ -54,8 +67,7 @@ export function workFactsFromStats(stats?: ShopReviewStatsRow | null): CafeWorkF
   const plug = (stats.power_available_pct ?? 0) >= AMENITY_YES_PCT
   const wifiSpeed = wifi ? asWifiSpeed(stats.wifi_speed_mode) : null
   const wifiTimeLimit = wifi ? asWifiCap(stats.wifi_time_limit_mode) : null
-
-  return {
+  const work = {
     known: true,
     wifi,
     longStay: wifi && wifiTimeLimit === 'unlimited',
@@ -64,12 +76,16 @@ export function workFactsFromStats(stats?: ShopReviewStatsRow | null): CafeWorkF
     plug,
     outletReliability: plug ? asPowerAccess(stats.power_access_mode) : null,
   }
+  return { ...work, ...statusesFromLegacyWork(work) }
+}
+
+export function workFactsFromAmenityRows(rows?: ShopAmenityResolutionRow[] | null): CafeWorkFacts {
+  return workFactsFromResolutions(rows)
 }
 
 export function amenityGapCopy(work: CafeWorkFacts, amenities: Amenity[] | 'none'): string | null {
-  if (!work.known) return 'WiFi and outlets not confirmed yet'
   if (amenities === 'none') return 'No WiFi or power outlets'
-  return null
+  return amenityGapCopyFromStatus(work.wifiStatus, work.outletsStatus)
 }
 
 export function publicObjectUrl(objectKey: string | null | undefined, publicBase?: string): string | null {
@@ -98,6 +114,15 @@ function usablePublicBase(publicBase?: string): string | null {
     return null
   }
   return base
+}
+
+export function amenitiesFromWork(work: CafeWorkFacts): Amenity[] | 'none' {
+  if (work.wifiStatus.availability === 'unknown' && work.outletsStatus.availability === 'unknown') return []
+  const amenities: Amenity[] = []
+  if (trustedPositive(work.wifiStatus)) amenities.push('wifi')
+  if (trustedPositive(work.outletsStatus)) amenities.push('plug')
+  if (!amenities.length && trustedNegative(work.wifiStatus) && trustedNegative(work.outletsStatus)) return 'none'
+  return amenities
 }
 
 export function amenitiesFromStats(stats?: ShopReviewStatsRow | null): Amenity[] | 'none' {
@@ -139,13 +164,16 @@ export function mapShopToCafe(
   stats?: ShopReviewStatsRow | null,
   publicBase?: string,
   markerTier: MarkerTier = 'standard',
+  amenityRows?: ShopAmenityResolutionRow[] | null,
+  payment?: CafePayment | null,
 ): Cafe {
   const image = shopImageUrl(shop, publicBase)
   const open = isOpenNow(shop.hours)
   const hoursHint = formatHoursHint(shop.hours)
   const { rating, label } = ratingFromStats(stats)
-  const amenities = amenitiesFromStats(stats)
-  const work = workFactsFromStats(stats)
+  const useResolutions = amenityRows !== undefined
+  const work = useResolutions ? workFactsFromAmenityRows(amenityRows) : workFactsFromStats(stats)
+  const amenities = useResolutions ? amenitiesFromWork(work) : amenitiesFromStats(stats)
 
   return {
     id: shop.id,
@@ -162,8 +190,8 @@ export function mapShopToCafe(
     popular: (stats?.total_reviews ?? 0) >= REVIEW_THRESHOLD && (stats?.recommend_pct ?? 0) >= 70,
     rating,
     ratingLabel: label,
-    wifiInsight: wifiInsightFromStats(stats),
-    plugInsight: plugInsightFromStats(stats),
+    wifiInsight: useResolutions ? amenityInsight('wifi', work.wifiStatus) : wifiInsightFromStats(stats),
+    plugInsight: useResolutions ? amenityInsight('outlets', work.outletsStatus) : plugInsightFromStats(stats),
     matchaInsight: matchaInsightFromStats(stats),
     busyness: null,
     reviews: [],
@@ -171,6 +199,7 @@ export function mapShopToCafe(
     lng: Number(shop.longitude),
     markerTier,
     source: shop.source ?? null,
+    payment: payment ?? null,
   }
 }
 

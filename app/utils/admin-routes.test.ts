@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { ADMIN_NAV, adminNavIdFromPath } from './admin-nav'
+import { ADMIN_NAV, adminNavIdFromPath, staffNav } from './admin-nav'
 
 describe('admin routes', () => {
   test('covers every portal section under /admin', () => {
@@ -7,6 +7,7 @@ describe('admin routes', () => {
     expect(hrefs).toEqual([
       '/admin',
       '/admin/cafes',
+      '/admin/audits',
       '/admin/requests',
       '/admin/claims',
       '/admin/partnerships',
@@ -19,7 +20,14 @@ describe('admin routes', () => {
 
   test('keeps nested cafe routes on the cafes section', () => {
     expect(adminNavIdFromPath('/admin/cafes/abc-123')).toBe('cafes')
+    expect(adminNavIdFromPath('/admin/audits/new')).toBe('audits')
+    expect(adminNavIdFromPath('/admin/cafes/abc-123/audits')).toBe('audits')
     expect(adminNavIdFromPath('/admin/requests?id=1')).toBe('requests')
     expect(adminNavIdFromPath('/admin/claims')).toBe('claims')
+  })
+
+  test('auditors only see the audits section', () => {
+    expect(staffNav('auditor').map((item) => item.id)).toEqual(['audits'])
+    expect(staffNav('admin').map((item) => item.id)).toContain('cafes')
   })
 })

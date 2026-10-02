@@ -20,33 +20,36 @@
         </span>
       </span>
       <span class="bag__lines">
-        <span v-if="hoursLine" class="bag__line">
-          <span class="bag__key">
-            <Clock :size="15" :stroke-width="2.25" aria-hidden="true" />
-            <span>Hours</span>
-          </span>
-          <span>{{ hoursLine }}</span>
+        <span v-if="hoursLine" class="bag__hours">
+          <Clock :size="15" :stroke-width="2.25" aria-hidden="true" />
+          <span class="bag__hours-key">Hours</span>
+          <span class="bag__hours-time">{{ hoursLine }}</span>
         </span>
-        <span class="bag__line">
-          <span class="bag__key">
-            <component :is="wifiIcon" :size="15" :stroke-width="2.25" aria-hidden="true" />
-            <span>WiFi</span>
+        <span class="bag__marks" aria-label="WiFi, outlets, and payments">
+          <span
+            v-for="(row, index) in stampMarks"
+            :key="row.kind"
+            class="bag__mark-stamp"
+            :class="{ 'is-soft': row.soft, 'is-no': row.unavailable }"
+            :data-stamp="row.stamp"
+            :style="{ '--tilt': index % 2 ? '1.6deg' : '-1.4deg' }"
+            :aria-label="row.aria"
+          >
+            <span class="bag__mark-noun">
+              <component :is="row.icon" :size="15" :stroke-width="2.25" aria-hidden="true" />
+              {{ row.noun }}
+            </span>
+            <span class="bag__mark-word">{{ row.words }}</span>
           </span>
-          <span>{{ wifiWords }}</span>
         </span>
-        <span class="bag__line">
-          <span class="bag__key">
-            <component :is="outletIcon" :size="15" :stroke-width="2.25" aria-hidden="true" />
-            <span>Outlets</span>
-          </span>
-          <span>{{ outletWords }}</span>
+        <span v-if="teamPress" class="bag__press">
+          <BadgeCheck :size="13" :stroke-width="2.4" aria-hidden="true" />
+          {{ teamPress }}
         </span>
-        <span v-if="distanceLabel" class="bag__line">
-          <span class="bag__key">
-            <Navigation :size="15" :stroke-width="2.25" aria-hidden="true" />
-            <span>Distance</span>
-          </span>
-          <span>{{ distanceLabel }}</span>
+        <span v-if="distanceLabel" class="bag__hours">
+          <Navigation :size="15" :stroke-width="2.25" aria-hidden="true" />
+          <span class="bag__hours-key">Distance</span>
+          <span class="bag__hours-time">{{ distanceLabel }}</span>
         </span>
       </span>
     </button>
@@ -69,12 +72,14 @@
 </template>
 
 <script lang="ts" setup>
-import { Clock, Heart, Navigation, Plug, Unplug, Wifi, WifiOff } from 'lucide-vue-next'
+import { BadgeCheck, Clock, Heart, Navigation, Plug, Unplug, Wallet, Wifi, WifiOff } from 'lucide-vue-next'
 import type { Cafe } from '~/types/cafe'
 import { cafeDisplayLogo, isKapedokoMark, KAPEDOKO_APP_LOGO_SRC } from '~/utils/logo'
+import { amenityAriaLabel, amenityBagPress, amenityBagValue, amenitySoft, amenityStampKind } from '~/utils/amenity-status'
+import { paymentCard, paymentTeamPress } from '~/utils/cafe-payment'
 
 const props = defineProps<{
-  cafe: Pick<Cafe, 'id' | 'name' | 'address' | 'image' | 'open' | 'status' | 'amenities' | 'work' | 'rating' | 'hoursHint'>
+  cafe: Pick<Cafe, 'id' | 'name' | 'address' | 'image' | 'open' | 'status' | 'amenities' | 'work' | 'rating' | 'hoursHint' | 'payment'>
   selected?: boolean
   distanceLabel?: string
 }>()
@@ -90,24 +95,45 @@ const usingAppLogo = computed(() => broken.value || isKapedokoMark(props.cafe.im
 const photoSrc = computed(() => cafeDisplayLogo(broken.value ? null : props.cafe.image))
 const closed = computed(() => props.cafe.status === 'Closed')
 
-const wifiWords = computed(() => {
-  if (!props.cafe.work?.known) return 'Not confirmed'
-  return props.cafe.work.wifi ? 'Confirmed' : 'No WiFi'
-})
+const wifiStatus = computed(() => props.cafe.work?.wifiStatus)
+const outletStatus = computed(() => props.cafe.work?.outletsStatus)
 
-const outletWords = computed(() => {
-  if (!props.cafe.work?.known) return 'Not confirmed'
-  return props.cafe.work.plug ? 'Confirmed' : 'No outlets'
-})
+const teamPress = computed(() => amenityBagPress(wifiStatus.value, outletStatus.value) ?? paymentTeamPress(props.cafe.payment))
 
-const wifiIcon = computed(() => {
-  if (props.cafe.work?.known && !props.cafe.work.wifi) return WifiOff
-  return Wifi
-})
-
-const outletIcon = computed(() => {
-  if (props.cafe.work?.known && !props.cafe.work.plug) return Unplug
-  return Plug
+const stampMarks = computed(() => {
+  const amenities = [
+    { kind: 'wifi' as const, noun: 'WiFi', status: wifiStatus.value },
+    { kind: 'outlets' as const, noun: 'Outlets', status: outletStatus.value },
+  ].map((row) => {
+    const status = row.status
+    return {
+      kind: row.kind,
+      noun: row.noun,
+      words: status ? amenityBagValue(row.kind, status) : 'Unknown',
+      stamp: status ? amenityStampKind(status) : 'unknown',
+      soft: status ? amenitySoft(status) : true,
+      unavailable: status?.availability === 'unavailable',
+      aria: status ? amenityAriaLabel(row.kind, status) : `${row.noun}, Unknown`,
+      icon: row.kind === 'wifi'
+        ? (status?.availability === 'unavailable' ? WifiOff : Wifi)
+        : (status?.availability === 'unavailable' ? Unplug : Plug),
+    }
+  })
+  const pay = paymentCard(props.cafe.payment)
+  if (!pay) return amenities
+  return [
+    ...amenities,
+    {
+      kind: 'pay' as const,
+      noun: 'Pay',
+      words: pay.label,
+      stamp: pay.stamp,
+      soft: pay.stamp === 'unknown',
+      unavailable: pay.unavailable,
+      aria: pay.aria,
+      icon: Wallet,
+    },
+  ]
 })
 
 const hoursLine = computed(() => {
@@ -221,40 +247,129 @@ const onPhotoError = () => {
 .bag__lines {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  align-items: flex-start;
+  gap: 8px;
   margin: 0;
-  padding-top: 8px;
+  padding-top: 10px;
+  overflow: visible;
   border-top: 1px solid color-mix(in srgb, var(--kd-ink) 12%, transparent);
   animation: bag-reprint 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
   animation-delay: calc(var(--enter, 0) * 32ms);
 }
 
-.bag__line {
-  display: grid;
-  grid-template-columns: 7rem max-content;
-  column-gap: 8px;
+.bag__hours {
+  display: inline-flex;
   align-items: baseline;
-  justify-content: start;
-  width: max-content;
-  max-width: 100%;
+  gap: 6px;
+  color: #1c1917;
   font-size: 0.7875rem;
   line-height: 1.3;
 }
 
-.bag__key {
+.bag__hours :deep(svg) {
+  color: #d9793b;
+  transform: translateY(2px);
+}
+
+.bag__hours-key {
+  font-weight: 400;
+}
+
+.bag__hours-time {
+  font-weight: 700;
+}
+
+.bag__marks {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px 10px;
+  max-width: 100%;
+  padding: 4px 4px 6px 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.bag__marks::-webkit-scrollbar {
+  display: none;
+}
+
+.bag__marks::after {
+  content: '';
+  flex: 0 0 6px;
+}
+
+.bag__mark-stamp {
+  display: grid;
+  flex: 0 0 auto;
+  gap: 1px;
+  min-width: 92px;
+  padding: 8px 10px 7px;
+  border: 1px solid color-mix(in srgb, #1c1917 34%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, #d9793b 16%, #faf8f5);
+  color: #1c1917;
+  transform: rotate(var(--tilt, -1.4deg));
+  transform-origin: 30% 80%;
+  scroll-snap-align: start;
+}
+
+.bag__mark-stamp[data-stamp='community'] {
+  background: #faf8f5;
+}
+
+.bag__mark-stamp[data-stamp='recheck'],
+.bag__mark-stamp.is-no {
+  background: color-mix(in srgb, #8c3a2f 10%, #faf8f5);
+  border-color: color-mix(in srgb, #8c3a2f 40%, transparent);
+}
+
+.bag__mark-stamp.is-soft {
+  background: #faf8f5;
+  border-style: dashed;
+}
+
+.bag__mark-noun {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.bag__mark-noun :deep(svg) {
+  color: #d9793b;
+}
+
+.bag__mark-word {
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+}
+
+.bag__mark-stamp.is-soft .bag__mark-word {
+  font-weight: 600;
+  color: color-mix(in srgb, #1c1917 72%, #faf8f5);
+}
+
+.bag__press {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   color: #1c1917;
-}
-
-.bag__key :deep(svg) {
-  color: #d9793b;
-}
-
-.bag__line > span:last-child {
+  font-size: 0.75rem;
   font-weight: 700;
-  text-align: left;
+  line-height: 1.2;
+}
+
+.bag__press :deep(svg) {
+  color: #d9793b;
 }
 
 .bag__save {

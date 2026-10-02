@@ -3,6 +3,7 @@ import type { DayHours, MarkerTier, ProfileRole, ShopPlacementKind, ShopPlacemen
 export type AdminNavId =
   | 'dashboard'
   | 'cafes'
+  | 'audits'
   | 'requests'
   | 'claims'
   | 'partnerships'

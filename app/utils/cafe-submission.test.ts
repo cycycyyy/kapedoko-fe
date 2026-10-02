@@ -192,7 +192,7 @@ describe('amenities from reviews', () => {
       power_available_pct: 100,
       recommend_pct: 100,
     }).known).toBe(false)
-    expect(amenityGapCopy(UNKNOWN_WORK, [])).toBe('WiFi and outlets not confirmed yet')
+    expect(amenityGapCopy(UNKNOWN_WORK, [])).toBe('WiFi and outlets unknown')
     expect(amenityGapCopy({
       ...UNKNOWN_WORK,
       known: true,
@@ -287,6 +287,21 @@ describe('shop to cafe mapping', () => {
 
   test('carries OSM source for attribution', () => {
     expect(mapShopToCafe({ ...shop, source: 'openstreetmap' }).source).toBe('openstreetmap')
+  })
+
+  test('carries team-visit payment facts', () => {
+    expect(mapShopToCafe(shop).payment).toBeNull()
+    expect(mapShopToCafe(shop, null, undefined, 'standard', undefined, {
+      qr: 'available',
+      card: 'unavailable',
+      cash: 'available',
+      sourceAt: '2026-10-02T00:00:00.000Z',
+    }).payment).toEqual({
+      qr: 'available',
+      card: 'unavailable',
+      cash: 'available',
+      sourceAt: '2026-10-02T00:00:00.000Z',
+    })
   })
 })
 

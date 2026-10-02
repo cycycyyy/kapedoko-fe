@@ -35,6 +35,7 @@
           {{ resultAnnouncement }}
         </p>
 
+        <p v-if="amenityHint" class="search-hint">{{ amenityHint }}</p>
         <div class="search-filters" role="tablist" aria-label="Cafe filters">
           <button
             v-for="filter in filters"
@@ -95,6 +96,7 @@ import { BatteryCharging, ChevronLeft, CircleAlert, Coffee, Flame, Hourglass, Na
 import CafeCard from '~/components/cafe/CafeCard.vue'
 import type { Cafe } from '~/types/cafe'
 import { CAFE_FILTERS, filterCafes, type CafeFilterIcon, type CafeFilterId } from '~/utils/cafe-filters'
+import { amenityFilterHint } from '~/utils/amenity-status'
 import { distanceMeters, formatDistance } from '~/utils/geo'
 
 const { cafes, status, error, refresh } = useApprovedShops()
@@ -117,6 +119,7 @@ const requestURL = useRequestURL()
 const query = ref('')
 const submittedQuery = ref('')
 const activeFilter = ref<CafeFilterId>('near')
+const amenityHint = computed(() => amenityFilterHint(activeFilter.value))
 
 const readQueryParam = (value: unknown) => {
   if (typeof value === 'string') return value
