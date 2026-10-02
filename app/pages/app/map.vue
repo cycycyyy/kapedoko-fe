@@ -221,7 +221,7 @@
     <CafeDetailSheet
       v-model:open="detailOpen"
       :cafe="selectedCafe || lastDetailCafe"
-      @present="onSheetPresent"
+      @present="onDetailPresent"
       @dismissed="onDetailDismissed"
       @review="onReviewCafe"
     />
@@ -231,7 +231,7 @@
 <script lang="ts" setup>
 import { ChevronLeft, Coffee, LocateFixed, LocateOff, Map as MapIcon, Plug, Search, Wifi } from 'lucide-vue-next'
 import { Capacitor } from '@capacitor/core'
-import { useIonRouter } from '@ionic/vue'
+import { onIonViewWillEnter, useIonRouter } from '@ionic/vue'
 import KapeMap from '~/components/map/KapeMap.client.vue'
 import NearbyCafesSheet from '~/components/map/NearbyCafesSheet.vue'
 import CafeDetailSheet from '~/components/map/CafeDetailSheet.vue'
@@ -240,9 +240,10 @@ import type { Cafe } from '~/types/cafe'
 import { cafeMatchesQuery } from '~/utils/cafe-search'
 import { trustedPositive } from '~/utils/amenity-status'
 import { distanceMeters, formatDistance } from '~/utils/geo'
-import { pointInBounds, type GeoBounds } from '~/utils/geography'
+import { ANALYTICS_EVENTS, confidenceBucketFromStatus, detailViewKey } from '~/utils/analytics'
 
 const ionRouter = useIonRouter()
+const { track, once, consent } = useAnalytics()
 const { status: locationStatus, location, usingFallback, center, requestLocation } =
   useDeviceLocation()
 const {
@@ -510,6 +511,19 @@ const onSheetPresent = () => {
   refreshMap()
 }
 
+const onDetailPresent = () => {
+  refreshMap()
+  const cafe = selectedCafe.value || lastDetailCafe.value
+  if (!cafe) return
+  if (!once(detailViewKey(cafe.id))) return
+  track(ANALYTICS_EVENTS.CAFE_DETAIL_VIEWED, {
+    cafe_id: cafe.id,
+    wifi_confidence: confidenceBucketFromStatus(cafe.work.wifiStatus),
+    outlet_confidence: confidenceBucketFromStatus(cafe.work.outletsStatus),
+    source: 'map',
+  })
+}
+
 watch(query, (value) => {
   activeIndex.value = -1
   searchCafes(value, mapCenter.value)
@@ -569,6 +583,19 @@ watch(
   },
   { immediate: true },
 )
+
+const fireMapOpened = () => {
+  if (!once('map_opened')) return
+  track(ANALYTICS_EVENTS.MAP_OPENED, {})
+}
+
+onIonViewWillEnter(() => {
+  fireMapOpened()
+})
+
+watch(consent, (value) => {
+  if (value === 'granted') fireMapOpened()
+})
 
 onMounted(() => {
   if (Capacitor.getPlatform() === 'android') {

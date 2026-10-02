@@ -124,6 +124,35 @@
           </div>
         </section>
 
+        <section class="profile__panel" aria-labelledby="analytics-title">
+          <h2 id="analytics-title">Usage analytics</h2>
+          <p>
+            {{ analyticsOn
+              ? 'Usage analytics is on. KapéDoko sends anonymous product events to our analytics provider (PostHog, EU). We do not send your email, precise GPS, or search text.'
+              : 'Usage analytics is off. Turn it on to help us see whether Marikina cafés are easy to find. We do not send your email, precise GPS, or search text.'
+            }}
+          </p>
+          <div class="profile__radius" role="group" aria-labelledby="analytics-title">
+            <button
+              type="button"
+              class="profile__radius-chip"
+              :class="{ 'is-active': analyticsOn }"
+              @click="setAnalyticsConsent('granted')"
+            >
+              Allow
+            </button>
+            <button
+              type="button"
+              class="profile__radius-chip"
+              :class="{ 'is-active': !analyticsOn }"
+              @click="setAnalyticsConsent('declined')"
+            >
+              Stop
+            </button>
+          </div>
+          <NuxtLink class="profile__text" to="/privacy">Privacy policy</NuxtLink>
+        </section>
+
         <section v-if="!signedIn" class="profile__panel" aria-label="Account actions">
           <button type="button" class="profile__primary" @click="goLogin">Sign in</button>
           <button type="button" class="profile__outline" @click="goRegister">Create account</button>
@@ -241,6 +270,8 @@ import { NEARBY_RADIUS_PRESETS_KM } from '~/utils/nearby-radius'
 import { canWithdrawClaim, claimStatusCopy, profileClaimsEmptyCopy } from '~/utils/shop-claims'
 
 const { user, currentUserId, loadProfile, updateDisplayName, signOut, goToLogin } = useAuth()
+const { consent, setConsent: setAnalyticsConsent } = useAnalytics()
+const analyticsOn = computed(() => consent.value === 'granted')
 const {
   ownedShops,
   claims: ownerClaims,

@@ -1,6 +1,7 @@
 import { Capacitor } from '@capacitor/core'
 import { Geolocation } from '@capacitor/geolocation'
 import type { LatLng } from '~/types/cafe'
+import { ANALYTICS_EVENTS, type LocationPermissionResult } from '~/utils/analytics'
 import { METRO_MANILA_FALLBACK } from '~/utils/geo'
 
 export type LocationStatus =
@@ -45,8 +46,16 @@ export function useDeviceLocation() {
   const status = ref<LocationStatus>('idle')
   const location = ref<DeviceLocation | null>(null)
   const usingFallback = ref(false)
+  const { track, once, consent } = useAnalytics()
 
   const center = computed<LatLng>(() => location.value ?? METRO_MANILA_FALLBACK)
+  let lastPermission: LocationPermissionResult | null = null
+
+  const trackLocation = (result: LocationPermissionResult) => {
+    lastPermission = result
+    if (!once(`location_permission:${result}`)) return
+    track(ANALYTICS_EVENTS.LOCATION_PERMISSION, { result })
+  }
 
   const applyFallback = (nextStatus: Exclude<LocationStatus, 'idle' | 'requesting' | 'granted'>) => {
     status.value = nextStatus
@@ -76,6 +85,7 @@ export function useDeviceLocation() {
 
           if (!allowed) {
             applyFallback('denied')
+            trackLocation('denied')
             return
           }
         }
@@ -89,10 +99,17 @@ export function useDeviceLocation() {
       }
       usingFallback.value = false
       status.value = 'granted'
+      trackLocation('granted')
     } catch (error) {
-      applyFallback(classifyLocationError(error))
+      const next = classifyLocationError(error)
+      applyFallback(next)
+      trackLocation(next === 'denied' ? 'denied' : 'fallback_used')
     }
   }
+
+  watch(consent, (value) => {
+    if (value === 'granted' && lastPermission) trackLocation(lastPermission)
+  })
 
   return {
     status,

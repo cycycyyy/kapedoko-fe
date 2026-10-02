@@ -55,13 +55,14 @@
             class="favorites-list"
             aria-label="Saved cafes"
           >
-            <CafeCard
-              v-for="(cafe, index) in savedCafes"
-              :key="cafe.id"
-              :cafe="cafe"
-              :style="{ '--enter': String(index % 12) }"
-              @select="openCafe"
-            />
+              <CafeCard
+                v-for="(cafe, index) in savedCafes"
+                :key="cafe.id"
+                :cafe="cafe"
+                :style="{ '--enter': String(index % 12) }"
+                surface="favorites"
+                @select="openCafe"
+              />
           </section>
         </Transition>
       </div>
@@ -73,6 +74,7 @@
 import { ArrowLeft, Heart } from 'lucide-vue-next'
 import CafeCard from '~/components/cafe/CafeCard.vue'
 import type { Cafe } from '~/types/cafe'
+import { ANALYTICS_EVENTS, rememberDetailSource } from '~/utils/analytics'
 import { fetchApprovedCafesByIds } from '~/utils/approved-shops'
 
 const favorites = useFavorites()
@@ -80,6 +82,7 @@ const user = useSupabaseUser()
 const supabase = useSupabaseClient()
 const config = useRuntimeConfig()
 const { goToLogin } = useAuth()
+const { track, once, consent } = useAnalytics()
 
 const savedCafes = ref<Cafe[]>([])
 const listStatus = ref<'loading' | 'ready' | 'error'>('loading')
@@ -134,10 +137,23 @@ watch(() => [favorites.ids.value.join(','), favorites.status.value], () => {
 })
 
 const openCafe = async (id: string) => {
+  rememberDetailSource('favorites')
   await navigateTo(`/app/cafes/${id}`)
 }
 
-const goLogin = () => goToLogin('/app/favorites')
+const goLogin = () => {
+  void goToLogin('/app/favorites')
+}
+
+watch(
+  [signedIn, savedCafes, listStatus, consent],
+  () => {
+    if (consent.value !== 'granted') return
+    if (signedIn.value || listStatus.value !== 'ready' || savedCafes.value.length === 0) return
+    if (!once('auth_prompt:favorites_sync')) return
+    track(ANALYTICS_EVENTS.AUTH_PROMPT_SHOWN, { trigger: 'favorites_sync' })
+  },
+)
 
 const goBack = async () => {
   await navigateTo('/app')

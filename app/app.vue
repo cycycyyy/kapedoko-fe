@@ -3,11 +3,13 @@
     <NuxtRouteAnnouncer />
     <IonRouterOutlet />
     <LoadingScreen v-if="isLoading" />
+    <AnalyticsConsentNotice />
   </IonApp>
 </template>
 
 <script setup lang="ts">
 import { IonApp, IonRouterOutlet } from '@ionic/vue'
+import AnalyticsConsentNotice from '~/components/analytics/AnalyticsConsentNotice.vue'
 import LoadingScreen from '~/components/LoadingScreen.vue'
 import { hasFinishedOnboarding, shouldShowOnboarding } from '~/utils/onboarding'
 

@@ -32,6 +32,7 @@
             :cafe="cafe"
             :selected="cafe.id === selectedId"
             :distance-label="distances[cafe.id]"
+            surface="map"
             @select="emit('select', $event)"
           />
         </div>

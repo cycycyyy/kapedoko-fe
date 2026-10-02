@@ -77,6 +77,12 @@ export default defineNuxtConfig({
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       },
       r2PublicBaseUrl: process.env.NUXT_PUBLIC_R2_PUBLIC_BASE_URL || "",
+      analytics: {
+        enabled: process.env.NUXT_PUBLIC_ANALYTICS_ENABLED === "true",
+        key: process.env.NUXT_PUBLIC_POSTHOG_KEY || "",
+        host: process.env.NUXT_PUBLIC_POSTHOG_HOST || "https://eu.i.posthog.com",
+        appVersion: process.env.NUXT_PUBLIC_APP_VERSION || "1.0.0",
+      },
     },
   },
 });

@@ -57,6 +57,9 @@
         Already have an account?
         <NuxtLink :to="{ path: '/login', query }">Sign in</NuxtLink>
       </p>
+      <p>
+        <NuxtLink to="/privacy">Privacy policy</NuxtLink>
+      </p>
     </div>
   </AuthShell>
 </template>

@@ -50,7 +50,8 @@
                   : 'home-partners__card--partner'"
               role="listitem"
               :aria-label="ad.ariaLabel"
-              @click="openCafe(ad.shopId)"
+              :ref="(el) => bindPromoEl(ad.id, el)"
+              @click="openPromotion(ad)"
             >
               <span class="home-partners__media">
                 <img
@@ -128,6 +129,7 @@
               :cafe="cafe"
               :distance-label="distanceLabel(cafe)"
               :style="{ '--enter': String(index % 12) }"
+              surface="home"
               @select="openCafe"
             />
             <p v-if="hasMoreCafes" ref="moreCafes" class="home-more">Scroll for more</p>
@@ -154,6 +156,16 @@ import CafeCard from '~/components/cafe/CafeCard.vue'
 import AppTabBar from '~/components/navigation/AppTabBar.vue'
 import type { Cafe } from '~/types/cafe'
 import { featuredAdCopy } from '~/utils/admin-ads'
+import {
+  ANALYTICS_EVENTS,
+  CARD_IMPRESSION_MS,
+  CARD_IMPRESSION_RATIO,
+  confidenceBucketFromCafe,
+  modalConfidenceBucket,
+  promotionViewKey,
+  rememberDetailSource,
+} from '~/utils/analytics'
+import { watchImpression } from '~/utils/analytics-impression'
 import { CAFE_FILTERS, filterCafes, type CafeFilterIcon, type CafeFilterId } from '~/utils/cafe-filters'
 import { amenityFilterHint } from '~/utils/amenity-status'
 import { distanceMeters, formatDistance } from '~/utils/geo'
@@ -175,6 +187,7 @@ const { ads: liveAds } = useActiveAds()
 const { status: locationStatus, location, usingFallback, requestLocation } = useDeviceLocation()
 const { radiusKm: nearbyRadiusKm, radiusMeters, hydrate: hydrateNearbyRadius } = useNearbyRadius()
 const { user, loadProfile } = useAuth()
+const { track, once, consent } = useAnalytics()
 const cafes = computed(() => liveCafes.value)
 
 const query = ref('')
@@ -218,7 +231,7 @@ const homeAds = computed(() => {
       place: cafe.address,
       image: '/assets/partner-ad-placeholder.svg',
       badge,
-      kind: cafe.markerTier,
+      kind: cafe.markerTier === 'promoted' ? 'promoted' as const : 'partner' as const,
       ariaLabel: `${badge}: ${cafe.name}, ${index + 1} of ${placementCafes.value.length}`,
     }
   })
@@ -297,12 +310,88 @@ const submitSearch = async () => {
 }
 
 const setFilter = (id: CafeFilterId) => {
+  if (id === activeFilter.value) return
   activeFilter.value = id
+  if (status.value !== 'ready') return
+  const results = filterCafes(cafes.value, {
+    query: submittedQuery.value,
+    filter: id,
+    origin: origin.value,
+    radiusMeters: radiusMeters.value,
+  })
+  track(ANALYTICS_EVENTS.FILTER_APPLIED, {
+    filter_name: id,
+    result_count: results.length,
+    confidence_bucket: modalConfidenceBucket(results.map((cafe) => confidenceBucketFromCafe(cafe))),
+  })
 }
 
 const openCafe = async (id: string) => {
+  rememberDetailSource('feed')
   await navigateTo(`/app/cafes/${id}`)
 }
+
+const openPromotion = async (ad: { id: string; shopId: string; kind: 'ad' | 'promoted' | 'partner' }) => {
+  track(ANALYTICS_EVENTS.PROMOTION_CLICKED, {
+    promotion_id: ad.id,
+    cafe_id: ad.shopId,
+    promotion_kind: ad.kind,
+    placement: 'home_rail',
+  })
+  rememberDetailSource('promotion')
+  await navigateTo(`/app/cafes/${ad.shopId}`)
+}
+
+const promoEls = new Map<string, Element>()
+const promoStops = new Map<string, () => void>()
+
+const startPromoWatch = (id: string, node: Element) => {
+  promoStops.get(id)?.()
+  promoStops.delete(id)
+  if (consent.value !== 'granted') return
+  const ad = homeAds.value.find((item) => item.id === id)
+  if (!ad) return
+  promoStops.set(id, watchImpression(node, {
+    ratio: CARD_IMPRESSION_RATIO,
+    dwellMs: CARD_IMPRESSION_MS,
+    onView: () => {
+      if (!once(promotionViewKey(ad.id))) return
+      track(ANALYTICS_EVENTS.PROMOTION_VIEWED, {
+        promotion_id: ad.id,
+        cafe_id: ad.shopId,
+        promotion_kind: ad.kind,
+        placement: 'home_rail',
+      })
+    },
+  }))
+}
+
+const bindPromoEl = (id: string, el: unknown) => {
+  const node = el instanceof Element ? el : (el as { $el?: Element } | null)?.$el
+  if (!(node instanceof Element)) {
+    promoStops.get(id)?.()
+    promoStops.delete(id)
+    promoEls.delete(id)
+    return
+  }
+  promoEls.set(id, node)
+  startPromoWatch(id, node)
+}
+
+watch(consent, (value) => {
+  if (value !== 'granted') {
+    for (const stop of promoStops.values()) stop()
+    promoStops.clear()
+    return
+  }
+  for (const [id, node] of promoEls) startPromoWatch(id, node)
+})
+
+onBeforeUnmount(() => {
+  for (const stop of promoStops.values()) stop()
+  promoStops.clear()
+  promoEls.clear()
+})
 
 const addCafe = async () => {
   await navigateTo('/app/submit-cafe')

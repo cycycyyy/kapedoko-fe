@@ -45,7 +45,7 @@
             class="search-filters__chip"
             :class="{ 'is-active': activeFilter === filter.id }"
             :aria-selected="activeFilter === filter.id"
-            @click="activeFilter = filter.id"
+            @click="setFilter(filter.id)"
           >
             <component :is="filterIcons[filter.icon]" :size="14" :stroke-width="2.25" aria-hidden="true" />
             {{ filter.label }}
@@ -79,6 +79,7 @@
                 :cafe="cafe"
                 :distance-label="distanceLabel(cafe)"
                 :style="{ '--enter': String(index % 12) }"
+                surface="search"
                 @select="openCafe"
               />
               <p v-if="hasMoreCafes" ref="moreCafes" class="search-more">Scroll for more</p>
@@ -97,10 +98,18 @@ import CafeCard from '~/components/cafe/CafeCard.vue'
 import type { Cafe } from '~/types/cafe'
 import { CAFE_FILTERS, filterCafes, type CafeFilterIcon, type CafeFilterId } from '~/utils/cafe-filters'
 import { amenityFilterHint } from '~/utils/amenity-status'
+import {
+  ANALYTICS_EVENTS,
+  classifySearchQuery,
+  confidenceBucketFromCafe,
+  modalConfidenceBucket,
+  rememberDetailSource,
+} from '~/utils/analytics'
 import { distanceMeters, formatDistance } from '~/utils/geo'
 
 const { cafes, status, error, refresh } = useApprovedShops()
 const { status: locationStatus, location, usingFallback, requestLocation } = useDeviceLocation()
+const { track } = useAnalytics()
 
 const filterIcons: Record<CafeFilterIcon, typeof Navigation> = {
   navigation: Navigation,
@@ -181,8 +190,42 @@ const distanceLabel = (cafe: Cafe) => {
 }
 
 const openCafe = async (id: string) => {
+  rememberDetailSource('search')
   await navigateTo(`/app/cafes/${id}`)
 }
+
+const setFilter = (id: CafeFilterId) => {
+  if (id === activeFilter.value) return
+  activeFilter.value = id
+  if (status.value !== 'ready') return
+  const results = filterCafes(cafes.value, {
+    query: submittedQuery.value,
+    filter: id,
+    origin: origin.value,
+  })
+  track(ANALYTICS_EVENTS.FILTER_APPLIED, {
+    filter_name: id,
+    result_count: results.length,
+    confidence_bucket: modalConfidenceBucket(results.map((cafe) => confidenceBucketFromCafe(cafe))),
+  })
+}
+
+watch(
+  [submittedQuery, status],
+  ([queryText, loadStatus], previous) => {
+    const next = String(queryText ?? '').trim()
+    if (!next || loadStatus !== 'ready') return
+    if (previous && previous[0] === queryText && previous[1] === loadStatus) return
+    const classified = classifySearchQuery(next)
+    track(ANALYTICS_EVENTS.SEARCH_PERFORMED, {
+      query_type: classified.query_type,
+      result_count: visibleCafes.value.length,
+      zero_results: visibleCafes.value.length === 0,
+      ...(classified.area_name ? { area_name: classified.area_name } : {}),
+    })
+  },
+  { immediate: true },
+)
 
 const resultAnnouncement = computed(() => {
   const count = visibleCafes.value.length

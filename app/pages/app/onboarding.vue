@@ -3,7 +3,7 @@
     <IonContent :scroll-y="false" class="onboarding-content">
       <div class="onboarding">
         <div class="onboarding__frame">
-          <button type="button" class="onboarding__skip" @click="finish">Skip</button>
+          <button type="button" class="onboarding__skip" @click="skip">Skip</button>
           <div
             ref="trackRef"
             class="onboarding__track"
@@ -46,8 +46,10 @@
 import OnboardingStep1 from '~/components/onboarding/OnboardingStep1.vue'
 import OnboardingStep2 from '~/components/onboarding/OnboardingStep2.vue'
 import OnboardingStep3 from '~/components/onboarding/OnboardingStep3.vue'
+import { ANALYTICS_EVENTS, type OnboardingStep } from '~/utils/analytics'
 import { markOnboardingDone } from '~/utils/onboarding'
 
+const { track } = useAnalytics()
 const STEP_COUNT = 3
 
 const trackRef = ref<HTMLElement | null>(null)
@@ -91,6 +93,14 @@ const onKeydown = (event: KeyboardEvent) => {
 }
 
 const finish = async () => {
+  track(ANALYTICS_EVENTS.ONBOARDING_COMPLETED, { step_reached: 3 })
+  await markOnboardingDone()
+  await navigateTo('/app')
+}
+
+const skip = async () => {
+  const step = Math.min(3, Math.max(1, activeStep.value + 1)) as OnboardingStep
+  track(ANALYTICS_EVENTS.ONBOARDING_SKIPPED, { step_reached: step })
   await markOnboardingDone()
   await navigateTo('/app')
 }

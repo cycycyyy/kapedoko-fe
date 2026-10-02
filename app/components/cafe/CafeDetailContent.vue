@@ -19,6 +19,7 @@
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Navigate to this cafe in Google Maps"
+          @click="onNavigate"
         >
           <span class="cafe-detail__action-face cafe-detail__action-face--primary">
             <Navigation :size="14" :stroke-width="2.25" aria-hidden="true" />
@@ -70,6 +71,7 @@
           v-if="variant !== 'page' && cafe.phone"
           class="cafe-detail__call"
           :href="`tel:${cafe.phone}`"
+          @click="onCall"
         >
           <span class="cafe-detail__action-face cafe-detail__action-face--quiet">
             <Phone :size="16" :stroke-width="2" aria-hidden="true" />
@@ -107,6 +109,7 @@
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Navigate to this cafe in Google Maps"
+          @click="onNavigate"
         >
           <span class="cafe-detail__action-face cafe-detail__action-face--primary">
             <Navigation :size="16" :stroke-width="2.25" aria-hidden="true" />
@@ -117,6 +120,7 @@
           v-if="cafe.phone"
           class="cafe-detail__call"
           :href="`tel:${cafe.phone}`"
+          @click="onCall"
         >
           <span class="cafe-detail__action-face cafe-detail__action-face--quiet">
             <Phone :size="16" :stroke-width="2" aria-hidden="true" />
@@ -274,7 +278,11 @@ import {
   amenityStampKind,
   type AmenityStampKind,
 } from '~/utils/amenity-status'
-import { paymentCard, paymentDateLabel } from '~/utils/cafe-payment'
+import {
+  ANALYTICS_EVENTS,
+  confidenceBucketFromCafe,
+  type CafeActionType,
+} from '~/utils/analytics'
 
 const props = withDefaults(
   defineProps<{
@@ -290,6 +298,7 @@ const emit = defineEmits<{
 
 const favorites = useFavorites()
 const { currentUserId, goToLogin } = useAuth()
+const { track } = useAnalytics()
 const supabase = useSupabaseClient()
 const route = useRoute()
 const broken = ref<Record<string, boolean>>({})
@@ -301,10 +310,22 @@ const onSave = () => {
   void favorites.toggle(props.cafe.id)
 }
 
+const trackAction = (type: CafeActionType) => {
+  track(ANALYTICS_EVENTS.CAFE_ACTION, {
+    cafe_id: props.cafe.id,
+    type,
+    confidence_bucket: confidenceBucketFromCafe(props.cafe),
+  }, type === 'navigate' || type === 'call' ? { instant: true } : undefined)
+}
+
+const onNavigate = () => trackAction('navigate')
+const onCall = () => trackAction('call')
+
 const reportTarget = async (target: 'review' | 'shop_photo', reviewId?: string) => {
   reportNotice.value = ''
   const userId = await currentUserId()
   if (!userId) {
+    track(ANALYTICS_EVENTS.AUTH_PROMPT_SHOWN, { trigger: 'report' })
     await goToLogin(route.fullPath)
     return
   }
@@ -398,6 +419,7 @@ watch(
 const selectPhoto = (index: number) => {
   activePhoto.value = index
   broken.value.hero = Boolean(broken.value[`t${index}`])
+  trackAction('photo_view')
 }
 </script>
 

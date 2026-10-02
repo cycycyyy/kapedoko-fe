@@ -42,6 +42,9 @@
         New here?
         <NuxtLink :to="{ path: '/register', query }">Create an account</NuxtLink>
       </p>
+      <p>
+        <NuxtLink to="/privacy">Privacy policy</NuxtLink>
+      </p>
     </div>
   </AuthShell>
 </template>

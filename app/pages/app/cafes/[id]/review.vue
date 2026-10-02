@@ -62,7 +62,7 @@
             <p>Your notes stay on your account, and we will bring you back here after you sign in.</p>
           </section>
           <div class="review__dock">
-            <button type="button" class="review__cta" @click="goToLogin(route.fullPath)">Sign in</button>
+            <button type="button" class="review__cta" @click="onReviewLogin">Sign in</button>
           </div>
         </div>
 
@@ -243,6 +243,7 @@ import {
   type CafeReviewDraft,
   type ReviewChapter,
 } from '~/utils/cafe-review'
+import { ANALYTICS_EVENTS, reviewStartKey } from '~/utils/analytics'
 
 definePageMeta({
   middleware: 'auth',
@@ -251,6 +252,7 @@ definePageMeta({
 const route = useRoute()
 const ionRouter = useIonRouter()
 const { currentUserId, goToLogin } = useAuth()
+const { track, once, consent } = useAnalytics()
 const allowed = ref(false)
 const { loadCafe, loadOwnReview, saveReview, reportBusyness, submitting, reporting } = useCafeReview()
 
@@ -527,6 +529,21 @@ const ensureSignedIn = async () => {
   }
   allowed.value = true
 }
+
+const onReviewLogin = () => {
+  track(ANALYTICS_EVENTS.AUTH_PROMPT_SHOWN, { trigger: 'review' })
+  void goToLogin(route.fullPath)
+}
+
+watch(
+  [status, allowed, cafe, consent],
+  () => {
+    if (consent.value !== 'granted') return
+    if (status.value !== 'ready' || !allowed.value || !cafe.value) return
+    if (!once(reviewStartKey(cafe.value.id))) return
+    track(ANALYTICS_EVENTS.REVIEW_STARTED, { cafe_id: cafe.value.id })
+  },
+)
 
 onIonViewWillEnter(() => {
   if (submitted.value) {

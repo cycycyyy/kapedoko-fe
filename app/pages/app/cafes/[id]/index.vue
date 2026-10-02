@@ -75,12 +75,19 @@ import {
   isShopId,
   shopIdFromRoute,
 } from '~/utils/approved-shops'
+import {
+  ANALYTICS_EVENTS,
+  confidenceBucketFromStatus,
+  detailViewKey,
+  takeDetailSource,
+} from '~/utils/analytics'
 
 const route = useRoute()
 const ionRouter = useIonRouter()
 const supabase = useSupabaseClient()
 const config = useRuntimeConfig()
 const { user } = useAuth()
+const { track, once, consent } = useAnalytics()
 const ownership = useShopOwnership()
 
 const cafe = ref<Cafe | null>(null)
@@ -161,7 +168,20 @@ const onReview = async () => {
 
 const goOwner = async () => {
   if (!ownerHref.value) return
+  if (!user.value) {
+    track(ANALYTICS_EVENTS.AUTH_PROMPT_SHOWN, { trigger: 'claim' })
+  }
   await navigateTo(ownerHref.value)
+}
+
+const trackCafeDetail = (next: Cafe) => {
+  if (!once(detailViewKey(next.id))) return
+  track(ANALYTICS_EVENTS.CAFE_DETAIL_VIEWED, {
+    cafe_id: next.id,
+    wifi_confidence: confidenceBucketFromStatus(next.work.wifiStatus),
+    outlet_confidence: confidenceBucketFromStatus(next.work.outletsStatus),
+    source: takeDetailSource(route.query.from),
+  })
 }
 
 const onHardwareBack = (event: Event) => {
@@ -212,6 +232,7 @@ const bootstrap = async (id: string, force = false) => {
     cafe.value = nextCafe
     status.value = 'ready'
     if (user.value) void ownership.loadClaimForShop(id)
+    trackCafeDetail(nextCafe)
   } catch {
     if (seq !== loadSeq) return
     status.value = cafe.value?.id === id ? 'ready' : 'error'
@@ -225,6 +246,12 @@ watch(
   },
   { immediate: true },
 )
+
+watch(consent, (value) => {
+  if (value === 'granted' && cafe.value && status.value === 'ready') {
+    trackCafeDetail(cafe.value)
+  }
+})
 
 onIonViewWillEnter(() => {
   void bootstrap(resolveShopId(), true)
