@@ -30,7 +30,7 @@
 <script lang="ts" setup>
 import { useIonRouter } from '@ionic/vue'
 import { Heart, House, Map as MapIcon, User } from 'lucide-vue-next'
-import { APP_TAB_PATHS, activeAppTab, isSameAppPath, type AppTabId } from '~/utils/app-tabs'
+import { APP_TAB_PATHS, activeAppTab, isSameAppPath, resolveAppPath, type AppTabId } from '~/utils/app-tabs'
 
 const props = defineProps<{
   active?: AppTabId
@@ -38,6 +38,13 @@ const props = defineProps<{
 
 const route = useRoute()
 const ionRouter = useIonRouter()
+const pendingPath = ref<string | null>(null)
+
+const livePath = computed(() => {
+  void route.fullPath
+  if (pendingPath.value) return pendingPath.value
+  return resolveAppPath(route.path, import.meta.client ? window.location.pathname : '')
+})
 
 const tabs: {
   id: AppTabId
@@ -52,32 +59,55 @@ const tabs: {
   { id: 'profile', label: 'Profile', aria: 'Profile', path: APP_TAB_PATHS.profile, icon: User },
 ]
 
-const active = computed<AppTabId>(() => props.active ?? activeAppTab(route.path))
+const active = computed<AppTabId>(() => props.active ?? activeAppTab(livePath.value))
 
 const activeIndex = computed(() => {
   const index = tabs.findIndex((tab) => tab.id === active.value)
   return index >= 0 ? index : 0
 })
 
-const go = async (path: string) => {
-  if (isSameAppPath(route.path, path)) return
-  // `/app` is a parent of `/app/profile`. A normal push is treated as a pop
-  // and often leaves Profile on screen. Tab switches replace the stack.
+const hideStackedPages = () => {
+  if (!import.meta.client) return
+  const visible = [...document.querySelectorAll('ion-router-outlet .ion-page')].filter((page) => (
+    !page.classList.contains('ion-page-hidden')
+    && !page.classList.contains('ion-page-invisible')
+  ))
+  visible.slice(0, -1).forEach((page) => {
+    page.classList.add('ion-page-hidden')
+    page.setAttribute('aria-hidden', 'true')
+  })
+}
+
+const go = (path: string) => {
+  const here = resolveAppPath(route.path, import.meta.client ? window.location.pathname : '')
+  if (isSameAppPath(here, path)) return
+  hideStackedPages()
+  pendingPath.value = path
   if (import.meta.client) {
     ionRouter.navigate(path, 'root', 'replace')
     return
   }
-  await navigateTo(path, { replace: true })
+  return navigateTo(path, { replace: true })
 }
+
+watch(
+  () => [route.fullPath, import.meta.client ? window.location.pathname : ''] as const,
+  () => {
+    const here = resolveAppPath(route.path, import.meta.client ? window.location.pathname : '')
+    if (pendingPath.value && isSameAppPath(here, pendingPath.value)) {
+      pendingPath.value = null
+    }
+  },
+)
 </script>
 
 <style scoped>
 .app-tabbar {
-  position: absolute;
+  position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 30;
+  z-index: 1100;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   align-items: stretch;
@@ -86,6 +116,8 @@ const go = async (path: string) => {
   padding: 0 8px env(safe-area-inset-bottom);
   background-color: #f2f2f2;
   border-top: 1px solid color-mix(in srgb, var(--kd-ink) 16%, transparent);
+  pointer-events: auto;
+  isolation: isolate;
 }
 
 .app-tabbar__mark {
@@ -116,6 +148,8 @@ const go = async (path: string) => {
   background: transparent;
   color: var(--kd-ink);
   cursor: pointer;
+  touch-action: manipulation;
+  pointer-events: auto;
   transition:
     color 160ms cubic-bezier(0.16, 1, 0.3, 1),
     transform 120ms cubic-bezier(0.16, 1, 0.3, 1),

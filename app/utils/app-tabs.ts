@@ -18,6 +18,22 @@ export function isSameAppPath(currentPath: string, targetPath: string): boolean 
   return normalizeAppPath(currentPath) === normalizeAppPath(targetPath)
 }
 
+/** Prefer the browser path when Ionic and Vue Router disagree. */
+export function resolveAppPath(routePath: string, locationPath?: string | null): string {
+  const fromRoute = normalizeAppPath(routePath)
+  const fromLocation = locationPath ? normalizeAppPath(locationPath) : ''
+  if (fromLocation && fromLocation !== fromRoute) return fromLocation
+  return fromLocation || fromRoute
+}
+
+export function isAppTabRoute(path: string): boolean {
+  const current = normalizeAppPath(path)
+  return current === APP_TAB_PATHS.home
+    || current === APP_TAB_PATHS.saved
+    || current === APP_TAB_PATHS.map
+    || current === APP_TAB_PATHS.profile
+}
+
 export function activeAppTab(path: string): AppTabId {
   const current = normalizeAppPath(path)
   if (current === APP_TAB_PATHS.map || current.startsWith(`${APP_TAB_PATHS.map}/`)) return 'map'

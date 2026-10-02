@@ -8,3 +8,8 @@
 @import '@ionic/vue/css/text-transformation.css';
 @import '@ionic/vue/css/flex-utils.css';
 @import '@ionic/vue/css/display.css';
+
+/* Opacity-0 pages still receive taps. Hide leftover stack layers after a tab switch. */
+.ion-page-invisible {
+  pointer-events: none !important;
+}

@@ -2,6 +2,9 @@
   <IonApp>
     <NuxtRouteAnnouncer />
     <IonRouterOutlet />
+    <Teleport to="body">
+      <AppTabBar v-if="showAppTabs" />
+    </Teleport>
     <LoadingScreen v-if="isLoading" />
     <AnalyticsConsentNotice />
   </IonApp>
@@ -11,11 +14,17 @@
 import { IonApp, IonRouterOutlet } from '@ionic/vue'
 import AnalyticsConsentNotice from '~/components/analytics/AnalyticsConsentNotice.vue'
 import LoadingScreen from '~/components/LoadingScreen.vue'
+import AppTabBar from '~/components/navigation/AppTabBar.vue'
+import { isAppTabRoute, resolveAppPath } from '~/utils/app-tabs'
 import { hasFinishedOnboarding, shouldShowOnboarding } from '~/utils/onboarding'
 
 const supabase = useSupabaseClient()
 const route = useRoute()
 const isLoading = ref(true)
+const showAppTabs = computed(() => {
+  if (isLoading.value) return false
+  return isAppTabRoute(resolveAppPath(route.path, import.meta.client ? window.location.pathname : ''))
+})
 
 useFavorites()
 

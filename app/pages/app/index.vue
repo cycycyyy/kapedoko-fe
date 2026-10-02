@@ -143,8 +143,6 @@
         </div>
       </div>
     </IonContent>
-
-    <AppTabBar active="home" />
   </IonPage>
 </template>
 
@@ -153,7 +151,6 @@ import { Capacitor } from '@capacitor/core'
 import { onIonViewWillEnter } from '@ionic/vue'
 import { BatteryCharging, CircleAlert, Coffee, Flame, Hourglass, Navigation, Plug, Plus, RefreshCw, Search, Wifi, Zap } from 'lucide-vue-next'
 import CafeCard from '~/components/cafe/CafeCard.vue'
-import AppTabBar from '~/components/navigation/AppTabBar.vue'
 import type { Cafe } from '~/types/cafe'
 import { featuredAdCopy } from '~/utils/admin-ads'
 import {

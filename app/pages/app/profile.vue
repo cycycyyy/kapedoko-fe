@@ -6,20 +6,49 @@
           <img
             src="/assets/bean-pin.png"
             alt=""
-            width="40"
-            height="48"
+            width="44"
+            height="52"
           />
           <h1>{{ signedIn ? 'Your account' : 'Profile' }}</h1>
           <p v-if="!signedIn">
             Sign in to keep saved cafes, reviews, and the cafes you submit.
           </p>
+          <p v-else class="profile__email">{{ email }}</p>
         </header>
 
-        <section class="profile__panel" aria-labelledby="nearby-radius-title">
-          <h2 id="nearby-radius-title">Near You radius</h2>
-          <p>Home only lists cafes within this distance of you. The default is 5 km.</p>
+        <section v-if="!signedIn" class="profile__account" aria-label="Account actions">
+          <button type="button" class="profile__primary" @click="goLogin">Sign in</button>
+          <button type="button" class="profile__outline" @click="goRegister">Create account</button>
+        </section>
+
+        <form v-else class="profile__account" @submit.prevent="saveName">
+          <label class="profile__field" for="display-name">
+            Name on reviews
+            <input
+              id="display-name"
+              v-model="displayName"
+              type="text"
+              name="display-name"
+              autocomplete="nickname"
+              maxlength="40"
+            />
+          </label>
+          <p v-if="nameError" class="profile__error" role="alert">{{ nameError }}</p>
+          <button type="submit" class="profile__primary" :disabled="savingName">
+            {{ savingName ? 'Saving…' : 'Save name' }}
+          </button>
+        </form>
+
+        <section class="profile__block" aria-labelledby="nearby-radius-title">
+          <div class="profile__heading">
+            <h2 id="nearby-radius-title">Near You radius</h2>
+            <span class="profile__stamp" aria-hidden="true">{{ nearbyRadiusKm }} km</span>
+          </div>
+          <p class="profile__lede">
+            Home only lists cafes within this distance of you. The default is 5 km.
+          </p>
           <div
-            class="profile__radius"
+            class="profile__chips"
             role="radiogroup"
             aria-labelledby="nearby-radius-title"
           >
@@ -28,7 +57,7 @@
               :key="km"
               type="button"
               role="radio"
-              class="profile__radius-chip"
+              class="profile__chip"
               :class="{ 'is-active': nearbyRadiusKm === km }"
               :aria-checked="nearbyRadiusKm === km"
               :aria-label="`${km} kilometers`"
@@ -37,161 +66,158 @@
               {{ km }} km
             </button>
           </div>
-          <button
-            v-if="!previewOpen"
-            type="button"
-            class="profile__primary"
-            :aria-expanded="false"
-            @click="togglePreview"
-          >
-            View map
-          </button>
-          <div v-else id="nearby-preview" class="profile__map">
-            <div class="profile__map-face">
-              <div
-                v-if="!previewOrigin"
-                class="profile__map-empty"
-                role="status"
-                :aria-busy="locationStatus === 'requesting'"
+          <div class="profile__reveal">
+            <Transition name="profile-map" mode="out-in">
+              <button
+                v-if="!previewOpen"
+                key="open-map"
+                type="button"
+                class="profile__outline"
+                :aria-expanded="false"
+                aria-controls="nearby-preview"
+                @click="togglePreview"
               >
-                <span v-if="locationStatus === 'requesting'" class="profile__map-you" aria-hidden="true">
-                  <span class="profile__map-you-pulse" />
-                  <span class="profile__map-you-pulse profile__map-you-pulse--late" />
-                  <span class="profile__map-you-core" />
-                </span>
-                <span v-else class="profile__map-mark" aria-hidden="true">
-                  <LocateOff :size="20" :stroke-width="2.25" />
-                </span>
-                <p class="profile__map-title">{{ locationTitle }}</p>
-                <p class="profile__map-copy">{{ locationHelp }}</p>
-                <button
-                  v-if="locationStatus !== 'requesting'"
-                  type="button"
-                  class="profile__primary profile__map-action"
-                  @click="requestLocation"
+                <MapPinned :size="16" :stroke-width="2.25" aria-hidden="true" />
+                View map
+              </button>
+              <div v-else id="nearby-preview" key="map" class="profile__map">
+              <div class="profile__map-face">
+                <div
+                  v-if="!previewOrigin"
+                  class="profile__map-empty"
+                  role="status"
+                  :aria-busy="locationStatus === 'requesting'"
                 >
-                  Enable location
-                </button>
-              </div>
-              <template v-else>
-                <NearbyRadiusMap
-                  v-if="!tilesFailed"
-                  ref="previewMap"
-                  :center="previewOrigin"
-                  :accuracy="previewAccuracy"
-                  :cafes="previewCafes"
-                  :radius-meters="previewRadiusMeters"
-                  @tiles-ready="tilesFailed = false"
-                  @tiles-error="tilesFailed = true"
-                />
-                <div v-else class="profile__map-empty" role="alert">
-                  <span class="profile__map-mark profile__map-mark--alert" aria-hidden="true">
-                    <MapIcon :size="20" :stroke-width="2.25" />
+                  <span v-if="locationStatus === 'requesting'" class="profile__map-you" aria-hidden="true">
+                    <span class="profile__map-you-pulse" />
+                    <span class="profile__map-you-pulse profile__map-you-pulse--late" />
+                    <span class="profile__map-you-core" />
                   </span>
-                  <p class="profile__map-title">Map couldn’t load</p>
-                  <p class="profile__map-copy">Check your connection, then try again.</p>
-                  <button type="button" class="profile__primary profile__map-action" @click="retryTiles">
-                    Retry map
+                  <span v-else class="profile__map-mark" aria-hidden="true">
+                    <LocateOff :size="20" :stroke-width="2.25" />
+                  </span>
+                  <p class="profile__map-title">{{ locationTitle }}</p>
+                  <p class="profile__map-copy">{{ locationHelp }}</p>
+                  <button
+                    v-if="locationStatus !== 'requesting'"
+                    type="button"
+                    class="profile__primary profile__map-action"
+                    @click="requestLocation"
+                  >
+                    Enable location
                   </button>
                 </div>
-                <p
-                  v-if="!tilesFailed"
-                  class="profile__map-caption"
-                  :aria-busy="previewStatus === 'loading' || previewStatus === 'idle'"
-                >
-                  <template v-if="previewStatus === 'error'">
-                    {{ previewError || 'Could not load cafes near you.' }}
-                    <button type="button" class="profile__text" @click="loadPreviewCafes">Try again</button>
-                  </template>
-                  <template v-else-if="previewStatus === 'loading' || previewStatus === 'idle'">
-                    Loading cafes near you…
-                  </template>
-                  <template v-else>
-                    {{ previewCountLabel }}
-                  </template>
-                </p>
-              </template>
+                <template v-else>
+                  <NearbyRadiusMap
+                    v-if="!tilesFailed"
+                    ref="previewMap"
+                    :center="previewOrigin"
+                    :accuracy="previewAccuracy"
+                    :cafes="previewCafes"
+                    :radius-meters="previewRadiusMeters"
+                    @tiles-ready="tilesFailed = false"
+                    @tiles-error="tilesFailed = true"
+                  />
+                  <div v-else class="profile__map-empty" role="alert">
+                    <span class="profile__map-mark profile__map-mark--alert" aria-hidden="true">
+                      <MapIcon :size="20" :stroke-width="2.25" />
+                    </span>
+                    <p class="profile__map-title">Map couldn’t load</p>
+                    <p class="profile__map-copy">Check your connection, then try again.</p>
+                    <button type="button" class="profile__primary profile__map-action" @click="retryTiles">
+                      Retry map
+                    </button>
+                  </div>
+                  <p
+                    v-if="!tilesFailed"
+                    class="profile__map-caption"
+                    :aria-busy="previewStatus === 'loading' || previewStatus === 'idle'"
+                  >
+                    <template v-if="previewStatus === 'error'">
+                      {{ previewError || 'Could not load cafes near you.' }}
+                      <button type="button" class="profile__text" @click="loadPreviewCafes">Try again</button>
+                    </template>
+                    <template v-else-if="previewStatus === 'loading' || previewStatus === 'idle'">
+                      Loading cafes near you…
+                    </template>
+                    <template v-else>
+                      {{ previewCountLabel }}
+                    </template>
+                  </p>
+                </template>
+              </div>
+              <button
+                type="button"
+                class="profile__outline"
+                aria-expanded="true"
+                aria-controls="nearby-preview"
+                @click="togglePreview"
+              >
+                Hide map
+              </button>
             </div>
-            <button
-              type="button"
-              class="profile__map-hide"
-              aria-expanded="true"
-              aria-controls="nearby-preview"
-              @click="togglePreview"
-            >
-              Hide map
-            </button>
+            </Transition>
           </div>
         </section>
 
-        <section class="profile__panel" aria-labelledby="analytics-title">
-          <h2 id="analytics-title">Usage analytics</h2>
-          <p>
-            {{ analyticsOn
-              ? 'Usage analytics is on. KapéDoko sends anonymous product events to our analytics provider (PostHog, EU). We do not send your email, precise GPS, or search text.'
-              : 'Usage analytics is off. Turn it on to help us see whether Marikina cafés are easy to find. We do not send your email, precise GPS, or search text.'
-            }}
-          </p>
-          <div class="profile__radius" role="group" aria-labelledby="analytics-title">
+        <section class="profile__block" aria-labelledby="analytics-title">
+          <div class="profile__heading">
+            <h2 id="analytics-title">Usage analytics</h2>
+            <span
+              class="profile__stamp"
+              :class="{ 'is-off': !analyticsOn }"
+              aria-hidden="true"
+            >
+              {{ analyticsOn ? 'On' : 'Off' }}
+            </span>
+          </div>
+          <p class="profile__lede">{{ analyticsCopy }}</p>
+          <div
+            class="profile__chips"
+            role="radiogroup"
+            aria-labelledby="analytics-title"
+          >
             <button
               type="button"
-              class="profile__radius-chip"
+              role="radio"
+              class="profile__chip"
               :class="{ 'is-active': analyticsOn }"
+              :aria-checked="analyticsOn"
               @click="setAnalyticsConsent('granted')"
             >
               Allow
             </button>
             <button
               type="button"
-              class="profile__radius-chip"
+              role="radio"
+              class="profile__chip"
               :class="{ 'is-active': !analyticsOn }"
+              :aria-checked="!analyticsOn"
               @click="setAnalyticsConsent('declined')"
             >
               Stop
             </button>
           </div>
-          <NuxtLink class="profile__text" to="/privacy">Privacy policy</NuxtLink>
+          <NuxtLink class="profile__policy" to="/privacy">Privacy policy</NuxtLink>
         </section>
 
-        <section v-if="!signedIn" class="profile__panel" aria-label="Account actions">
-          <button type="button" class="profile__primary" @click="goLogin">Sign in</button>
-          <button type="button" class="profile__outline" @click="goRegister">Create account</button>
-        </section>
-
-        <template v-else>
-          <form class="profile__panel" @submit.prevent="saveName">
-            <p class="profile__email">{{ email }}</p>
-            <label class="profile__field" for="display-name">
-              Name on reviews
-              <input
-                id="display-name"
-                v-model="displayName"
-                type="text"
-                name="display-name"
-                autocomplete="nickname"
-                maxlength="40"
-              />
-            </label>
-            <p v-if="nameError" class="profile__error" role="alert">{{ nameError }}</p>
-            <button type="submit" class="profile__primary" :disabled="savingName">
-              {{ savingName ? 'Saving…' : 'Save name' }}
-            </button>
-          </form>
-
-          <section v-if="isAdmin || isAuditor" class="profile__panel" aria-label="Staff">
+        <template v-if="signedIn">
+          <section v-if="isAdmin || isAuditor" class="profile__block" aria-label="Staff">
             <NuxtLink class="profile__primary" :to="isAdmin ? '/admin' : '/admin/audits'">
               {{ isAdmin ? 'Admin portal' : 'Cafe audits' }}
             </NuxtLink>
           </section>
 
-          <section class="profile__submissions" aria-labelledby="owned-title">
+          <section class="profile__block" aria-labelledby="owned-title">
             <h2 id="owned-title">Cafes you manage</h2>
-            <p v-if="ownedStatus === 'loading'">Loading your cafes…</p>
+            <p v-if="ownedStatus === 'loading'" class="profile__lede">Loading your cafes…</p>
             <p v-else-if="ownedStatus === 'error'" class="profile__error">
               {{ ownedError }}
               <button type="button" class="profile__text" @click="loadOwned">Try again</button>
             </p>
-            <p v-else-if="ownedCafes.length === 0">No verified cafes yet. Claim a listing from its cafe page.</p>
+            <p v-else-if="ownedCafes.length === 0" class="profile__lede">
+              No verified cafes yet. Claim a listing from its cafe page.
+            </p>
             <article v-for="shop in ownedCafes" :key="shop.id" class="profile__shop">
               <h3>{{ shop.name }}</h3>
               <p>You can edit hours, contact, and the logo.</p>
@@ -199,18 +225,18 @@
             </article>
           </section>
 
-          <section class="profile__submissions" aria-labelledby="claims-title">
+          <section class="profile__block" aria-labelledby="claims-title">
             <h2 id="claims-title">Ownership claims</h2>
-            <p v-if="ownedStatus === 'loading'">Loading your claims…</p>
+            <p v-if="ownedStatus === 'loading'" class="profile__lede">Loading your claims…</p>
             <p v-else-if="ownedStatus === 'error'" class="profile__error">
               {{ ownedError }}
               <button type="button" class="profile__text" @click="loadOwned">Try again</button>
             </p>
-            <p v-else-if="openClaims.length === 0 && isAdmin">
+            <p v-else-if="openClaims.length === 0 && isAdmin" class="profile__lede">
               You review other people’s claims in the
               <NuxtLink class="profile__text" to="/admin/claims">admin portal</NuxtLink>.
             </p>
-            <p v-else-if="openClaims.length === 0">{{ profileClaimsEmptyCopy(false) }}</p>
+            <p v-else-if="openClaims.length === 0" class="profile__lede">{{ profileClaimsEmptyCopy(false) }}</p>
             <article v-for="claim in openClaims" :key="claim.id" class="profile__shop">
               <h3>{{ shopNameForClaim(claim.shop_id) }}</h3>
               <p>{{ claimStatusCopy(claim.status, claim.rejection_reason) }}</p>
@@ -235,14 +261,14 @@
             </article>
           </section>
 
-          <section class="profile__submissions" aria-labelledby="submissions-title">
+          <section class="profile__block" aria-labelledby="submissions-title">
             <h2 id="submissions-title">Cafes you submitted</h2>
-            <p v-if="shopsStatus === 'loading'">Loading your submissions…</p>
+            <p v-if="shopsStatus === 'loading'" class="profile__lede">Loading your submissions…</p>
             <p v-else-if="shopsStatus === 'error'" class="profile__error">
               {{ shopsError }}
               <button type="button" class="profile__text" @click="loadShops">Try again</button>
             </p>
-            <p v-else-if="shops.length === 0">You have not submitted a cafe yet.</p>
+            <p v-else-if="shops.length === 0" class="profile__lede">You have not submitted a cafe yet.</p>
             <article v-for="shop in shops" :key="shop.id" class="profile__shop">
               <h3>{{ shop.name }}</h3>
               <p>{{ statusCopy(shop) }}</p>
@@ -256,15 +282,13 @@
         </template>
       </div>
     </IonContent>
-    <AppTabBar active="profile" />
   </IonPage>
 </template>
 
 <script lang="ts" setup>
 import { onIonViewDidEnter, onIonViewWillEnter } from '@ionic/vue'
-import { LocateOff, Map as MapIcon } from 'lucide-vue-next'
+import { LocateOff, Map as MapIcon, MapPinned } from 'lucide-vue-next'
 import NearbyRadiusMap from '~/components/map/NearbyRadiusMap.client.vue'
-import AppTabBar from '~/components/navigation/AppTabBar.vue'
 import type { ShopRow } from '~/types/shop'
 import { NEARBY_RADIUS_PRESETS_KM } from '~/utils/nearby-radius'
 import { canWithdrawClaim, claimStatusCopy, profileClaimsEmptyCopy } from '~/utils/shop-claims'
@@ -299,6 +323,12 @@ const {
 const supabase = useSupabaseClient()
 
 const radiusPresets = NEARBY_RADIUS_PRESETS_KM
+
+const analyticsCopy = computed(() => (
+  analyticsOn.value
+    ? 'KapéDoko sends anonymous product events to our analytics provider (PostHog, EU). We do not send your email, precise GPS, or search text.'
+    : 'Turn it on to help us see whether Marikina cafés are easy to find. We do not send your email, precise GPS, or search text.'
+))
 
 const locationTitle = computed(() => {
   if (locationStatus.value === 'requesting') return 'Finding you'
@@ -469,20 +499,19 @@ const onWithdraw = async (claimId: string) => {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 8px;
   color: var(--kd-ink);
 }
 
 .profile__hero img {
   display: block;
-  width: 40px;
-  height: 48px;
+  width: 44px;
+  height: 52px;
   object-fit: contain;
 }
 
 .profile__hero h1,
-.profile__panel h2,
-.profile__submissions h2,
+.profile__heading h2,
+.profile__block h2,
 .profile__shop h3 {
   margin: 0;
   font-weight: 700;
@@ -491,55 +520,100 @@ const onWithdraw = async (claimId: string) => {
 }
 
 .profile__hero h1 {
-  margin-top: 4px;
+  margin-top: 16px;
   font-size: 1.325rem;
   line-height: 1.05;
 }
 
 .profile__hero p,
 .profile__email,
-.profile__panel > p,
-.profile__submissions > p,
+.profile__lede,
 .profile__shop p {
   margin: 0;
   color: var(--kd-ink);
   font-size: 0.7875rem;
-  line-height: 1.3;
+  line-height: 1.4;
+}
+
+.profile__hero p,
+.profile__email {
+  margin-top: 8px;
 }
 
 .profile__email {
   font-size: 0.85rem;
   line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
-.profile__panel,
-.profile__submissions {
+.profile__account {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 24px;
+  gap: 8px;
+  margin-top: 20px;
 }
 
-.profile__submissions {
-  margin-top: 32px;
+.profile__block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  margin-top: 8px;
+  padding-top: 32px;
+  border-top: 1px solid color-mix(in srgb, var(--kd-ink) 18%, transparent);
 }
 
-.profile__submissions h2,
-.profile__panel h2 {
-  margin-bottom: 0;
+.profile__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  width: 100%;
+}
+
+.profile__heading h2,
+.profile__block > h2 {
   color: var(--kd-ink);
   font-size: 0.95rem;
   letter-spacing: 0;
   line-height: 1.2;
 }
 
-.profile__radius {
+.profile__stamp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 8px;
+  background: #faf8f5;
+  color: var(--kd-ink);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.profile__stamp.is-off {
+  border-style: dashed;
+  font-weight: 400;
+}
+
+.profile__lede {
+  margin-top: 6px;
+  max-width: 42ch;
+}
+
+.profile__chips {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  width: 100%;
+  margin-top: 14px;
 }
 
-.profile__radius-chip {
+.profile__chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -561,26 +635,39 @@ const onWithdraw = async (claimId: string) => {
   -webkit-tap-highlight-color: transparent;
 }
 
-.profile__radius-chip.is-active {
+.profile__chip.is-active {
   background: var(--kd-accent);
   color: var(--kd-ink);
   border-color: var(--kd-accent);
   font-weight: 700;
 }
 
-.profile__radius-chip:active {
+.profile__chip:active {
   box-shadow: inset 0 3px 0 color-mix(in srgb, var(--kd-ink) 22%, transparent);
 }
 
-.profile__radius-chip:focus-visible {
+.profile__chip:focus-visible {
   outline: 2px solid var(--kd-primary);
   outline-offset: 2px;
+}
+
+.profile__reveal {
+  width: 100%;
+  margin-top: 14px;
+}
+
+.profile__reveal .profile__outline,
+.profile__block > .profile__primary,
+.profile__map > .profile__outline {
+  align-self: stretch;
+  width: 100%;
 }
 
 .profile__map {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: 100%;
 }
 
 .profile__map-face {
@@ -683,34 +770,9 @@ const onWithdraw = async (claimId: string) => {
   line-height: 1.3;
 }
 
-.profile__map-hide {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  padding: 0 16px;
-  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
-  border-radius: 16px;
-  background: transparent;
-  color: var(--kd-ink);
-  font-family: inherit;
-  font-size: 0.95rem;
-  font-weight: 400;
-  line-height: 1.2;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.profile__map-hide:active {
-  box-shadow: inset 0 3px 0 color-mix(in srgb, var(--kd-ink) 22%, transparent);
-}
-
-.profile__map-hide:focus-visible {
-  outline: 2px solid var(--kd-primary);
-  outline-offset: 3px;
-}
-
 .profile__shop {
+  width: 100%;
+  margin-top: 12px;
   padding: 12px 16px;
   border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
   border-radius: 16px;
@@ -726,7 +788,7 @@ const onWithdraw = async (claimId: string) => {
 
 .profile__shop p {
   margin-top: 4px;
-  color: color-mix(in srgb, var(--kd-ink) 72%, transparent);
+  color: color-mix(in srgb, var(--kd-ink) 72%, #faf8f5);
 }
 
 .profile__claim-actions {
@@ -738,7 +800,6 @@ const onWithdraw = async (claimId: string) => {
 }
 
 .profile__claim-actions .profile__text {
-  margin-left: 0;
   min-height: 44px;
   display: inline-flex;
   align-items: center;
@@ -780,7 +841,8 @@ const onWithdraw = async (claimId: string) => {
 .profile__primary,
 .profile__outline,
 .profile__quiet,
-.profile__text {
+.profile__text,
+.profile__policy {
   font-family: inherit;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -793,6 +855,7 @@ const onWithdraw = async (claimId: string) => {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   min-height: 44px;
   padding: 0 16px;
   border-radius: 16px;
@@ -824,23 +887,62 @@ const onWithdraw = async (claimId: string) => {
   color: var(--kd-primary);
 }
 
+.profile__outline:hover:not(:disabled),
+.profile__outline:active:not(:disabled) {
+  box-shadow: inset 0 3px 0 color-mix(in srgb, var(--kd-ink) 22%, transparent);
+}
+
 .profile__quiet {
-  margin-top: 20px;
+  margin-top: 24px;
   border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
   background: transparent;
   color: var(--kd-ink);
   font-weight: 400;
+  align-self: stretch;
 }
 
-.profile__text {
+.profile__quiet:hover:not(:disabled),
+.profile__quiet:active:not(:disabled) {
+  box-shadow: inset 0 3px 0 color-mix(in srgb, var(--kd-ink) 22%, transparent);
+}
+
+.profile__text,
+.profile__policy {
   display: inline;
-  margin-left: 8px;
   padding: 0;
   border: 0;
   background: transparent;
   color: var(--kd-primary);
   font-size: 0.7875rem;
   font-weight: 700;
+}
+
+.profile__policy {
+  margin-top: 14px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  text-underline-offset: 3px;
+}
+
+.profile__policy:hover {
+  text-decoration: underline;
+}
+
+.profile__error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin: 8px 0 0;
+  color: var(--kd-destructive);
+  font-size: 0.7875rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.profile__block > .profile__error {
+  margin-top: 6px;
 }
 
 .profile__primary:disabled,
@@ -855,17 +957,21 @@ const onWithdraw = async (claimId: string) => {
 .profile__outline:focus-visible,
 .profile__quiet:focus-visible,
 .profile__text:focus-visible,
-.profile__map-hide:focus-visible {
+.profile__policy:focus-visible {
   outline: 2px solid var(--kd-primary);
   outline-offset: 3px;
 }
 
-.profile__error {
-  margin: 0;
-  color: var(--kd-destructive);
-  font-size: 0.7875rem;
-  font-weight: 700;
-  line-height: 1.35;
+.profile-map-enter-active,
+.profile-map-leave-active {
+  transition: opacity 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.profile-map-enter-from,
+.profile-map-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
 }
 
 @media (min-width: 540px) {
@@ -877,14 +983,17 @@ const onWithdraw = async (claimId: string) => {
 
 @media (prefers-reduced-motion: reduce) {
   .profile__primary,
-  .profile__radius-chip,
-  .profile__map-hide {
+  .profile__outline,
+  .profile__quiet,
+  .profile__chip,
+  .profile-map-enter-active,
+  .profile-map-leave-active {
     transition-duration: 1ms;
   }
 
   .profile__primary:active:not(:disabled),
-  .profile__radius-chip:active,
-  .profile__map-hide:active {
+  .profile__chip:active,
+  .profile__outline:active:not(:disabled) {
     transform: none;
     box-shadow: none;
   }
@@ -893,13 +1002,17 @@ const onWithdraw = async (claimId: string) => {
   .profile__map-you-pulse--late {
     animation: none;
   }
+
+  .profile-map-enter-from,
+  .profile-map-leave-to {
+    transform: none;
+  }
 }
 
 :root.is-android .profile__primary,
 :root.is-android .profile__outline,
 :root.is-android .profile__quiet,
-:root.is-android .profile__radius-chip,
-:root.is-android .profile__map-hide,
+:root.is-android .profile__chip,
 :root.is-android .profile__map-action {
   min-height: 48px;
 }

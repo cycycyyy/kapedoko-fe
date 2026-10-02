@@ -202,10 +202,6 @@
             Show cafes near me
           </button>
         </div>
-
-        <Transition name="tabbar">
-          <AppTabBar v-if="showTabBar" active="map" />
-        </Transition>
       </div>
     </IonContent>
 
@@ -235,7 +231,6 @@ import { onIonViewWillEnter, useIonRouter } from '@ionic/vue'
 import KapeMap from '~/components/map/KapeMap.client.vue'
 import NearbyCafesSheet from '~/components/map/NearbyCafesSheet.vue'
 import CafeDetailSheet from '~/components/map/CafeDetailSheet.vue'
-import AppTabBar from '~/components/navigation/AppTabBar.vue'
 import type { Cafe } from '~/types/cafe'
 import { cafeMatchesQuery } from '~/utils/cafe-search'
 import { trustedPositive } from '~/utils/amenity-status'
@@ -277,7 +272,6 @@ const mapRef = ref<{
 } | null>(null)
 
 const mapSettled = computed(() => mapReady.value || tilesFailed.value)
-const showTabBar = computed(() => !mapSettled.value)
 const mapCenter = computed(() => (location.value ? center.value : null))
 const accuracy = computed(() => location.value?.accuracy ?? 0)
 
@@ -336,11 +330,10 @@ const distances = computed(() => {
 
 const headerPad = 188
 const bottomPad = computed(() => {
-  if (showTabBar.value) return 108
   if (sheetOpen.value || detailOpen.value) {
     return Math.round(window.innerHeight * 0.52)
   }
-  return 96
+  return 108
 })
 
 const goBack = async () => {
@@ -998,7 +991,7 @@ onMounted(() => {
 .map-locate {
   position: absolute;
   right: 20px;
-  bottom: calc(env(safe-area-inset-bottom) + 76px);
+  bottom: calc(72px + env(safe-area-inset-bottom) + 76px);
   display: grid;
   place-items: center;
   width: 48px;
@@ -1021,7 +1014,7 @@ onMounted(() => {
   position: absolute;
   left: 20px;
   right: 20px;
-  bottom: calc(env(safe-area-inset-bottom) + 16px);
+  bottom: calc(72px + env(safe-area-inset-bottom) + 16px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1053,18 +1046,6 @@ onMounted(() => {
 .map-cta:active,
 .map-note__action:active {
   transform: scale(0.96);
-}
-
-.tabbar-enter-active,
-.tabbar-leave-active {
-  transition: opacity 280ms cubic-bezier(0.16, 1, 0.3, 1),
-    transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.tabbar-enter-from,
-.tabbar-leave-to {
-  opacity: 0;
-  transform: translateY(12px);
 }
 
 @keyframes map-rise {
@@ -1116,8 +1097,6 @@ onMounted(() => {
   .map-cta,
   .map-locate,
   .map-note__you-pulse,
-  .tabbar-enter-active,
-  .tabbar-leave-active,
   .map-note-enter-active,
   .map-note-leave-active {
     animation: none;

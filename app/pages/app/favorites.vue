@@ -182,7 +182,7 @@ const goBack = async () => {
   min-height: 100%;
   background-color: #f2f2f2;
   color: var(--kd-ink);
-  padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+  padding-bottom: calc(8.5rem + env(safe-area-inset-bottom));
 }
 
 .favorites-hero {
