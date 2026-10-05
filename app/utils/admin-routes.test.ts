@@ -24,6 +24,9 @@ describe('admin routes', () => {
     expect(adminNavIdFromPath('/admin/cafes/abc-123/audits')).toBe('audits')
     expect(adminNavIdFromPath('/admin/requests?id=1')).toBe('requests')
     expect(adminNavIdFromPath('/admin/claims')).toBe('claims')
+    expect(adminNavIdFromPath('/admin/moderation')).toBe('moderation')
+    expect(adminNavIdFromPath('/admin/users')).toBe('users')
+    expect(adminNavIdFromPath('/admin')).toBe('dashboard')
   })
 
   test('auditors only see the audits section', () => {
