@@ -5,6 +5,10 @@ on:
     - cron: "0 * * * *" # hourly
   workflow_dispatch:
     inputs:
+      upstream_repository:
+        description: "Upstream repository (owner/name)"
+        required: true
+        default: "cycycyyy/kapedoko-fe"
       upstream_branch:
         description: "Upstream branch"
         required: true
@@ -24,9 +28,10 @@ jobs:
 
       - name: Sync from upstream
         env:
+          UPSTREAM_REPOSITORY: ${{ inputs.upstream_repository || 'cycycyyy/kapedoko-fe' }}
           UPSTREAM_BRANCH: ${{ inputs.upstream_branch || 'release/v0.1.0' }}
         run: |
-          git remote add upstream https://github.com/KapeDoko/kapedoko-fe.git
+          git remote add upstream "https://github.com/${UPSTREAM_REPOSITORY}.git"
           git fetch upstream "$UPSTREAM_BRANCH"
 
           git checkout "$UPSTREAM_BRANCH" 2>/dev/null || \
