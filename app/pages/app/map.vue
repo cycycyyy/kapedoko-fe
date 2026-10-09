@@ -58,6 +58,7 @@
               <label class="map-search__field">
                 <span class="sr-only">Search a coffee shop</span>
                 <input
+                  ref="searchInput"
                   v-model="query"
                   type="search"
                   name="q"
@@ -73,9 +74,21 @@
                   @blur="onSearchBlur"
                   @keydown="onSearchKeydown"
                 />
-                <button type="submit" class="map-search__submit" aria-label="Search">
-                  <Search :size="24" :stroke-width="2" />
-                </button>
+                <span class="map-search__controls">
+                  <button
+                    v-if="query.length > 0"
+                    type="button"
+                    class="map-search__clear"
+                    aria-label="Clear search"
+                    @mousedown.prevent="clearSearch"
+                    @click="clearSearch"
+                  >
+                    <X :size="22" :stroke-width="2" aria-hidden="true" />
+                  </button>
+                  <button type="submit" class="map-search__submit" aria-label="Search">
+                    <Search :size="24" :stroke-width="2" />
+                  </button>
+                </span>
               </label>
 
               <ul
@@ -225,7 +238,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ChevronLeft, Coffee, LocateFixed, LocateOff, Map as MapIcon, Plug, Search, Wifi } from 'lucide-vue-next'
+import { ChevronLeft, Coffee, LocateFixed, LocateOff, Map as MapIcon, Plug, Search, Wifi, X } from 'lucide-vue-next'
 import { Capacitor } from '@capacitor/core'
 import { onIonViewWillEnter, useIonRouter } from '@ionic/vue'
 import KapeMap from '~/components/map/KapeMap.client.vue'
@@ -258,6 +271,7 @@ const {
 const query = ref('')
 const submittedQuery = ref('')
 const searchFocused = ref(false)
+const searchInput = ref<HTMLInputElement | null>(null)
 const activeIndex = ref(-1)
 const sheetOpen = ref(false)
 const detailOpen = ref(false)
@@ -360,6 +374,14 @@ const goBack = async () => {
 
 const onSearchFocus = () => {
   searchFocused.value = true
+}
+
+const clearSearch = () => {
+  query.value = ''
+  submittedQuery.value = ''
+  activeIndex.value = -1
+  searchFocused.value = true
+  searchInput.value?.focus()
 }
 
 const onSearchBlur = () => {
@@ -677,6 +699,7 @@ onMounted(() => {
 }
 
 .map-back:focus-visible,
+.map-search__clear:focus-visible,
 .map-search__submit:focus-visible,
 .map-search__suggestion:focus-visible,
 .map-locate:focus-visible,
@@ -768,6 +791,13 @@ onMounted(() => {
   -webkit-appearance: none;
 }
 
+.map-search__controls {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.map-search__clear,
 .map-search__submit {
   display: grid;
   place-items: center;
@@ -1042,6 +1072,7 @@ onMounted(() => {
 }
 
 .map-back:active,
+.map-search__clear:active,
 .map-search__submit:active,
 .map-search__suggestion:active,
 .map-locate:active,
@@ -1115,6 +1146,7 @@ onMounted(() => {
   }
 
   .map-back:active,
+  .map-search__clear:active,
   .map-search__submit:active,
   .map-search__suggestion:active,
   .map-locate:active,

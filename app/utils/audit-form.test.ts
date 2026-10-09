@@ -1,12 +1,21 @@
 import { describe, expect, test } from 'bun:test'
-import { auditFormError, auditFormHasErrors, auditPhotoError, emptyAuditDraft, voidReasonError } from './audit-form'
+import {
+  auditFormError,
+  auditFormHasErrors,
+  auditPhotoError,
+  emptyAuditDraft,
+  removeAuditAriaLabel,
+  removeAuditConfirmCopy,
+  removeAuditReasonPromptCopy,
+  voidReasonError,
+} from './audit-form'
 
 describe('audit form', () => {
   test('requires cafe, both amenities, and a long-stay stance', () => {
     const errors = auditFormError(emptyAuditDraft())
     expect(errors.shop).toMatch(/cafe/)
     expect(errors.wifi).toMatch(/WiFi/)
-    expect(errors.outlets).toMatch(/Outlets/)
+    expect(errors.outlets).toBe('Choose an outlets result.')
     expect(errors.longStay).toMatch(/long-stay/)
     expect(errors.payment).toMatch(/QR, card, and cash/)
     expect(auditFormHasErrors(errors)).toBe(true)
@@ -58,6 +67,10 @@ describe('audit form', () => {
     expect(auditFormError(draft).wifi).toMatch(/negative/)
     expect(voidReasonError('nope')).toMatch(/why/)
     expect(voidReasonError('Wrong cafe visit recorded.')).toBeNull()
+    expect(removeAuditConfirmCopy('% Arabica')).toMatch(/does not delete the cafe/)
+    expect(removeAuditConfirmCopy('% Arabica')).toMatch(/% Arabica/)
+    expect(removeAuditReasonPromptCopy()).toMatch(/Why is this audit being removed/)
+    expect(removeAuditAriaLabel('% Arabica')).toBe('Remove audit for % Arabica')
   })
 
   test('rejects the wrong photo type', () => {

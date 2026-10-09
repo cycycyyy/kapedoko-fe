@@ -38,7 +38,7 @@
             <span v-if="item.id === 'claims' && claimCount > 0" class="admin-shell__badge">{{ claimCount }}</span>
           </NuxtLink>
         </nav>
-        <NuxtLink to="/app" class="admin-shell__back" @click="navOpen = false">Back to app</NuxtLink>
+        <NuxtLink to="/app" class="admin-shell__back" @click.prevent="backToApp">Back to app</NuxtLink>
       </aside>
 
       <div class="admin-shell__main" :inert="navOpen && !desktop ? true : undefined">
@@ -75,9 +75,9 @@
 </template>
 
 <script lang="ts" setup>
-import { IonContent } from '@ionic/vue'
+import { IonContent, useIonRouter } from '@ionic/vue'
 import { adminNavIdFromPath, staffNav } from '~/utils/admin-nav'
-import { isSameAppPath, resolveAppPath } from '~/utils/app-tabs'
+import { isForeignSurface, isSameAppPath, resolveAppPath } from '~/utils/app-tabs'
 
 const props = withDefaults(
   defineProps<{
@@ -98,6 +98,7 @@ const props = withDefaults(
 )
 
 const route = useRoute()
+const ionRouter = useIonRouter()
 const navOpen = ref(false)
 const desktop = ref(true)
 const shellEl = ref<HTMLElement | null>(null)
@@ -105,7 +106,15 @@ const ownedPath = route.path
 const pendingPath = useState<string | null>('kd-admin-nav-path', () => null)
 const items = computed(() => staffNav(props.navRole))
 const active = computed(() => adminNavIdFromPath(pendingPath.value || route.path))
+const revealAppTabBar = useRevealAppTabBar()
 useAdminPageTabLock(shellEl)
+
+const hideOwnedPage = () => {
+  const page = shellEl.value?.closest('.ion-page')
+  if (!page) return
+  page.classList.add('ion-page-hidden')
+  page.setAttribute('aria-hidden', 'true')
+}
 
 const browserPath = () => (
   import.meta.client ? `${window.location.pathname}${window.location.hash}` : ''
@@ -160,18 +169,30 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown)
 })
 
+const backToApp = async () => {
+  navOpen.value = false
+  hideOwnedPage()
+  revealAppTabBar('/app')
+  await navigateTo('/app')
+  ionRouter.navigate('/app', 'root', 'replace')
+}
+
 watch(() => route.path, (path) => {
   if (pendingPath.value && adminNavIdFromPath(path) === adminNavIdFromPath(pendingPath.value)) {
     pendingPath.value = null
   }
   if (!import.meta.client || !shellEl.value) return
-  if (adminNavIdFromPath(ownedPath) === adminNavIdFromPath(path)) return
-  const pages = document.querySelectorAll('ion-router-outlet .ion-page')
-  if (pages.length < 2) return
+  if (isForeignSurface(path) && adminNavIdFromPath(ownedPath) === adminNavIdFromPath(path)) return
   const page = shellEl.value.closest('.ion-page')
   if (!page) return
-  page.classList.add('ion-page-hidden')
-  page.setAttribute('aria-hidden', 'true')
+  if (!isForeignSurface(path)) {
+    hideOwnedPage()
+    revealAppTabBar(path)
+    return
+  }
+  const pages = document.querySelectorAll('ion-router-outlet .ion-page')
+  if (pages.length < 2) return
+  hideOwnedPage()
 })
 </script>
 

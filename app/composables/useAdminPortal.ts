@@ -169,6 +169,55 @@ export function useAdminData() {
   const markerTierFor = (shopId: string): MarkerTier =>
     effectiveMarkerTier(placementsByShop.value.get(shopId) ?? [])
 
+  const applyShopStatus = async (
+    shop: ShopRow,
+    next: Extract<ShopStatus, 'approved' | 'rejected' | 'pending'>,
+    rejectionReason = '',
+  ) => {
+    const { data, error: rpcError } = await supabase.rpc('moderate_admin_shop', {
+      p_shop_id: shop.id,
+      p_status: next,
+      p_rejection_reason: next === 'rejected' ? rejectionReason : null,
+    })
+    const rpcRow = Array.isArray(data) ? data[0] : data
+    let updated = rpcRow as ShopRow | null
+    if (rpcError || !updated) {
+      const reviewerId = await requireAdminUserId()
+      const { data: row, error: updateError } = await supabase
+        .from('shops')
+        .update({
+          status: next,
+          rejection_reason: next === 'rejected' ? rejectionReason.trim() || 'Does not meet listing standards' : null,
+          reviewed_by: reviewerId,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq('id', shop.id)
+        .select()
+        .single()
+      if (updateError || !row) {
+        throw new Error(rpcError?.message || updateError?.message || 'Could not update this cafe.')
+      }
+      updated = row as ShopRow
+    }
+    return updated
+  }
+
+  const applyModerationSideEffects = (
+    shopId: string,
+    next: Extract<ShopStatus, 'approved' | 'rejected' | 'pending'>,
+  ) => {
+    if (next === 'approved') return
+    const now = new Date().toISOString()
+    placements.value = placements.value.map((row) =>
+      row.shop_id === shopId && row.ends_at > now ? { ...row, ends_at: now } : row,
+    )
+    ads.value = ads.value.map((row) =>
+      row.shop_id === shopId && !row.cancelled_at
+        ? { ...row, cancelled_at: now, enabled: false, ends_at: row.ends_at > now ? now : row.ends_at }
+        : row,
+    )
+  }
+
   const moderate = async (
     shop: ShopRow,
     next: Extract<ShopStatus, 'approved' | 'rejected' | 'pending'>,
@@ -177,46 +226,53 @@ export function useAdminData() {
     savingId.value = shop.id
     error.value = ''
     try {
-      const { data, error: rpcError } = await supabase.rpc('moderate_admin_shop', {
-        p_shop_id: shop.id,
-        p_status: next,
-        p_rejection_reason: next === 'rejected' ? rejectionReason : null,
-      })
-      const rpcRow = Array.isArray(data) ? data[0] : data
-      let updated = rpcRow as ShopRow | null
-      if (rpcError || !updated) {
-        const reviewerId = await requireAdminUserId()
-        const { data: row, error: updateError } = await supabase
-          .from('shops')
-          .update({
-            status: next,
-            rejection_reason: next === 'rejected' ? rejectionReason.trim() || 'Does not meet listing standards' : null,
-            reviewed_by: reviewerId,
-            reviewed_at: new Date().toISOString(),
-          })
-          .eq('id', shop.id)
-          .select()
-          .single()
-        if (updateError || !row) {
-          throw new Error(rpcError?.message || updateError?.message || 'Could not update this cafe.')
-        }
-        updated = row as ShopRow
-      }
+      const updated = await applyShopStatus(shop, next, rejectionReason)
       shops.value = shops.value.map((item) => (item.id === shop.id ? updated : item))
-      if (next !== 'approved') {
-        const now = new Date().toISOString()
-        placements.value = placements.value.map((row) =>
-          row.shop_id === shop.id && row.ends_at > now ? { ...row, ends_at: now } : row,
-        )
-        ads.value = ads.value.map((row) =>
-          row.shop_id === shop.id && !row.cancelled_at
-            ? { ...row, cancelled_at: now, enabled: false, ends_at: row.ends_at > now ? now : row.ends_at }
-            : row,
-        )
-      }
+      applyModerationSideEffects(shop.id, next)
       return updated
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Could not update this cafe.'
+      throw err
+    } finally {
+      savingId.value = null
+    }
+  }
+
+  const moderateMany = async (
+    queue: ShopRow[],
+    next: Extract<ShopStatus, 'approved' | 'rejected'>,
+    rejectionReason = '',
+    onProgress?: (done: number, total: number) => void,
+  ) => {
+    if (queue.length === 0) throw new Error('There are no pending cafes to stamp.')
+    savingId.value = 'bulk'
+    error.value = ''
+    const done: ShopRow[] = []
+    const failed: string[] = []
+    try {
+      const chunkSize = 4
+      for (let i = 0; i < queue.length; i += chunkSize) {
+        const chunk = queue.slice(i, i + chunkSize)
+        const results = await Promise.allSettled(
+          chunk.map((shop) => applyShopStatus(shop, next, rejectionReason)),
+        )
+        results.forEach((result, index) => {
+          if (result.status === 'fulfilled') done.push(result.value)
+          else failed.push(chunk[index]?.name || 'a cafe')
+        })
+        onProgress?.(done.length + failed.length, queue.length)
+      }
+      const byId = new Map(done.map((row) => [row.id, row]))
+      shops.value = shops.value.map((item) => byId.get(item.id) ?? item)
+      for (const row of done) applyModerationSideEffects(row.id, next)
+      if (failed.length > 0) {
+        const verb = next === 'approved' ? 'Approved' : 'Rejected'
+        const names = failed.slice(0, 3).join(', ')
+        throw new Error(`${verb} ${done.length} of ${queue.length}. Could not update ${names}${failed.length > 3 ? '…' : ''}.`)
+      }
+      return done
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Could not update these cafes.'
       throw err
     } finally {
       savingId.value = null
@@ -286,6 +342,30 @@ export function useAdminData() {
     if (rpcError || !data) throw new Error(rpcError?.message || 'Could not create this cafe.')
     const created = (Array.isArray(data) ? data[0] : data) as ShopRow
     shops.value = [created, ...shops.value]
+    return created
+  }
+
+  const importShops = async (drafts: {
+    name: string
+    address: string
+    latitude: number
+    longitude: number
+    hours: WeeklyHours
+    contact_number: string | null
+  }[]) => {
+    if (drafts.length === 0) throw new Error('Confirm at least one cafe before importing.')
+    const { data, error: rpcError } = await supabase.rpc('import_admin_shops', {
+      p_shops: drafts,
+    })
+    if (rpcError) {
+      const message = rpcError.message || 'Could not import these cafes.'
+      if (/schema cache|does not exist|import_admin_shops/i.test(message)) {
+        throw new Error('Apply db/20261008_admin_shop_csv_import.sql in the SQL editor, then try again.')
+      }
+      throw new Error(message)
+    }
+    const created = (Array.isArray(data) ? data : data ? [data] : []) as ShopRow[]
+    shops.value = [...created, ...shops.value]
     return created
   }
 
@@ -437,9 +517,11 @@ export function useAdminData() {
     loadClaims,
     markerTierFor,
     moderate,
+    moderateMany,
     savePlacement,
     endPlacement,
     createShop,
+    importShops,
     updateShop,
     resolveReport,
     saveAd,

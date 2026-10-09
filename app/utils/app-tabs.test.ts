@@ -9,6 +9,7 @@ import {
   normalizeAppPath,
   pathFromHref,
   resolveAppPath,
+  isActiveForeignSurface,
   resolveTabBarVisible,
   shouldShowAppTabs,
 } from './app-tabs'
@@ -111,6 +112,31 @@ describe('app tab paths', () => {
       routeStamp: 3,
       foreign: false,
     })).toBe(true)
+  })
+
+  test('shows the app tab bar when Home is current even if a leftover admin URL is still set', () => {
+    expect(isActiveForeignSurface('/app', '/admin')).toBe(false)
+    expect(isActiveForeignSurface('/app/profile', '/#/admin')).toBe(false)
+    expect(isActiveForeignSurface('/admin', '/app/profile')).toBe(true)
+    expect(isActiveForeignSurface('/app/profile', '/#/admin/cafes')).toBe(false)
+    expect(resolveTabBarVisible({
+      pageMode: 'hide',
+      pageStamp: 2,
+      routeMode: 'show',
+      routeStamp: 3,
+      foreign: true,
+    })).toBe(true)
+  })
+
+  test('keeps the tab bar hidden on admin when the route has not returned to a tab', () => {
+    expect(isActiveForeignSurface('/admin/cafes', '/app/profile')).toBe(true)
+    expect(resolveTabBarVisible({
+      pageMode: 'show',
+      pageStamp: 2,
+      routeMode: 'hide',
+      routeStamp: 3,
+      foreign: true,
+    })).toBe(false)
   })
 
   test('keeps the tab bar hidden when onboarding is the page on screen', () => {

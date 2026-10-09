@@ -9,8 +9,11 @@
       :claim-count="counts.pendingClaims"
     >
       <template #actions>
+        <NuxtLink class="admin-btn admin-btn--ghost" to="/admin/cafes/import">Import CSV</NuxtLink>
         <NuxtLink class="admin-btn" to="/admin/cafes/new">Add cafe</NuxtLink>
       </template>
+
+      <p v-if="importedCopy" class="cafe-notice" role="status">{{ importedCopy }}</p>
 
       <AdminPendingRail :shops="pending" :status="status" />
 
@@ -175,9 +178,17 @@ definePageMeta({
 })
 
 const admin = useAdminData()
+const route = useRoute()
 const { shops, counts, status, error, savingId, load, moderate } = admin
 const query = ref('')
-const statusFilter = ref<'all' | ShopStatus>('all')
+const statusFilter = ref<'all' | ShopStatus>(Number(route.query.imported) > 0 ? 'pending' : 'all')
+const importedCopy = computed(() => {
+  const count = Number(route.query.imported)
+  if (!Number.isFinite(count) || count < 1) return ''
+  return count === 1
+    ? '1 cafe landed on the pending rail. Publish when the address looks right.'
+    : `${count} cafes landed on the pending rail. Publish when the addresses look right.`
+})
 const page = ref(1)
 const ledgerEl = ref<HTMLElement | null>(null)
 const filters = [
@@ -260,6 +271,14 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.cafe-notice {
+  margin: 0 0 16px;
+  color: var(--kd-ink);
+  font-size: 0.7875rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
 .cafe-board {
   caret-color: var(--kd-primary);
 }
