@@ -8,7 +8,7 @@ on:
       upstream_repository:
         description: "Upstream repository (owner/name)"
         required: true
-        default: "KapeDoko/kapedoko-fe"
+        default: "cycycyyy/kapedoko-fe"
       upstream_branch:
         description: "Upstream branch"
         required: true
@@ -28,7 +28,7 @@ jobs:
 
       - name: Sync from upstream
         env:
-          UPSTREAM_REPOSITORY: ${{ inputs.upstream_repository || 'KapeDoko/kapedoko-fe' }}
+          UPSTREAM_REPOSITORY: ${{ inputs.upstream_repository || 'cycycyyy/kapedoko-fe' }}
           UPSTREAM_BRANCH: ${{ inputs.upstream_branch || 'release/v0.1.0' }}
           UPSTREAM_READ_TOKEN: ${{ secrets.UPSTREAM_READ_TOKEN }}
         run: |
