@@ -165,6 +165,18 @@ export function voidReasonError(reason: string): string | null {
   return null
 }
 
+export function removeAuditConfirmCopy(cafeName: string): string {
+  return `Remove the latest audit for ${cafeName}? This cancels that visit record. It does not delete the cafe.`
+}
+
+export function removeAuditReasonPromptCopy(): string {
+  return 'Why is this audit being removed?'
+}
+
+export function removeAuditAriaLabel(cafeName: string): string {
+  return `Remove audit for ${cafeName}`
+}
+
 function paymentError(payment: AuditPaymentDraft): string | null {
   const missing = PAYMENT_METHODS.filter((method) => !payment[method.id]).map((method) => method.label)
   if (!missing.length) return null
@@ -179,8 +191,8 @@ function amenityResultError(
   notes: string,
   extras: { download?: string; upload?: string; reliability?: string | null; count?: string },
 ): string | null {
-  if (!result) return `Choose a ${label} result.`
-  if (result === 'unknown' && notes.trim().length < 4) return `Say why ${label.toLowerCase()} is unknown.`
+  if (!result) return missingAmenityCopy(label)
+  if (result === 'unknown' && notes.trim().length < 4) return unknownAmenityCopy(label)
   if (extras.download != null && extras.download !== '' && !isNonNegativeNumber(extras.download)) {
     return 'Download speed cannot be negative.'
   }
@@ -195,6 +207,16 @@ function amenityResultError(
     return notes.trim() ? null : 'Add a note when measured speed is 0.'
   }
   return null
+}
+
+function missingAmenityCopy(label: string): string {
+  if (label === 'Outlets') return 'Choose an outlets result.'
+  return `Choose a ${label} result.`
+}
+
+function unknownAmenityCopy(label: string): string {
+  if (label === 'Outlets') return 'Say why outlets are unknown.'
+  return `Say why ${label} is unknown.`
 }
 
 function parseOptionalNonNegative(value: string): { error: string | null } {

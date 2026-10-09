@@ -1,5 +1,6 @@
-import { onIonViewDidEnter, onIonViewWillEnter } from '@ionic/vue'
+import { onIonViewDidEnter, onIonViewWillEnter, onIonViewWillLeave } from '@ionic/vue'
 import {
+  isActiveForeignSurface,
   isForeignSurface,
   isVisibleIonPageClass,
   pathFromHref,
@@ -10,6 +11,13 @@ import {
 
 const tabFreePages = new Set<Element>()
 let pendingTabFreeShells = 0
+/** After leaving admin/onboarding, ignore leftover stacked pages until a new hide surface mounts. */
+let holdTabBarShow = false
+
+function hideIonPage(page: Element) {
+  page.classList.add('ion-page-hidden')
+  page.setAttribute('aria-hidden', 'true')
+}
 
 export function useAppTabsLock() {
   const locked = useState('kd-app-tabs-locked', () => false)
@@ -29,17 +37,59 @@ export function useAppTabsLock() {
   return { locked, setLocked }
 }
 
-export function useHideAppTabs(shellEl: Ref<HTMLElement | null>, surface: string) {
+function unlockTabFreePages(setLocked: (value: boolean) => void) {
+  holdTabBarShow = true
+  const pages = [...tabFreePages]
+  tabFreePages.clear()
+  pendingTabFreeShells = 0
+  setLocked(false)
+  for (const page of pages) hideIonPage(page)
+}
+
+/**
+ * Show the shell tab bar immediately when leaving a tab-free surface
+ * (admin, onboarding, auth). Call from setup so the returned function can
+ * run later in click / leave handlers.
+ */
+export function useRevealAppTabBar() {
   const { setLocked } = useAppTabsLock()
+  const pageMode = useState<AppTabBarMode | null>('kd-app-tab-page', () => null)
+  const pageStamp = useState('kd-app-tab-page-stamp', () => 0)
+  const routeMode = useState<AppTabBarMode | null>('kd-app-tab-route', () => null)
+  const routeStamp = useState('kd-app-tab-route-stamp', () => 0)
+  const appliedPath = useState('kd-app-tab-applied', () => '')
+  const locationPath = useState('kd-app-tab-location', () => '')
+
+  return (path = '/app') => {
+    const current = pathFromHref(path) || '/app'
+    unlockTabFreePages(setLocked)
+    pageStamp.value += 1
+    pageMode.value = 'show'
+    routeStamp.value = pageStamp.value
+    routeMode.value = 'show'
+    appliedPath.value = current
+    locationPath.value = current
+  }
+}
+
+export function useHideAppTabs(shellEl: Ref<HTMLElement | null>, surface: string) {
+  const route = useRoute()
+  const { setLocked } = useAppTabsLock()
+  const revealAppTabBar = useRevealAppTabBar()
   let page: Element | null = null
   let observer: MutationObserver | null = null
   let pending = false
 
   const publish = () => {
+    if (holdTabBarShow) {
+      setLocked(false)
+      return
+    }
     setLocked(tabFreePages.size > 0 || pendingTabFreeShells > 0)
   }
 
   const beginPending = () => {
+    holdTabBarShow = false
     if (pending) return
     pending = true
     pendingTabFreeShells += 1
@@ -60,6 +110,11 @@ export function useHideAppTabs(shellEl: Ref<HTMLElement | null>, surface: string
     page.setAttribute('data-app-surface', surface)
     const syncPage = () => {
       if (!page) return
+      if (holdTabBarShow) {
+        tabFreePages.delete(page)
+        publish()
+        return
+      }
       if (isVisibleIonPageClass(page.className)) {
         tabFreePages.add(page)
         endPending()
@@ -87,11 +142,25 @@ export function useHideAppTabs(shellEl: Ref<HTMLElement | null>, surface: string
     publish()
   }
 
+  const leaveForTabBar = (toPath: string) => {
+    if (tabBarModeForPath(toPath) !== 'show') return
+    if (page) {
+      tabFreePages.delete(page)
+      hideIonPage(page)
+    }
+    endPending()
+    revealAppTabBar(toPath)
+  }
+
   if (import.meta.client) beginPending()
 
   watch(shellEl, (el) => {
     if (el) bind(el)
   }, { flush: 'post' })
+
+  watch(() => route.path, (path, previous) => {
+    if (previous && tabBarModeForPath(path) === 'show') leaveForTabBar(path)
+  })
 
   onMounted(() => {
     if (shellEl.value) bind(shellEl.value)
@@ -112,10 +181,14 @@ export function useAdminPageTabLock(shellEl: Ref<HTMLElement | null>) {
  * on that first navigation. A later route change still wins until the next enter.
  */
 export function useAppTabBar(mode: AppTabBarMode) {
+  const route = useRoute()
   const pageMode = useState<AppTabBarMode | null>('kd-app-tab-page', () => null)
   const pageStamp = useState('kd-app-tab-page-stamp', () => 0)
+  const revealAppTabBar = useRevealAppTabBar()
 
   const claim = () => {
+    if (mode === 'hide' && holdTabBarShow && tabBarModeForPath(route.path) === 'show') return
+    if (mode === 'hide') holdTabBarShow = false
     pageStamp.value += 1
     pageMode.value = mode
   }
@@ -123,10 +196,20 @@ export function useAppTabBar(mode: AppTabBarMode) {
   if (import.meta.client) claim()
   onIonViewWillEnter(claim)
   onIonViewDidEnter(claim)
+  onIonViewWillLeave(() => {
+    if (mode !== 'hide') return
+    const dest = import.meta.client
+      ? pathFromHref(`${window.location.pathname}${window.location.hash}`)
+      : ''
+    if (tabBarModeForPath(dest) === 'show') revealAppTabBar(dest)
+  })
+
+  return { reveal: revealAppTabBar }
 }
 
 export function useAppTabBarVisibility() {
   const route = useRoute()
+  const { setLocked } = useAppTabsLock()
   const pageMode = useState<AppTabBarMode | null>('kd-app-tab-page', () => null)
   const pageStamp = useState('kd-app-tab-page-stamp', () => 0)
   const routeMode = useState<AppTabBarMode | null>('kd-app-tab-route', () => null)
@@ -136,15 +219,30 @@ export function useAppTabBarVisibility() {
 
   const notePath = (path: string) => {
     const current = pathFromHref(path)
-    if (!current || current === '/' || current === appliedPath.value) return
+    if (!current || current === '/') return
+    const mode = tabBarModeForPath(current)
+    if (mode === 'hide' && isForeignSurface(current) && tabBarModeForPath(route.path) === 'show') {
+      // Vue already landed on a tab page; ignore a late leftover admin URL.
+      return
+    }
+    if (current === appliedPath.value && mode !== 'show') return
     appliedPath.value = current
     // A real path change is newer than any page already on screen, so the bar
     // follows the navigation immediately. The entering page can claim again after.
     routeStamp.value = pageStamp.value + 1
-    routeMode.value = tabBarModeForPath(current)
+    routeMode.value = mode
+    if (mode === 'show') {
+      locationPath.value = current
+      unlockTabFreePages(setLocked)
+    }
   }
 
-  watch(() => route.path, notePath, { immediate: true, flush: 'sync' })
+  watch(() => route.path, (path) => {
+    if (import.meta.client) {
+      locationPath.value = `${window.location.pathname}${window.location.hash}`
+    }
+    notePath(path)
+  }, { immediate: true, flush: 'sync' })
 
   if (import.meta.client) {
     const onLocation = () => {
@@ -156,7 +254,7 @@ export function useAppTabBarVisibility() {
     onMounted(() => {
       const href = `${window.location.pathname}${window.location.hash}`
       locationPath.value = href
-      if (isForeignSurface(href)) notePath(href)
+      if (isActiveForeignSurface(route.path, href)) notePath(href)
       window.addEventListener('popstate', onLocation)
       window.addEventListener('hashchange', onLocation)
     })
@@ -172,7 +270,7 @@ export function useAppTabBarVisibility() {
     pageStamp: pageStamp.value,
     routeMode: routeMode.value,
     routeStamp: routeStamp.value,
-    foreign: isForeignSurface(route.path) || isForeignSurface(locationPath.value),
+    foreign: isActiveForeignSurface(route.path, locationPath.value),
   }))
 
   return { visible }

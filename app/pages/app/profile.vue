@@ -268,8 +268,8 @@
               {{ shopsError }}
               <button type="button" class="profile__text" @click="loadShops">Try again</button>
             </p>
-            <p v-else-if="shops.length === 0" class="profile__lede">You have not submitted a cafe yet.</p>
-            <article v-for="shop in shops" :key="shop.id" class="profile__shop">
+            <p v-else-if="submittedShops.length === 0" class="profile__lede">{{ profileSubmittedEmptyCopy() }}</p>
+            <article v-for="shop in submittedShops" :key="shop.id" class="profile__shop">
               <h3>{{ shop.name }}</h3>
               <p>{{ statusCopy(shop) }}</p>
             </article>
@@ -292,6 +292,9 @@ import NearbyRadiusMap from '~/components/map/NearbyRadiusMap.client.vue'
 import type { ShopRow } from '~/types/shop'
 import { NEARBY_RADIUS_PRESETS_KM } from '~/utils/nearby-radius'
 import { canWithdrawClaim, claimStatusCopy, profileClaimsEmptyCopy } from '~/utils/shop-claims'
+import { profileSubmittedEmptyCopy, splitProfileShops } from '~/utils/profile-shops'
+
+type ProfileShopCard = Pick<ShopRow, 'id' | 'name' | 'status' | 'rejection_reason' | 'source' | 'imported_at'>
 
 useAppTabBar('show')
 
@@ -374,13 +377,14 @@ const nameError = ref('')
 const savingName = ref(false)
 const signingOut = ref(false)
 const signOutError = ref('')
-const shops = ref<Pick<ShopRow, 'id' | 'name' | 'status' | 'rejection_reason'>[]>([])
+const shops = ref<ProfileShopCard[]>([])
 const shopsStatus = ref<'idle' | 'loading' | 'ready' | 'error'>('idle')
 const shopsError = ref('')
 const isAdmin = ref(false)
 const isAuditor = ref(false)
 const ownedCafes = computed(() => ownedShops.value)
 const openClaims = computed(() => ownerClaims.value.filter((claim) => claim.status !== 'verified'))
+const submittedShops = computed(() => splitProfileShops(shops.value).submitted)
 const withdrawingId = ref<string | null>(null)
 const withdrawError = ref('')
 
@@ -403,7 +407,7 @@ const loadShops = async () => {
   shopsError.value = ''
   const { data, error } = await supabase
     .from('shops')
-    .select('id, name, status, rejection_reason')
+    .select('id, name, status, rejection_reason, source, imported_at')
     .eq('submitted_by', userId)
     .order('created_at', { ascending: false })
 
@@ -412,7 +416,7 @@ const loadShops = async () => {
     shopsError.value = 'Could not load your submissions.'
     return
   }
-  shops.value = (data ?? []) as Pick<ShopRow, 'id' | 'name' | 'status' | 'rejection_reason'>[]
+  shops.value = (data ?? []) as ProfileShopCard[]
   shopsStatus.value = 'ready'
 }
 

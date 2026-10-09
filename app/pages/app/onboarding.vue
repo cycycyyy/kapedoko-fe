@@ -57,7 +57,7 @@ const STEP_COUNT = 3
 const shellRef = ref<HTMLElement | null>(null)
 const activeStep = ref(0)
 
-useAppTabBar('hide')
+const { reveal: revealAppTabBar } = useAppTabBar('hide')
 
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -102,6 +102,7 @@ const leave = async () => {
     page.classList.add('ion-page-hidden')
     page.setAttribute('aria-hidden', 'true')
   }
+  revealAppTabBar('/app')
   await navigateTo('/app', { replace: true })
   ionRouter.navigate('/app', 'root', 'replace')
 }

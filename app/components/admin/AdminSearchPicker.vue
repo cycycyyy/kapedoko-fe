@@ -8,6 +8,9 @@
       aria-haspopup="dialog"
       :aria-controls="dialogId"
       :aria-required="required || undefined"
+      :aria-invalid="invalid || undefined"
+      :aria-describedby="describedBy || undefined"
+      :class="{ 'is-invalid': invalid }"
       :disabled="disabled"
       @click="openDialog"
     >
@@ -110,6 +113,8 @@ const props = withDefaults(defineProps<{
   status?: 'idle' | 'loading' | 'ready' | 'error'
   required?: boolean
   disabled?: boolean
+  invalid?: boolean
+  describedBy?: string
 }>(), {
   placeholder: 'Choose an option',
   searchPlaceholder: 'Search',
@@ -122,6 +127,8 @@ const props = withDefaults(defineProps<{
   status: 'ready',
   required: false,
   disabled: false,
+  invalid: false,
+  describedBy: undefined,
 })
 
 const model = defineModel<string>({ default: '' })
@@ -296,6 +303,10 @@ onBeforeUnmount(() => {
 .admin-picker__chevron {
   flex: 0 0 auto;
   color: var(--kd-primary);
+}
+
+.admin-picker__trigger.is-invalid {
+  border-color: var(--kd-destructive);
 }
 
 .admin-picker__trigger:disabled {

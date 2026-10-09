@@ -1,6 +1,7 @@
 <template>
   <IonPage>
     <AdminShell
+      layout="cafe"
       :title="shop?.name || 'Edit cafe'"
       lede="Changes go live for approved cafes. Unpublish to take a listing off Home and Map."
       :status="pageStatus"
@@ -20,16 +21,23 @@
           Unpublish
         </button>
       </template>
-      <p v-if="shop" class="admin-meta">Status: {{ shop.status }}</p>
-      <p v-if="formError" class="admin-error" role="alert">{{ formError }}</p>
-      <AdminCafeForm
-        v-if="shop"
-        :key="shop.id"
-        :shop="shop"
-        :saving="saving"
-        submit-label="Save changes"
-        @save="onSave"
-      />
+      <div v-if="shop" class="cafe-editor">
+        <p class="editor-status" :class="`editor-status--${shop.status}`">
+          <span class="editor-status__mark" aria-hidden="true">
+            <span class="editor-status__dot" />
+          </span>
+          <span class="editor-status__label">Status</span>
+          <span class="editor-status__word">{{ statusWord(shop.status) }}</span>
+        </p>
+        <p v-if="formError" class="admin-error" role="alert">{{ formError }}</p>
+        <AdminCafeForm
+          :key="shop.id"
+          :shop="shop"
+          :saving="saving"
+          submit-label="Save changes"
+          @save="onSave"
+        />
+      </div>
     </AdminShell>
   </IonPage>
 </template>
@@ -38,7 +46,7 @@
 import { useIonRouter } from '@ionic/vue'
 import AdminCafeForm from '~/components/admin/AdminCafeForm.vue'
 import AdminShell from '~/components/admin/AdminShell.vue'
-import type { ShopRow } from '~/types/shop'
+import type { ShopRow, ShopStatus } from '~/types/shop'
 import { shopIdFromRoute } from '~/utils/approved-shops'
 
 definePageMeta({
@@ -72,6 +80,12 @@ const pageStatus = computed(() => {
   if (!shop.value) return 'error'
   return 'ready'
 })
+
+const statusWord = (value: ShopStatus) => {
+  if (value === 'approved') return 'Approved'
+  if (value === 'pending') return 'Pending'
+  return 'Rejected'
+}
 
 const pageError = computed(() => {
   if (shop.value) return error.value
@@ -136,3 +150,176 @@ watch(
   },
 )
 </script>
+
+<style scoped>
+.cafe-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  caret-color: var(--kd-primary);
+}
+
+.cafe-editor ::selection {
+  background: var(--kd-accent);
+  color: var(--kd-ink);
+}
+
+.editor-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 40px;
+  margin: 0;
+  padding: 6px 14px 6px 8px;
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 16px;
+  background: #faf8f5;
+  color: var(--kd-ink);
+  line-height: 1.2;
+}
+
+.editor-status__mark {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid currentColor;
+  border-radius: 16px;
+  flex: 0 0 auto;
+}
+
+.editor-status__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 16px;
+  background: currentColor;
+}
+
+.editor-status__label {
+  color: var(--kd-ink);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.editor-status__word {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.editor-status--approved {
+  border-color: color-mix(in srgb, var(--kd-primary) 48%, #faf8f5);
+  background: color-mix(in srgb, var(--kd-primary) 10%, #faf8f5);
+  color: var(--kd-primary);
+}
+
+.editor-status--approved .editor-status__word {
+  color: var(--kd-primary);
+}
+
+.editor-status--pending {
+  border-color: color-mix(in srgb, var(--kd-accent) 62%, #faf8f5);
+  background: color-mix(in srgb, var(--kd-accent) 16%, #faf8f5);
+  color: var(--kd-accent);
+}
+
+.editor-status--pending .editor-status__word {
+  color: var(--kd-ink);
+}
+
+.editor-status--rejected {
+  border-color: color-mix(in srgb, var(--kd-destructive) 48%, #faf8f5);
+  background: color-mix(in srgb, var(--kd-destructive) 10%, #faf8f5);
+  color: var(--kd-destructive);
+}
+
+.editor-status--rejected .editor-status__word {
+  color: var(--kd-destructive);
+}
+
+.cafe-editor :deep(.admin-form) {
+  gap: 20px;
+}
+
+.cafe-editor :deep(.admin-form > .admin-panel) {
+  padding: 20px;
+}
+
+.cafe-editor :deep(.admin-form > .admin-panel:not(.admin-map)) {
+  display: flex;
+  flex-direction: column;
+}
+
+.cafe-editor :deep(.details) {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid color-mix(in srgb, var(--kd-ink) 14%, transparent);
+}
+
+.cafe-editor :deep(.identity__logo) {
+  gap: 8px;
+}
+
+.cafe-editor :deep(.identity__logo-row) {
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.cafe-editor :deep(.identity__logo-actions) {
+  gap: 10px;
+}
+
+.cafe-editor :deep(.details__hours) {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cafe-editor :deep(.details__hours-label),
+.cafe-editor :deep(.details__toggle),
+.cafe-editor :deep(.details__times),
+.cafe-editor :deep(.details__days) {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.cafe-editor :deep(.details__days) {
+  gap: 16px;
+}
+
+.cafe-editor :deep(.details__day-name) {
+  margin-bottom: 8px;
+}
+
+.cafe-editor :deep(.details__day-controls) {
+  gap: 12px;
+}
+
+.cafe-editor :deep(.picker) {
+  gap: 16px;
+}
+
+.cafe-editor :deep(.picker__copy p) {
+  margin-top: 8px;
+}
+
+@media (min-width: 768px) {
+  .cafe-editor :deep(.admin-form.admin-form) {
+    grid-template-columns: minmax(0, 1.15fr) minmax(260px, 0.85fr);
+    column-gap: 24px;
+    row-gap: 20px;
+  }
+}
+
+@media (max-width: 520px) {
+  .cafe-editor :deep(.details__day-controls:has(input)) {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .cafe-editor :deep(.details__day-controls select) {
+    grid-column: 1 / -1;
+  }
+}
+</style>

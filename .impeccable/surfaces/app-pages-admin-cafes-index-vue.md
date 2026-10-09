@@ -2,7 +2,7 @@
 version: 1
 slug: "app-pages-admin-cafes-index-vue"
 primary_target: "app/pages/admin/cafes/index.vue"
-related_targets: ["app/components/admin/AdminShell.vue","app/pages/admin/index.vue","app/pages/admin/requests/index.vue"]
+related_targets: ["app/components/admin/AdminShell.vue","app/pages/admin/index.vue","app/pages/admin/requests/index.vue","app/pages/admin/cafes/import.vue"]
 ---
 
 ## Scope and visitor mode
@@ -27,9 +27,9 @@ THESIS: The admin desk is a pending ticket rail over a dense cafe ledger, refusi
 
 OWN-WORLD: Shelf #F2F2F2, stock #FAF8F5, ink #1c1917, teal chrome, orange action fills. Kumbh Sans. 16px label corners, hairline borders, no lift shadows.
 
-STORY: The admin sees what is waiting to publish, finds any cafe by name or address as fast as before, then edits, unpublishes, or adds one.
+STORY: The admin sees what is waiting to publish, finds any cafe by name or address as fast as before, then edits, unpublishes, adds one, or stamps a CSV crate before it lands.
 
-FIRST VIEWPORT: Stock nav rail, teal on the current section, orange Add cafe. A horizontal rail of pending name-tickets. Full-width find. Status tabs as printed marks. A compact ledger of name, status word, address, updated, Edit, Unpublish.
+FIRST VIEWPORT: Stock nav rail, teal on the current section, ghost Import CSV beside orange Add cafe. A horizontal rail of pending name-tickets. Full-width find. Status tabs as printed marks. A compact ledger of name, status word, address, updated, Edit, Unpublish.
 
 FORM: Pending rail + ledger, seed b24de6e1, dealt index 2. Signature interaction: pending tickets stamp onto the rail; the ledger reprints in place when search or status changes.
 

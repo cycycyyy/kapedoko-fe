@@ -1,6 +1,6 @@
 <template>
   <IonContent class="admin-shell-content">
-    <div ref="shellEl" class="admin-shell" :class="{ 'is-nav-open': navOpen }">
+    <div ref="shellEl" class="admin-shell" :class="{ 'is-nav-open': navOpen, 'admin-shell--cafe': layout === 'cafe' }">
       <div
         v-if="navOpen"
         class="admin-shell__scrim"
@@ -12,6 +12,15 @@
         <div class="admin-shell__brand">
           <img src="/assets/kapedoko-horizontal-text_dark.png" alt="kapé DOKO" width="132" height="28" />
           <p>Admin</p>
+          <button
+            v-if="!desktop"
+            type="button"
+            class="admin-shell__close"
+            aria-label="Close admin navigation"
+            @click="navOpen = false"
+          >
+            Close
+          </button>
         </div>
         <nav aria-label="Admin">
           <NuxtLink
@@ -20,7 +29,8 @@
             :to="item.href"
             class="admin-shell__link"
             :class="{ 'is-active': active === item.id }"
-            @click="navOpen = false"
+            :aria-current="active === item.id ? 'page' : undefined"
+            @click.prevent="go(item.href)"
           >
             <span class="admin-shell__link-mark" aria-hidden="true" />
             {{ item.label }}
@@ -28,16 +38,17 @@
             <span v-if="item.id === 'claims' && claimCount > 0" class="admin-shell__badge">{{ claimCount }}</span>
           </NuxtLink>
         </nav>
-        <NuxtLink to="/app" class="admin-shell__back" @click="navOpen = false">Back to app</NuxtLink>
+        <NuxtLink to="/app" class="admin-shell__back" @click.prevent="backToApp">Back to app</NuxtLink>
       </aside>
 
-      <div class="admin-shell__main">
+      <div class="admin-shell__main" :inert="navOpen && !desktop ? true : undefined">
         <header class="admin-shell__top">
           <button
             type="button"
             class="admin-shell__menu"
-            aria-label="Open admin navigation"
-            @click="navOpen = true"
+            :aria-expanded="navOpen"
+            :aria-label="navOpen ? 'Close admin navigation' : 'Open admin navigation'"
+            @click="navOpen = !navOpen"
           >
             Menu
           </button>
@@ -64,8 +75,9 @@
 </template>
 
 <script lang="ts" setup>
-import { IonContent } from '@ionic/vue'
+import { IonContent, useIonRouter } from '@ionic/vue'
 import { adminNavIdFromPath, staffNav } from '~/utils/admin-nav'
+import { isForeignSurface, isSameAppPath, resolveAppPath } from '~/utils/app-tabs'
 
 const props = withDefaults(
   defineProps<{
@@ -76,6 +88,7 @@ const props = withDefaults(
     pendingCount?: number
     claimCount?: number
     navRole?: 'admin' | 'auditor'
+    layout?: 'cafe'
   }>(),
   {
     pendingCount: 0,
@@ -85,25 +98,101 @@ const props = withDefaults(
 )
 
 const route = useRoute()
+const ionRouter = useIonRouter()
 const navOpen = ref(false)
 const desktop = ref(true)
 const shellEl = ref<HTMLElement | null>(null)
+const ownedPath = route.path
+const pendingPath = useState<string | null>('kd-admin-nav-path', () => null)
 const items = computed(() => staffNav(props.navRole))
-const active = computed(() => adminNavIdFromPath(route.path))
+const active = computed(() => adminNavIdFromPath(pendingPath.value || route.path))
+const revealAppTabBar = useRevealAppTabBar()
 useAdminPageTabLock(shellEl)
+
+const hideOwnedPage = () => {
+  const page = shellEl.value?.closest('.ion-page')
+  if (!page) return
+  page.classList.add('ion-page-hidden')
+  page.setAttribute('aria-hidden', 'true')
+}
+
+const browserPath = () => (
+  import.meta.client ? `${window.location.pathname}${window.location.hash}` : ''
+)
+
+const settleAdminPages = () => {
+  const pages = [...document.querySelectorAll('ion-router-outlet .ion-page')]
+  if (pages.length < 2) return
+  pages.forEach((page, index) => {
+    const top = index === pages.length - 1
+    page.classList.toggle('ion-page-hidden', !top)
+    if (top) {
+      page.classList.remove('ion-page-invisible')
+      page.removeAttribute('aria-hidden')
+    }
+    else {
+      page.setAttribute('aria-hidden', 'true')
+    }
+  })
+}
 
 const onResize = () => {
   desktop.value = window.innerWidth >= 1024
   if (desktop.value) navOpen.value = false
 }
 
+const onKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'Escape' && navOpen.value) navOpen.value = false
+}
+
+const go = async (href: string) => {
+  pendingPath.value = href
+  navOpen.value = false
+  const here = resolveAppPath(route.path, browserPath())
+  if (isSameAppPath(here, href)) return
+  try {
+    await navigateTo(href)
+  }
+  finally {
+    if (import.meta.client) requestAnimationFrame(settleAdminPages)
+  }
+}
+
 onMounted(() => {
   onResize()
   window.addEventListener('resize', onResize)
+  window.addEventListener('keydown', onKeydown)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize)
+  window.removeEventListener('keydown', onKeydown)
+})
+
+const backToApp = async () => {
+  navOpen.value = false
+  hideOwnedPage()
+  revealAppTabBar('/app')
+  await navigateTo('/app')
+  ionRouter.navigate('/app', 'root', 'replace')
+}
+
+watch(() => route.path, (path) => {
+  if (pendingPath.value && adminNavIdFromPath(path) === adminNavIdFromPath(pendingPath.value)) {
+    pendingPath.value = null
+  }
+  if (!import.meta.client || !shellEl.value) return
+  if (isForeignSurface(path) && adminNavIdFromPath(ownedPath) === adminNavIdFromPath(path)) return
+  const page = shellEl.value.closest('.ion-page')
+  if (!page) return
+  if (!isForeignSurface(path)) {
+    hideOwnedPage()
+    revealAppTabBar(path)
+    return
+  }
+  const pages = document.querySelectorAll('ion-router-outlet .ion-page')
+  if (pages.length < 2) return
+  hideOwnedPage()
 })
 </script>
 
@@ -139,21 +228,40 @@ onBeforeUnmount(() => {
 
 .admin-shell__brand {
   display: grid;
-  gap: 4px;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  align-items: center;
 }
 
 .admin-shell__brand img {
   display: block;
   width: 132px;
   height: auto;
+  grid-column: 1;
 }
 
 .admin-shell__brand p {
   margin: 0;
+  grid-column: 1;
   color: color-mix(in srgb, var(--kd-ink) 72%, #faf8f5);
   font-size: 0.75rem;
   font-weight: 400;
   line-height: 1.3;
+}
+
+.admin-shell__close {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 16px;
+  background: transparent;
+  color: var(--kd-ink);
+  font: inherit;
+  font-size: 0.7875rem;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .admin-shell__nav nav {
@@ -170,6 +278,7 @@ onBeforeUnmount(() => {
 }
 
 .admin-shell__link {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -180,24 +289,47 @@ onBeforeUnmount(() => {
   font-size: 0.95rem;
   font-weight: 400;
   text-decoration: none;
+  transition:
+    background-color 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    color 160ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .admin-shell__link-mark {
-  display: none;
+  position: absolute;
+  top: 50%;
+  left: 6px;
+  display: block;
   width: 4px;
   height: 16px;
-  margin-left: -8px;
   border-radius: 16px;
   background: var(--kd-accent);
+  opacity: 0;
+  transform: translateY(-50%) scaleY(0.4);
+  transition:
+    opacity 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .admin-shell__link.is-active {
+  background: color-mix(in srgb, var(--kd-primary) 14%, #faf8f5);
   color: var(--kd-primary);
   font-weight: 700;
 }
 
 .admin-shell__link.is-active .admin-shell__link-mark {
-  display: block;
+  opacity: 1;
+  transform: translateY(-50%) scaleY(1);
+}
+
+.admin-shell__back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: auto;
+  color: var(--kd-primary);
+  font-size: 0.7875rem;
+  font-weight: 700;
+  text-decoration: none;
 }
 
 .admin-shell__badge {
@@ -211,14 +343,6 @@ onBeforeUnmount(() => {
   font-weight: 700;
   text-align: center;
   font-variant-numeric: tabular-nums;
-}
-
-.admin-shell__back {
-  margin-top: auto;
-  color: var(--kd-primary);
-  font-size: 0.7875rem;
-  font-weight: 700;
-  text-decoration: none;
 }
 
 .admin-shell__main {
@@ -665,8 +789,13 @@ onBeforeUnmount(() => {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .admin-shell__link:hover {
-    color: var(--kd-primary);
+  .admin-shell__link:hover:not(.is-active) {
+    background: color-mix(in srgb, var(--kd-ink) 6%, #faf8f5);
+  }
+
+  .admin-shell__back:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
 
   .admin-shell :deep(.admin-btn--quiet:hover),
@@ -683,6 +812,15 @@ onBeforeUnmount(() => {
 @media (prefers-reduced-motion: reduce) {
   .admin-shell :deep(.admin-ticket) {
     animation: none;
+  }
+
+  .admin-shell__link,
+  .admin-shell__link-mark {
+    transition: none;
+  }
+
+  .admin-shell__link-mark {
+    transform: translateY(-50%);
   }
 }
 
@@ -756,10 +894,17 @@ onBeforeUnmount(() => {
   .admin-shell.is-nav-open .admin-shell__nav {
     display: flex;
     position: fixed;
-    inset: 0 auto 0 0;
+    top: 0;
+    bottom: 0;
+    left: 0;
     z-index: 21;
     width: min(280px, 86vw);
-    height: 100%;
+    height: auto;
+    max-height: 100dvh;
+    overflow: auto;
+    padding-top: max(24px, env(safe-area-inset-top));
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+    padding-left: max(18px, env(safe-area-inset-left));
   }
 }
 
@@ -772,8 +917,29 @@ onBeforeUnmount(() => {
 .admin-shell :deep(.admin-picker__trigger:focus-visible),
 .admin-shell :deep(.admin-ticket:focus-visible),
 .admin-shell__link:focus-visible,
-.admin-shell__menu:focus-visible {
+.admin-shell__menu:focus-visible,
+.admin-shell__close:focus-visible,
+.admin-shell__back:focus-visible {
   outline: 2px solid var(--kd-primary);
   outline-offset: 2px;
+}
+
+.admin-shell--cafe .admin-shell__top {
+  padding: max(20px, env(safe-area-inset-top)) 20px 20px;
+  gap: 16px 20px;
+}
+
+.admin-shell--cafe .admin-shell__body {
+  padding: 20px 20px 36px;
+}
+
+@media (min-width: 1024px) {
+  .admin-shell--cafe .admin-shell__top {
+    padding: max(24px, env(safe-area-inset-top)) 32px 20px;
+  }
+
+  .admin-shell--cafe .admin-shell__body {
+    padding: 28px 32px 48px;
+  }
 }
 </style>

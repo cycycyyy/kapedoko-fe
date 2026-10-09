@@ -85,9 +85,20 @@ export function tabBarModeForPath(path: string): AppTabBarMode | null {
 }
 
 /**
+ * True only while a foreign surface is actually current.
+ * A leftover admin/auth URL must not win after the app route is already a tab.
+ */
+export function isActiveForeignSurface(routePath: string, locationPath?: string | null): boolean {
+  if (isForeignSurface(routePath)) return true
+  if (!locationPath || !isForeignSurface(locationPath)) return false
+  return tabBarModeForPath(routePath) !== 'show'
+}
+
+/**
  * Page enter wins when it is at least as new as the route change, so the bar
  * updates on the first navigation even if Ionic and Vue disagree.
- * A newer route change wins so leaving that page updates the bar immediately.
+ * A newer show route wins so leaving admin/onboarding updates the bar immediately,
+ * even if a foreign hint or hide claim has not been cleared yet.
  */
 export function resolveTabBarVisible(input: {
   pageMode: AppTabBarMode | null
@@ -96,9 +107,9 @@ export function resolveTabBarVisible(input: {
   routeStamp: number
   foreign: boolean
 }): boolean {
-  if (input.foreign) return false
   const pageWins = input.pageMode != null && input.pageStamp >= input.routeStamp
   const mode = pageWins ? input.pageMode : input.routeMode
+  if (input.foreign && mode !== 'show') return false
   return mode === 'show'
 }
 

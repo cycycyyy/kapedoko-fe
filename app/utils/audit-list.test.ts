@@ -60,6 +60,23 @@ describe('audit list', () => {
     expect(rows[1]).toMatchObject({ auditId: 'kept', wifi: 'unknown', outlets: null })
   })
 
+  test('drops a cafe when its only visit is voided', () => {
+    const rows = auditedCafeRows(
+      [
+        {
+          id: 'only',
+          shop_id: 'a',
+          audited_at: '2026-10-02T04:34:00.000Z',
+          created_at: '2026-10-02T04:34:00.000Z',
+          long_stay_stance: 'welcome',
+        },
+      ],
+      [{ audit_id: 'only', amenity_key: 'wifi', result: 'available' }],
+      ['only'],
+    )
+    expect(rows).toEqual([])
+  })
+
   test('labels amenities and search for the desk', () => {
     expect(amenityKeyLabel('wifi')).toBe('WiFi')
     expect(amenityKeyLabel('outlets')).toBe('Outlets')

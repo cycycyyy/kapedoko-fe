@@ -11,30 +11,112 @@
         <NuxtLink class="admin-btn" :to="`/admin/audits/new?shop=${shopId}`">New audit</NuxtLink>
       </template>
 
-      <p v-if="auditsList.length === 0" class="admin-meta">No audits yet.</p>
-      <article v-for="audit in auditsList" :key="audit.id" class="admin-card">
-        <h2>{{ formatAdminDate(audit.audited_at) }}</h2>
-        <p class="admin-meta">{{ voided(audit.id) ? `Voided: ${voided(audit.id)}` : 'Valid' }}</p>
-        <p v-if="audit.corrects_audit_id" class="admin-meta">Corrects {{ audit.corrects_audit_id }}</p>
-        <p>Long-stay: {{ audit.long_stay_stance }}{{ audit.staff_confirmed_long_stay ? ' (asked staff)' : '' }}</p>
-        <p>Pay: {{ paymentWord(audit.accepts_qr, audit.accepts_card, audit.accepts_cash) }}</p>
-        <p v-for="result in resultsFor(audit.id)" :key="`${audit.id}-${result.amenity_key}`">
-          {{ result.amenity_key }}: {{ result.result }}
-          <span v-if="result.wifi_download_mbps != null"> · {{ result.wifi_download_mbps }} / {{ result.wifi_upload_mbps }} Mbps</span>
-          <span v-if="result.outlet_reliability"> · {{ result.outlet_reliability }}</span>
-        </p>
-        <p v-if="audit.notes">{{ audit.notes }}</p>
-        <div class="admin-row-actions">
-          <NuxtLink class="admin-link" :to="`/admin/audits/new?shop=${shopId}&corrects=${audit.id}`">Correct</NuxtLink>
-          <button v-if="isAdmin" type="button" class="admin-btn admin-btn--danger" @click="onVoid(audit.id)">Void</button>
-        </div>
-      </article>
+      <p v-if="visits.length === 0" class="visit-empty">
+        No team visits for this cafe yet. File the first one with
+        <NuxtLink class="visit-inline" :to="`/admin/audits/new?shop=${shopId}`">New audit</NuxtLink>.
+      </p>
 
-      <section v-if="reports.length" class="admin-panel">
-        <h2>Seed reports</h2>
-        <p v-for="report in reports" :key="report.id" class="admin-meta">
-          {{ report.amenity_key }} {{ report.result }} · {{ formatAdminDate(report.observed_at) }}
-        </p>
+      <div v-else class="visit-log">
+        <p class="visit-log__count">{{ visitCountCopy(visits.length) }}</p>
+
+        <article
+          v-for="visit in visits"
+          :key="visit.id"
+          class="admin-card visit-slip"
+          :class="{ 'is-voided': Boolean(visit.voidReason), 'is-latest': visit.isLatest }"
+        >
+          <header class="visit-head">
+            <div class="visit-head__when">
+              <h2>{{ visit.when }}</h2>
+              <p>
+                Visit {{ visit.number }}
+                <template v-if="visit.relative"> · {{ visit.relative }}</template>
+              </p>
+            </div>
+            <span
+              class="visit-stamp"
+              :class="visit.voidReason ? 'visit-stamp--void' : 'visit-stamp--valid'"
+            >
+              <span class="visit-stamp__mark" aria-hidden="true" />
+              {{ visit.voidReason ? 'Voided' : 'Valid' }}
+            </span>
+          </header>
+
+          <p v-if="visit.voidReason" class="visit-void">{{ visit.voidReason }}</p>
+          <p v-if="visit.correctsLabel" class="visit-corrects">{{ visit.correctsLabel }}</p>
+
+          <div class="visit-facts">
+            <section class="visit-group" :aria-labelledby="`visit-stay-${visit.id}`">
+              <h3 :id="`visit-stay-${visit.id}`">
+                <Hourglass :size="16" :stroke-width="2.25" aria-hidden="true" />
+                Stay
+              </h3>
+              <p class="visit-fact" :class="toneClass(visit.stay.tone)">
+                <span class="visit-fact__mark" aria-hidden="true" />
+                {{ visit.stay.stance }}
+              </p>
+              <p v-if="visit.stay.askedStaff" class="visit-detail">Asked staff</p>
+              <p v-if="visit.stay.seating" class="visit-detail">{{ visit.stay.seating }}</p>
+            </section>
+
+            <section class="visit-group" :aria-labelledby="`visit-connect-${visit.id}`">
+              <h3 :id="`visit-connect-${visit.id}`">
+                <Wifi :size="16" :stroke-width="2.25" aria-hidden="true" />
+                Connectivity
+              </h3>
+              <p v-if="visit.connectivity.length === 0" class="visit-detail">No amenity marks on this visit.</p>
+              <div v-for="fact in visit.connectivity" :key="`${visit.id}-${fact.key}`" class="visit-amenity">
+                <p class="visit-amenity__label">{{ fact.label }}</p>
+                <p class="visit-fact" :class="toneClass(fact.tone)">
+                  <span class="visit-fact__mark" aria-hidden="true" />
+                  {{ fact.value }}
+                </p>
+                <p v-if="fact.detail" class="visit-detail">{{ fact.detail }}</p>
+              </div>
+            </section>
+
+            <section class="visit-group" :aria-labelledby="`visit-pay-${visit.id}`">
+              <h3 :id="`visit-pay-${visit.id}`">
+                <Wallet :size="16" :stroke-width="2.25" aria-hidden="true" />
+                Payment
+              </h3>
+              <p class="visit-fact" :class="toneClass(visit.pay.tone)">
+                <span class="visit-fact__mark" aria-hidden="true" />
+                {{ visit.pay.word }}
+              </p>
+            </section>
+          </div>
+
+          <p v-if="visit.notes" class="visit-notes">{{ visit.notes }}</p>
+
+          <div class="visit-actions">
+            <NuxtLink
+              class="admin-link"
+              :to="`/admin/audits/new?shop=${shopId}&corrects=${visit.id}`"
+              :aria-label="`Correct visit on ${visit.when}`"
+            >
+              Correct
+            </NuxtLink>
+            <button
+              v-if="isAdmin && !visit.voidReason"
+              type="button"
+              class="admin-btn admin-btn--danger"
+              :aria-label="`Void visit on ${visit.when}`"
+              @click="onVoid(visit.id)"
+            >
+              Void
+            </button>
+          </div>
+        </article>
+      </div>
+
+      <section v-if="seedReports.length" class="admin-panel visit-seeds" aria-labelledby="visit-seeds-heading">
+        <h2 id="visit-seeds-heading">Seed reports</h2>
+        <ul>
+          <li v-for="report in seedReports" :key="report.id">
+            {{ report.label }} · {{ report.result }} · {{ report.when }}
+          </li>
+        </ul>
       </section>
     </AdminShell>
   </IonPage>
@@ -42,11 +124,16 @@
 
 <script lang="ts" setup>
 import { onIonViewWillEnter, useIonRouter } from '@ionic/vue'
+import { Hourglass, Wallet, Wifi } from 'lucide-vue-next'
 import AdminShell from '~/components/admin/AdminShell.vue'
 import { isShopId, resolveLiveShopId } from '~/utils/approved-shops'
-import { formatAdminDate } from '~/utils/admin-nav'
 import { voidReasonError } from '~/utils/audit-form'
-import { paymentWord } from '~/utils/audit-list'
+import {
+  presentAuditHistory,
+  presentSeedReports,
+  visitCountCopy,
+  type AuditHistoryTone,
+} from '~/utils/audit-history'
 import type { CafeAuditResultRow, CafeAuditRow } from '~/composables/useCafeAudits'
 
 definePageMeta({
@@ -90,8 +177,17 @@ const pageError = computed(() => {
   return loadError.value
 })
 
-const resultsFor = (id: string) => results.value.filter((row) => row.audit_id === id)
-const voided = (id: string) => voids.value.find((row) => row.audit_id === id)?.reason ?? null
+const visits = computed(() => presentAuditHistory({
+  audits: auditsList.value,
+  results: results.value,
+  voids: voids.value,
+}))
+const seedReports = computed(() => presentSeedReports(reports.value))
+const toneClass = (tone: AuditHistoryTone) => {
+  if (tone === 'ok') return 'visit-fact--ok'
+  if (tone === 'no') return 'visit-fact--no'
+  return 'visit-fact--unknown'
+}
 
 let loadSeq = 0
 let loadedFor = ''
@@ -187,3 +283,297 @@ const onVoid = async (id: string) => {
   }
 }
 </script>
+
+<style scoped>
+.visit-log,
+.visit-seeds,
+.visit-empty,
+.visit-slip {
+  caret-color: var(--kd-primary);
+}
+
+.visit-log ::selection,
+.visit-seeds ::selection,
+.visit-empty ::selection,
+.visit-slip ::selection {
+  background: var(--kd-accent);
+  color: var(--kd-ink);
+}
+
+.visit-empty {
+  margin: 0;
+  padding: 16px;
+  max-width: 42rem;
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 22%, transparent);
+  border-radius: 16px;
+  background: #faf8f5;
+  color: var(--kd-ink);
+  font-size: 0.7875rem;
+  line-height: 1.35;
+}
+
+.visit-inline {
+  color: var(--kd-primary);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.visit-log {
+  display: grid;
+  gap: 12px;
+}
+
+.visit-log__count {
+  margin: 0;
+  color: color-mix(in srgb, var(--kd-ink) 72%, #faf8f5);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.visit-slip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  min-width: 0;
+}
+
+.visit-slip.is-voided {
+  background: color-mix(in srgb, var(--kd-ink) 4%, #faf8f5);
+}
+
+.visit-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.visit-head__when {
+  min-width: 0;
+}
+
+.visit-slip .visit-head h2 {
+  margin: 0;
+  color: var(--kd-ink);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.visit-slip .visit-head p,
+.visit-slip p.visit-corrects,
+.visit-slip p.visit-detail {
+  margin: 4px 0 0;
+  color: color-mix(in srgb, var(--kd-ink) 72%, #faf8f5);
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+}
+
+.visit-stamp {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 16px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.visit-stamp__mark {
+  width: 8px;
+  height: 8px;
+  border-radius: 16px;
+  flex: 0 0 auto;
+}
+
+.visit-stamp--valid {
+  background: color-mix(in srgb, var(--kd-primary) 14%, #faf8f5);
+  color: var(--kd-primary);
+}
+
+.visit-stamp--valid .visit-stamp__mark {
+  background: var(--kd-primary);
+}
+
+.visit-stamp--void {
+  background: color-mix(in srgb, var(--kd-destructive) 16%, #faf8f5);
+  color: var(--kd-destructive);
+}
+
+.visit-stamp--void .visit-stamp__mark {
+  background: var(--kd-destructive);
+}
+
+.visit-slip p.visit-void {
+  margin: 0;
+  color: var(--kd-destructive);
+  font-size: 0.7875rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.visit-facts {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.visit-group {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.visit-group h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 2px;
+  color: var(--kd-ink);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.visit-group h3 svg {
+  flex: 0 0 auto;
+  color: var(--kd-accent);
+}
+
+.visit-amenity {
+  display: grid;
+  grid-template-columns: minmax(6.5rem, auto) minmax(0, 1fr);
+  gap: 2px 10px;
+  align-items: baseline;
+}
+
+.visit-slip p.visit-amenity__label {
+  margin: 0;
+  color: var(--kd-ink);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.visit-amenity .visit-detail {
+  grid-column: 1 / -1;
+}
+
+.visit-slip p.visit-fact {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  color: var(--kd-ink);
+  font-size: 0.7875rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.visit-fact__mark {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  margin-top: 0.35em;
+  border-radius: 16px;
+  box-shadow: inset 0 0 0 1.5px currentColor;
+}
+
+.visit-fact--ok {
+  color: var(--kd-primary);
+}
+
+.visit-fact--no {
+  color: var(--kd-destructive);
+}
+
+.visit-fact--ok .visit-fact__mark,
+.visit-fact--no .visit-fact__mark {
+  background: currentColor;
+  box-shadow: none;
+}
+
+.visit-slip p.visit-notes {
+  margin: 0;
+  color: var(--kd-ink);
+  font-size: 0.7875rem;
+  font-weight: 400;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.visit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--kd-ink) 14%, transparent);
+}
+
+.visit-seeds {
+  margin-top: 24px;
+}
+
+.visit-seeds ul {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.visit-seeds li {
+  color: color-mix(in srgb, var(--kd-ink) 72%, #faf8f5);
+  font-size: 0.7875rem;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+}
+
+.visit-inline:focus-visible,
+.visit-actions :deep(.admin-link:focus-visible),
+.visit-actions :deep(.admin-btn:focus-visible) {
+  outline: 2px solid var(--kd-primary);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .visit-inline:hover {
+    color: var(--kd-ink);
+  }
+}
+
+@media (min-width: 720px) {
+  .visit-facts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px 24px;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .visit-slip.is-latest .visit-stamp__mark {
+    animation: visit-print 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+@keyframes visit-print {
+  from {
+    clip-path: inset(0 100% 0 0 round 8px);
+  }
+
+  to {
+    clip-path: inset(0 0 0 0 round 8px);
+  }
+}
+</style>
