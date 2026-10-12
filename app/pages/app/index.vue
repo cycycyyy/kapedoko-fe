@@ -477,6 +477,7 @@ const addCafe = async () => {
 
 onIonViewWillEnter(() => {
   hydrateNearbyRadius()
+  void refresh()
 })
 
 onMounted(() => {

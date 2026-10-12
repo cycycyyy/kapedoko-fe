@@ -163,7 +163,10 @@ const syncFromRoute = () => {
 syncFromRoute()
 
 watch(() => route.fullPath, syncFromRoute)
-onIonViewWillEnter(syncFromRoute)
+onIonViewWillEnter(() => {
+  syncFromRoute()
+  void refresh()
+})
 onMounted(syncFromRoute)
 
 const listKey = computed(() => `${submittedQuery.value.trim().toLowerCase()}|${activeFilter.value}`)

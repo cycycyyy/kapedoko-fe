@@ -22,6 +22,7 @@ const SEARCH_DEBOUNCE_MS = 180
 export function useMapCafes() {
   const supabase = useSupabaseClient()
   const config = useRuntimeConfig()
+  const { upsertCafe } = useApprovedShops()
   const cache = ref(new Map<string, Cafe>())
   const viewBounds = ref<GeoBounds | null>(null)
   const nearbyCafes = ref<Cafe[]>([])
@@ -83,6 +84,7 @@ export function useMapCafes() {
       if (!base) return current
       const detailed = await hydrateCafeDetail(supabase, base)
       remember([detailed], 'replace')
+      upsertCafe(detailed)
       return detailed
     } catch {
       return current
