@@ -92,6 +92,7 @@ const { user } = useAuth()
 const { track, once, consent } = useAnalytics()
 const ownership = useShopOwnership()
 
+const { upsertCafe } = useApprovedShops()
 const cafe = ref<Cafe | null>(null)
 const status = ref<'loading' | 'ready' | 'missing' | 'error'>('loading')
 
@@ -143,11 +144,14 @@ const publicBase = () => String(config.public.r2PublicBaseUrl || '')
 const loadCafe = async (id: string): Promise<Cafe | null> => {
   const next = await fetchApprovedCafeById(supabase, publicBase(), id)
   if (!next) return null
+  let hydrated = next
   try {
-    return await hydrateCafeDetail(supabase, next)
+    hydrated = await hydrateCafeDetail(supabase, next)
   } catch {
-    return next
+    hydrated = next
   }
+  upsertCafe(hydrated)
+  return hydrated
 }
 
 const goHome = async () => {

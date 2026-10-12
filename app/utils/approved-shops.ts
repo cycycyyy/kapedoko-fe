@@ -10,8 +10,12 @@ import type {
   ShopRow,
 } from '../types/shop'
 import { mapPublicReview, matchaInsightFromStats, statsFromPublicReviews } from './cafe-review'
-import { mapShopToCafe, withCafeBusyness, withCafeReviews } from './shop-mapper'
 import type { ShopAmenityResolutionRow } from './amenity-status'
+import {
+  mapShopToCafe,
+  withCafeBusyness,
+  withCafeReviews,
+} from './shop-mapper'
 import { paymentFromRow, type CafePayment, type ShopPaymentRow } from './cafe-payment'
 
 export const APPROVED_SHOP_COLUMNS =
@@ -59,18 +63,79 @@ function sanitizeSearch(query: string): string {
   return query.replace(/[%_,()]/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
-async function fetchAmenityResolutions(
-  supabase: { from: (relation: string) => any },
+export const SHOP_ID_CHUNK = 80
+export const SHOP_ID_GET_CHUNK = 8
+export const SHOP_ID_MIN_CHUNK = 1
+export const POSTGREST_PAGE_SIZE = 1000
+export const SIDECAR_RPC = 'shop_card_sidecars'
+
+const AMENITY_RESOLUTION_COLUMNS =
+  'shop_id,amenity_key,availability,confidence,source_at,decided_count,yes_count,no_count,is_stale,needs_recheck,wifi_speed,wifi_time_limit,outlet_reliability'
+const PAYMENT_COLUMNS = 'shop_id,accepts_qr,accepts_card,accepts_cash,source_at'
+
+type PageResult<T> = { data: T[] | null; error: unknown }
+
+export function chunkIds<T>(items: readonly T[], size = SHOP_ID_CHUNK): T[][] {
+  const chunkSize = Math.max(1, size)
+  const chunks: T[][] = []
+  for (let i = 0; i < items.length; i += chunkSize) {
+    chunks.push(items.slice(i, i + chunkSize) as T[])
+  }
+  return chunks
+}
+
+export async function fetchPages<T>(
+  loadPage: (from: number, to: number) => PromiseLike<PageResult<T>>,
+  pageSize = POSTGREST_PAGE_SIZE,
+): Promise<T[]> {
+  const size = Math.max(1, pageSize)
+  const rows: T[] = []
+  let from = 0
+  while (true) {
+    const { data, error } = await loadPage(from, from + size - 1)
+    if (error) throw error
+    const page = data ?? []
+    rows.push(...page)
+    if (page.length < size) break
+    from += size
+  }
+  return rows
+}
+
+export async function fetchByShopIds<T>(
   ids: string[],
-): Promise<Map<string, ShopAmenityResolutionRow[]> | null> {
-  if (!ids.length) return new Map()
-  const { data, error } = await supabase
-    .from('shop_amenity_resolutions_public')
-    .select('shop_id,amenity_key,availability,confidence,source_at,decided_count,yes_count,no_count,is_stale,needs_recheck,wifi_speed,wifi_time_limit,outlet_reliability')
-    .in('shop_id', ids)
-  if (error) return null
+  loadPage: (chunk: string[], from: number, to: number) => PromiseLike<PageResult<T>>,
+  size = SHOP_ID_GET_CHUNK,
+): Promise<T[]> {
+  const rows: T[] = []
+  for (const chunk of chunkIds(ids, size)) {
+    rows.push(...await fetchShopIdChunk(chunk, loadPage))
+  }
+  return rows
+}
+
+/** GET ?shop_id=in.(…) 400s past a handful of uuids. Split until one id, which cards already load. */
+async function fetchShopIdChunk<T>(
+  chunk: string[],
+  loadPage: (chunk: string[], from: number, to: number) => PromiseLike<PageResult<T>>,
+): Promise<T[]> {
+  try {
+    return await fetchPages((from, to) => loadPage(chunk, from, to))
+  } catch (err) {
+    if (chunk.length <= SHOP_ID_MIN_CHUNK) throw err
+    const rows: T[] = []
+    for (const half of chunkIds(chunk, Math.ceil(chunk.length / 2))) {
+      rows.push(...await fetchShopIdChunk(half, loadPage))
+    }
+    return rows
+  }
+}
+
+export function groupAmenityRows(
+  rows: ShopAmenityResolutionRow[],
+): Map<string, ShopAmenityResolutionRow[]> {
   const grouped = new Map<string, ShopAmenityResolutionRow[]>()
-  for (const row of (data ?? []) as ShopAmenityResolutionRow[]) {
+  for (const row of rows) {
     const list = grouped.get(row.shop_id) ?? []
     list.push(row)
     grouped.set(row.shop_id, list)
@@ -78,38 +143,173 @@ async function fetchAmenityResolutions(
   return grouped
 }
 
-async function fetchPayments(
-  supabase: { from: (relation: string) => any },
-  ids: string[],
-): Promise<Map<string, CafePayment> | null> {
-  if (!ids.length) return new Map()
-  const { data, error } = await supabase
-    .from('shop_payment_public')
-    .select('shop_id,accepts_qr,accepts_card,accepts_cash,source_at')
-    .in('shop_id', ids)
-  if (error) return null
-  const byId = new Map<string, CafePayment>()
-  for (const row of (data ?? []) as ShopPaymentRow[]) {
-    const payment = paymentFromRow(row)
-    if (payment) byId.set(row.shop_id, payment)
-  }
-  return byId
+type ShopClient = {
+  from: (relation: string) => any
+  rpc?: (fn: string, args: Record<string, unknown>) => PromiseLike<PageResult<unknown>>
 }
 
-export async function fetchApprovedCafes(
-  supabase: { from: (relation: string) => any },
+interface ShopCardSidecarsPayload {
+  amenities?: ShopAmenityResolutionRow[] | null
+  payments?: ShopPaymentRow[] | null
+  stats?: ShopReviewStatsRow[] | null
+  tiers?: ShopMarkerTierRow[] | null
+}
+
+export function parseSidecarPayload(data: unknown): ShopCardSidecarsPayload | null {
+  if (data == null) return null
+  try {
+    const parsed = typeof data === 'string' ? JSON.parse(data) : data
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null
+    return parsed as ShopCardSidecarsPayload
+  } catch {
+    return null
+  }
+}
+
+export interface CafeSidecars {
+  statsById: Map<string, ShopReviewStatsRow>
+  tierById: Map<string, MarkerTier>
+  amenityById: Map<string, ShopAmenityResolutionRow[]>
+  paymentById: Map<string, CafePayment>
+  amenitiesLoaded: boolean
+  paymentsLoaded: boolean
+}
+
+export function sidecarsFromPayload(payload?: ShopCardSidecarsPayload | null): CafeSidecars {
+  const paymentById = new Map<string, CafePayment>()
+  for (const row of payload?.payments ?? []) {
+    const payment = paymentFromRow(row)
+    if (payment) paymentById.set(row.shop_id, payment)
+  }
+  return {
+    statsById: new Map((payload?.stats ?? []).map((row) => [row.shop_id, row])),
+    tierById: new Map(
+      (payload?.tiers ?? []).map((row) => [row.shop_id, row.marker_tier as MarkerTier]),
+    ),
+    amenityById: groupAmenityRows(payload?.amenities ?? []),
+    paymentById,
+    amenitiesLoaded: Array.isArray(payload?.amenities),
+    paymentsLoaded: Array.isArray(payload?.payments),
+  }
+}
+
+export function mergeSidecars(target: CafeSidecars, extra: CafeSidecars): CafeSidecars {
+  for (const [id, row] of extra.statsById) target.statsById.set(id, row)
+  for (const [id, row] of extra.tierById) target.tierById.set(id, row)
+  for (const [id, rows] of extra.amenityById) {
+    target.amenityById.set(id, [...(target.amenityById.get(id) ?? []), ...rows])
+  }
+  for (const [id, row] of extra.paymentById) target.paymentById.set(id, row)
+  target.amenitiesLoaded = target.amenitiesLoaded || extra.amenitiesLoaded
+  target.paymentsLoaded = target.paymentsLoaded || extra.paymentsLoaded
+  return target
+}
+
+async function rowsOrNull<T>(rows: Promise<T[]>): Promise<T[] | null> {
+  try {
+    return await rows
+  } catch {
+    return null
+  }
+}
+
+async function loadCafeSidecarsByIn(supabase: ShopClient, ids: string[]): Promise<CafeSidecars> {
+  const unique = [...new Set(ids)]
+  if (!unique.length) return sidecarsFromPayload()
+
+  const [amenities, stats, tiers, payments] = await Promise.all([
+    rowsOrNull(fetchByShopIds<ShopAmenityResolutionRow>(unique, (chunk, from, to) =>
+      supabase
+        .from('shop_amenity_resolutions_public')
+        .select(AMENITY_RESOLUTION_COLUMNS)
+        .in('shop_id', chunk)
+        .range(from, to),
+    )),
+    rowsOrNull(fetchByShopIds<ShopReviewStatsRow>(unique, (chunk, from, to) =>
+      supabase.from('shop_review_stats').select('*').in('shop_id', chunk).range(from, to),
+    )),
+    rowsOrNull(fetchByShopIds<ShopMarkerTierRow>(unique, (chunk, from, to) =>
+      supabase.from('shop_marker_tiers').select('shop_id,marker_tier').in('shop_id', chunk).range(from, to),
+    )),
+    rowsOrNull(fetchByShopIds<ShopPaymentRow>(unique, (chunk, from, to) =>
+      supabase.from('shop_payment_public').select(PAYMENT_COLUMNS).in('shop_id', chunk).range(from, to),
+    )),
+  ])
+
+  return sidecarsFromPayload({ amenities, stats, tiers, payments })
+}
+
+async function loadCafeSidecarsByRpc(supabase: ShopClient, ids: string[]): Promise<CafeSidecars | null> {
+  if (typeof supabase.rpc !== 'function') return null
+  let bundled = sidecarsFromPayload()
+  for (const chunk of chunkIds(ids)) {
+    const payload = await rpcSidecarPayload(supabase, chunk)
+    if (!payload) return null
+    bundled = mergeSidecars(bundled, sidecarsFromPayload(payload))
+  }
+  return bundled
+}
+
+async function rpcSidecarPayload(
+  supabase: ShopClient,
+  chunk: string[],
+): Promise<ShopCardSidecarsPayload | null> {
+  try {
+    const { data, error } = await supabase.rpc!(SIDECAR_RPC, { p_shop_ids: chunk })
+    if (error) return null
+    return parseSidecarPayload(data)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * RPC first (POST ids). GET in() of 8 if the RPC is missing. Never one giant in().
+ * A sidecar that cannot load stays unloaded so cards fall back to review stats.
+ */
+export async function loadCafeSidecars(supabase: ShopClient, ids: string[]): Promise<CafeSidecars> {
+  const unique = [...new Set(ids.filter(Boolean))]
+  if (!unique.length) return sidecarsFromPayload()
+  return await loadCafeSidecarsByRpc(supabase, unique) ?? await loadCafeSidecarsByIn(supabase, unique)
+}
+
+export async function fetchAmenityRowsForShopIds(
+  supabase: ShopClient,
+  ids: string[],
+): Promise<ShopAmenityResolutionRow[]> {
+  const sidecars = await loadCafeSidecars(supabase, ids)
+  return [...sidecars.amenityById.values()].flat()
+}
+
+function cafeFromApprovedShop(
+  shop: ShopRow,
   publicBase: string,
+  sidecars: CafeSidecars,
+): Cafe {
+  return mapShopToCafe(
+    shop,
+    sidecars.statsById.get(shop.id),
+    publicBase,
+    sidecars.tierById.get(shop.id) ?? 'standard',
+    sidecars.amenitiesLoaded ? sidecars.amenityById.get(shop.id) ?? [] : undefined,
+    sidecars.paymentById.get(shop.id) ?? null,
+  )
+}
+
+function approvedShopQuery(
+  supabase: { from: (relation: string) => any },
   options: {
     bounds?: GeoBounds
     query?: string
-    limit?: number
+    ids?: string[]
   } = {},
-): Promise<Cafe[]> {
+) {
   let request = supabase
     .from('shops')
     .select(APPROVED_SHOP_COLUMNS)
     .eq('status', 'approved')
 
+  if (options.ids) request = request.in('id', options.ids)
   if (options.bounds) {
     request = request
       .gte('latitude', options.bounds.south)
@@ -123,84 +323,69 @@ export async function fetchApprovedCafes(
     request = request.or(`name.ilike.%${term}%,address.ilike.%${term}%`)
   }
 
-  request = request.order('name')
-  if (options.limit) request = request.limit(options.limit)
+  return request.order('name')
+}
 
-  const { data: shops, error } = await request
-  if (error) throw error
+export async function fetchApprovedShopRows(
+  supabase: ShopClient,
+  options: {
+    bounds?: GeoBounds
+    query?: string
+    limit?: number
+  } = {},
+): Promise<ShopRow[]> {
+  const shops = options.limit
+    ? await (async () => {
+        const { data, error } = await approvedShopQuery(supabase, options).limit(options.limit)
+        if (error) throw error
+        return (data ?? []) as ShopRow[]
+      })()
+    : await fetchPages<ShopRow>((from, to) =>
+        approvedShopQuery(supabase, options).range(from, to),
+      )
+  return shops.filter((shop) => shop.status === 'approved')
+}
 
-  const approved = ((shops ?? []) as ShopRow[]).filter((shop) => shop.status === 'approved')
+export function cafesFromApprovedShops(
+  shops: ShopRow[],
+  publicBase: string,
+  sidecars: CafeSidecars = sidecarsFromPayload(),
+): Cafe[] {
+  return shops.map((shop) => cafeFromApprovedShop(shop, publicBase, sidecars))
+}
+
+export async function fetchApprovedCafes(
+  supabase: ShopClient,
+  publicBase: string,
+  options: {
+    bounds?: GeoBounds
+    query?: string
+    limit?: number
+  } = {},
+): Promise<Cafe[]> {
+  const approved = await fetchApprovedShopRows(supabase, options)
   if (!approved.length) return []
-
-  const ids = approved.map((shop) => shop.id)
-  const [{ data: stats }, { data: tiers }, amenityById, paymentById] = await Promise.all([
-    supabase.from('shop_review_stats').select('*').in('shop_id', ids),
-    supabase.from('shop_marker_tiers').select('shop_id, marker_tier').in('shop_id', ids),
-    fetchAmenityResolutions(supabase, ids),
-    fetchPayments(supabase, ids),
-  ])
-
-  const statsById = new Map(
-    ((stats ?? []) as ShopReviewStatsRow[]).map((row) => [row.shop_id, row]),
-  )
-  const tierById = new Map(
-    ((tiers ?? []) as ShopMarkerTierRow[]).map((row) => [row.shop_id, row.marker_tier as MarkerTier]),
-  )
-
-  return approved.map((shop) =>
-    mapShopToCafe(
-      shop,
-      statsById.get(shop.id),
-      publicBase,
-      tierById.get(shop.id) ?? 'standard',
-      amenityById ? amenityById.get(shop.id) ?? [] : undefined,
-      paymentById?.get(shop.id) ?? null,
-    ),
-  )
+  const sidecars = await loadCafeSidecars(supabase, approved.map((shop) => shop.id))
+  return cafesFromApprovedShops(approved, publicBase, sidecars)
 }
 
 export async function fetchApprovedCafesByIds(
-  supabase: { from: (relation: string) => any },
+  supabase: ShopClient,
   publicBase: string,
   shopIds: string[],
 ): Promise<Cafe[]> {
   const ids = [...new Set(shopIds.filter((id) => isShopId(id)))]
   if (!ids.length) return []
 
-  const { data: shops, error } = await supabase
-    .from('shops')
-    .select(APPROVED_SHOP_COLUMNS)
-    .eq('status', 'approved')
-    .in('id', ids)
-
-  if (error) throw error
-  const approved = ((shops ?? []) as ShopRow[]).filter((shop) => shop.status === 'approved')
+  const found = await fetchByShopIds<ShopRow>(ids, (chunk, from, to) =>
+    approvedShopQuery(supabase, { ids: chunk }).range(from, to),
+  )
+  const approved = found.filter((shop) => shop.status === 'approved')
   if (!approved.length) return []
 
-  const [{ data: stats }, { data: tiers }, amenityById, paymentById] = await Promise.all([
-    supabase.from('shop_review_stats').select('*').in('shop_id', ids),
-    supabase.from('shop_marker_tiers').select('shop_id, marker_tier').in('shop_id', ids),
-    fetchAmenityResolutions(supabase, ids),
-    fetchPayments(supabase, ids),
-  ])
-  const statsById = new Map(
-    ((stats ?? []) as ShopReviewStatsRow[]).map((row) => [row.shop_id, row]),
-  )
-  const tierById = new Map(
-    ((tiers ?? []) as ShopMarkerTierRow[]).map((row) => [row.shop_id, row.marker_tier as MarkerTier]),
-  )
+  const sidecars = await loadCafeSidecars(supabase, approved.map((shop) => shop.id))
   const byId = new Map(
-    approved.map((shop) => [
-      shop.id,
-      mapShopToCafe(
-        shop,
-        statsById.get(shop.id),
-        publicBase,
-        tierById.get(shop.id) ?? 'standard',
-        amenityById ? amenityById.get(shop.id) ?? [] : undefined,
-        paymentById?.get(shop.id) ?? null,
-      ),
-    ]),
+    approved.map((shop) => [shop.id, cafeFromApprovedShop(shop, publicBase, sidecars)]),
   )
 
   return ids.flatMap((id) => {
@@ -226,27 +411,8 @@ export async function fetchApprovedCafeById(
   if (error) throw error
   if (!shop) return null
 
-  let stats: ShopReviewStatsRow | null = null
-  let markerTier: MarkerTier = 'standard'
-  let amenityRows: ShopAmenityResolutionRow[] | undefined
-  let payment: CafePayment | null = null
-  try {
-    const [statsResult, tiersResult, amenityById, paymentById] = await Promise.all([
-      supabase.from('shop_review_stats').select('*').eq('shop_id', shopId).limit(1),
-      supabase.from('shop_marker_tiers').select('shop_id, marker_tier').eq('shop_id', shopId).limit(1),
-      fetchAmenityResolutions(supabase, [shopId]),
-      fetchPayments(supabase, [shopId]),
-    ])
-    stats = statsResult.error ? null : firstRow(statsResult.data as ShopReviewStatsRow[] | ShopReviewStatsRow | null)
-    const tierRow = tiersResult.error ? null : firstRow(tiersResult.data as ShopMarkerTierRow[] | ShopMarkerTierRow | null)
-    markerTier = (tierRow?.marker_tier as MarkerTier | undefined) ?? 'standard'
-    amenityRows = amenityById ? amenityById.get(shopId) ?? [] : undefined
-    payment = paymentById?.get(shopId) ?? null
-  } catch {
-    stats = null
-  }
-
-  return mapShopToCafe(shop as ShopRow, stats, publicBase, markerTier, amenityRows, payment)
+  const sidecars = await loadCafeSidecars(supabase, [shopId])
+  return cafeFromApprovedShop(shop as ShopRow, publicBase, sidecars)
 }
 
 export async function fetchPublicCafeReviews(
