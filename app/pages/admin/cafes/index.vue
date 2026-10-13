@@ -13,7 +13,7 @@
         <NuxtLink class="admin-btn" to="/admin/cafes/new">Add cafe</NuxtLink>
       </template>
 
-      <p v-if="importedCopy" class="cafe-notice" role="status">{{ importedCopy }}</p>
+      <p v-if="stampNotice || importedCopy" class="cafe-notice" role="status">{{ stampNotice || importedCopy }}</p>
 
       <AdminPendingRail :shops="pending" :status="status" />
 
@@ -47,14 +47,58 @@
         </div>
       </div>
 
+      <AdminCafeLogoDialog
+        class="cafe-stamp-pad"
+        :shop="logoShop"
+        :sources="logoSources"
+        :status="logoSourcesStatus"
+        :public-base="publicBase"
+        :saving="busy"
+        :selected-count="Math.max(selectedIds.size, logoShop ? 1 : 0)"
+        @close="closeLogoPicker"
+        @assign="assignLogo"
+      >
+        <template #ticks>
+          <button type="button" class="admin-btn admin-btn--ghost" :disabled="busy" @click="tickPaged">
+            This page
+          </button>
+          <button
+            v-if="visible.length > 1"
+            type="button"
+            class="admin-btn"
+            :disabled="busy"
+            @click="tickVisible"
+          >
+            All {{ visible.length }} in this search
+          </button>
+          <button type="button" class="admin-btn admin-btn--quiet" :disabled="busy" @click="resetTicks">
+            Clear extra ticks
+          </button>
+        </template>
+      </AdminCafeLogoDialog>
+
       <p v-if="visible.length === 0" class="admin-meta">No cafes match that search.</p>
 
-      <div v-else ref="ledgerEl" class="admin-ledger cafe-board">
+      <div v-else ref="ledgerEl" class="admin-ledger cafe-board" :class="{ 'is-stamping': Boolean(logoShop) }">
         <div class="admin-table-wrap">
           <table class="admin-table">
             <thead>
               <tr>
-                <th>Cafe</th>
+                <th>
+                  <span class="cafe-heading">
+                    <label v-if="logoShop" class="cafe-tick">
+                      <input
+                        ref="pageTickEl"
+                        type="checkbox"
+                        :checked="pageTick === 'all'"
+                        :disabled="busy"
+                        @change="onPageTick"
+                      />
+                      <span class="sr-only">Tick cafes on this page</span>
+                    </label>
+                    Cafe
+                  </span>
+                </th>
                 <th>Status</th>
                 <th>Address</th>
                 <th>Updated</th>
@@ -62,9 +106,27 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="shop in paged" :key="shop.id">
+              <tr v-for="shop in paged" :key="shop.id" :class="{ 'is-ticked': selectedIds.has(shop.id) }">
                 <td>
-                  <NuxtLink class="cafe-name" :to="`/admin/cafes/${shop.id}`">{{ shop.name }}</NuxtLink>
+                  <div class="cafe-identity">
+                    <label v-if="logoShop" class="cafe-tick">
+                      <input
+                        type="checkbox"
+                        :checked="selectedIds.has(shop.id)"
+                        :disabled="busy"
+                        :aria-label="`Also stamp onto ${shop.name}`"
+                        @change="toggleTick(shop.id, ($event.target as HTMLInputElement).checked)"
+                      />
+                    </label>
+                    <AdminCafeLogoButton
+                      :shop="shop"
+                      :public-base="publicBase"
+                      :saving="savingId === shop.id || savingId === 'logos'"
+                      :expanded="logoShop?.id === shop.id"
+                      @click="openLogoPicker(shop)"
+                    />
+                    <NuxtLink class="cafe-name" :to="`/admin/cafes/${shop.id}`">{{ shop.name }}</NuxtLink>
+                  </div>
                 </td>
                 <td>
                   <span class="cafe-stamp" :class="`cafe-stamp--${shop.status}`">
@@ -95,10 +157,33 @@
         </div>
 
         <div class="admin-cards">
-          <article v-for="shop in paged" :key="shop.id" class="admin-card">
-            <h2>
-              <NuxtLink class="cafe-name" :to="`/admin/cafes/${shop.id}`">{{ shop.name }}</NuxtLink>
-            </h2>
+          <article
+            v-for="shop in paged"
+            :key="shop.id"
+            class="admin-card"
+            :class="{ 'is-ticked': selectedIds.has(shop.id) }"
+          >
+            <div class="cafe-identity">
+              <label v-if="logoShop" class="cafe-tick">
+                <input
+                  type="checkbox"
+                  :checked="selectedIds.has(shop.id)"
+                  :disabled="busy"
+                  :aria-label="`Also stamp onto ${shop.name}`"
+                  @change="toggleTick(shop.id, ($event.target as HTMLInputElement).checked)"
+                />
+              </label>
+              <AdminCafeLogoButton
+                :shop="shop"
+                :public-base="publicBase"
+                :saving="savingId === shop.id || savingId === 'logos'"
+                :expanded="logoShop?.id === shop.id"
+                @click="openLogoPicker(shop)"
+              />
+              <h2>
+                <NuxtLink class="cafe-name" :to="`/admin/cafes/${shop.id}`">{{ shop.name }}</NuxtLink>
+              </h2>
+            </div>
             <p>
               <span class="cafe-stamp" :class="`cafe-stamp--${shop.status}`">
                 <span class="cafe-stamp__mark" aria-hidden="true" />
@@ -162,14 +247,24 @@
           </nav>
         </div>
       </div>
+
     </AdminShell>
   </IonPage>
 </template>
 
 <script lang="ts" setup>
+import AdminCafeLogoButton from '~/components/admin/AdminCafeLogoButton.vue'
+import AdminCafeLogoDialog from '~/components/admin/AdminCafeLogoDialog.vue'
 import AdminPendingRail from '~/components/admin/AdminPendingRail.vue'
 import AdminShell from '~/components/admin/AdminShell.vue'
 import type { ShopRow, ShopStatus } from '~/types/shop'
+import {
+  cafeLogoSources,
+  logoOverwriteCount,
+  logoTickState,
+  stampLogoConfirmCopy,
+  stampLogoDoneCopy,
+} from '~/utils/admin-logos'
 import { formatAdminDate } from '~/utils/admin-nav'
 import { ledgerPageCount, ledgerPageRange, ledgerPageSlice, ledgerPageTokens } from '~/utils/admin-ledger'
 
@@ -179,8 +274,14 @@ definePageMeta({
 
 const admin = useAdminData()
 const route = useRoute()
-const { shops, counts, status, error, savingId, load, moderate } = admin
+const config = useRuntimeConfig()
+const { shops, counts, status, error, savingId, load, moderate, updateShopLogos } = admin
+const publicBase = String(config.public.r2PublicBaseUrl || '')
 const query = ref('')
+const logoShop = ref<ShopRow | null>(null)
+const selectedIds = ref<Set<string>>(new Set())
+const stampNotice = ref('')
+const pageTickEl = ref<HTMLInputElement | null>(null)
 const statusFilter = ref<'all' | ShopStatus>(Number(route.query.imported) > 0 ? 'pending' : 'all')
 const importedCopy = computed(() => {
   const count = Number(route.query.imported)
@@ -218,6 +319,15 @@ const currentPage = computed(() => Math.min(page.value, pageCount.value))
 const paged = computed(() => ledgerPageSlice(visible.value, currentPage.value))
 const range = computed(() => ledgerPageRange(visible.value.length, currentPage.value))
 const pageTokens = computed(() => ledgerPageTokens(currentPage.value, pageCount.value))
+const logoSources = computed(() => cafeLogoSources(shops.value, publicBase))
+const logoSourcesStatus = computed(() => {
+  if (status.value === 'loading' || status.value === 'idle') return 'loading' as const
+  if (status.value === 'error' || status.value === 'forbidden') return 'error' as const
+  return 'ready' as const
+})
+const busy = computed(() => Boolean(savingId.value))
+const pageTick = computed(() => logoTickState(paged.value.map((shop) => shop.id), selectedIds.value))
+const selectedShops = computed(() => shops.value.filter((shop) => selectedIds.value.has(shop.id)))
 
 watch([query, statusFilter], () => {
   page.value = 1
@@ -256,6 +366,83 @@ const statusWord = (value: ShopStatus) => {
   return 'Rejected'
 }
 
+const openLogoPicker = (shop: ShopRow) => {
+  stampNotice.value = ''
+  if (!logoShop.value) {
+    selectedIds.value = new Set([shop.id])
+  } else {
+    const next = new Set(selectedIds.value)
+    next.add(shop.id)
+    selectedIds.value = next
+  }
+  logoShop.value = shop
+}
+
+const closeLogoPicker = () => {
+  logoShop.value = null
+  selectedIds.value = new Set()
+}
+
+const toggleTick = (id: string, on: boolean) => {
+  const next = new Set(selectedIds.value)
+  if (on) next.add(id)
+  else next.delete(id)
+  selectedIds.value = next
+}
+
+const tickPaged = () => {
+  const next = new Set(selectedIds.value)
+  for (const shop of paged.value) next.add(shop.id)
+  selectedIds.value = next
+}
+
+const tickVisible = () => {
+  selectedIds.value = new Set(visible.value.map((shop) => shop.id))
+}
+
+const resetTicks = () => {
+  selectedIds.value = new Set(logoShop.value ? [logoShop.value.id] : [])
+}
+
+const onPageTick = (event: Event) => {
+  const on = (event.target as HTMLInputElement).checked
+  const next = new Set(selectedIds.value)
+  for (const shop of paged.value) {
+    if (on) next.add(shop.id)
+    else next.delete(shop.id)
+  }
+  selectedIds.value = next
+}
+
+const assignLogo = async (payload: { logoFile: File | null; logoObjectKey: string | null }) => {
+  const queue = selectedShops.value.length > 0
+    ? selectedShops.value
+    : logoShop.value
+      ? [logoShop.value]
+      : []
+  if (queue.length === 0) return
+  if (queue.length > 1) {
+    const overwrite = logoOverwriteCount(
+      queue,
+      new Set(queue.map((shop) => shop.id)),
+      payload.logoObjectKey,
+      Boolean(payload.logoFile),
+    )
+    if (!window.confirm(stampLogoConfirmCopy(queue.length, overwrite))) return
+  }
+  try {
+    const done = await updateShopLogos(queue, payload)
+    stampNotice.value = stampLogoDoneCopy(done.length)
+    closeLogoPicker()
+  } catch {
+    /* shown in the admin shell */
+  }
+}
+
+watch(pageTick, (state) => {
+  if (pageTickEl.value) pageTickEl.value.indeterminate = state === 'some'
+})
+
 const unpublish = async (shop: ShopRow) => {
   if (!window.confirm(`Unpublish ${shop.name}? It leaves Home and Map until it is approved again.`)) return
   try {
@@ -277,6 +464,55 @@ onMounted(() => {
   font-size: 0.7875rem;
   font-weight: 700;
   line-height: 1.3;
+}
+
+.cafe-stamp-pad {
+  position: sticky;
+  top: 8px;
+  z-index: 3;
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--kd-ink) 8%, transparent);
+}
+
+.cafe-stamp-pad :deep(.admin-btn) {
+  transform: rotate(-1.25deg);
+}
+
+.cafe-stamp-pad :deep(.admin-btn--ghost),
+.cafe-stamp-pad :deep(.admin-btn--quiet) {
+  transform: none;
+}
+
+.cafe-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cafe-tick {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+
+.cafe-tick input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--kd-primary);
+  cursor: pointer;
+}
+
+.cafe-tick input:focus-visible {
+  outline: 2px solid var(--kd-primary);
+  outline-offset: 2px;
+}
+
+.cafe-board.admin-ledger.is-stamping tr.is-ticked td,
+.admin-card.is-ticked {
+  background: color-mix(in srgb, var(--kd-accent) 12%, #faf8f5);
 }
 
 .cafe-board {
@@ -330,7 +566,19 @@ onMounted(() => {
   font-weight: 700;
 }
 
+.cafe-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.cafe-identity h2 {
+  min-width: 0;
+}
+
 .cafe-name {
+  min-width: 0;
   color: var(--kd-ink);
   font-weight: 700;
   text-decoration: none;
@@ -556,13 +804,30 @@ onMounted(() => {
   .cafe-warn {
     flex: 1 1 0;
   }
+
+  .cafe-stamp-pad :deep(.admin-btn) {
+    flex: 1 1 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .cafe-edit:active,
   .cafe-warn:active:not(:disabled),
-  .cafe-page:active:not(:disabled) {
+  .cafe-page:active:not(:disabled),
+  .cafe-stamp-pad :deep(.admin-btn) {
     transform: none;
   }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 </style>

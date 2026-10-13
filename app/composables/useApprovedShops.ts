@@ -33,6 +33,10 @@ export function useApprovedShops() {
     }
   }
 
+  /**
+   * Shared cache for cafe pages and the map. The home and search lists page
+   * their own feeds; opening the app must not download the whole catalog.
+   */
   const upsertCafe = (next: Cafe) => {
     const index = cafes.value.findIndex((cafe) => cafe.id === next.id)
     if (index === -1) {
@@ -57,11 +61,6 @@ export function useApprovedShops() {
         : cafe
     ))
   }
-
-  onMounted(() => {
-    if (status.value !== 'idle') return
-    void refresh()
-  })
 
   return { cafes, source, status, error, refresh, upsertCafe }
 }

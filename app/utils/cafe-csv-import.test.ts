@@ -3,10 +3,13 @@ import { describe, expect, test } from 'bun:test'
 import { sameHoursEveryDay } from './hours'
 import {
   canCommitCrate,
+  chunkImportDrafts,
   crateTally,
+  IMPORT_ADMIN_SHOPS_MAX,
   keptImportDrafts,
   parseCafeImportCsv,
   parseCsvRecords,
+  pendingImportDrafts,
   stampReadyTickets,
   stampTicket,
 } from './cafe-csv-import'
@@ -84,6 +87,29 @@ describe('cafe CSV import crate', () => {
       name: '1821 Café',
       address: '28 J.P. Laurel Sr, Cor Mt Everest, San Roque, Marikina',
     })
+  })
+
+  test('splits a crate larger than the import cap into 200-cafe batches', () => {
+    const raw = readFileSync(new URL('../../data/imports/pampanga-places-cafes.csv', import.meta.url), 'utf8')
+    const stamped = stampReadyTickets(parseCafeImportCsv(raw))
+    const drafts = keptImportDrafts(stamped)
+    expect(drafts.length).toBeGreaterThan(IMPORT_ADMIN_SHOPS_MAX)
+    const chunks = chunkImportDrafts(drafts)
+    expect(chunks.length).toBeGreaterThan(1)
+    expect(chunks.every((chunk) => chunk.length <= IMPORT_ADMIN_SHOPS_MAX)).toBe(true)
+    expect(chunks.flat()).toHaveLength(drafts.length)
+  })
+
+  test('drops drafts that are already listed nearby', () => {
+    const drafts = keptImportDrafts(stampReadyTickets(parseCafeImportCsv(csv([
+      `"Resonate Coffee","25 Bronze Street, Marikina",14.6507,121.1127,"${hours.replaceAll('"', '""')}",,a`,
+    ]))))
+    expect(pendingImportDrafts(drafts, [{
+      name: 'Resonate Coffee',
+      latitude: 14.65075,
+      longitude: 121.11272,
+    }])).toEqual([])
+    expect(pendingImportDrafts(drafts, [])).toEqual(drafts)
   })
 
   test('counts a mixed crate', () => {
