@@ -456,7 +456,7 @@ SSIDs, review text, submission notes, claim text, emails, display names, phone n
 
 **First-launch notice**
 
-> Help us improve KapéDoko? We record taps like search, filters, and café opens so we can see whether Marikina cafés are easy to find. We do not record your email, your exact location, or what you type into search. You can change this later in Profile.
+> Help us improve KapéDoko? We record taps like search, filters, and café opens so we can see whether cafés nationwide are easy to find. We do not record your email, your exact location, or what you type into search. You can change this later in Profile.
 
 Buttons: **Allow analytics** / **Not now**
 

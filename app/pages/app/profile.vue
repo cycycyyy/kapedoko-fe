@@ -332,7 +332,7 @@ const radiusPresets = NEARBY_RADIUS_PRESETS_KM
 const analyticsCopy = computed(() => (
   analyticsOn.value
     ? 'KapéDoko sends anonymous product events to our analytics provider (PostHog, EU). We do not send your email, precise GPS, or search text.'
-    : 'Turn it on to help us see whether Marikina cafés are easy to find. We do not send your email, precise GPS, or search text.'
+    : 'Turn it on to help us see whether cafés nationwide are easy to find. We do not send your email, precise GPS, or search text.'
 ))
 
 const locationTitle = computed(() => {

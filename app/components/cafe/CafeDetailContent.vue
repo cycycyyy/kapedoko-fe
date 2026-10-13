@@ -219,6 +219,21 @@
         </button>
       </div>
 
+      <div class="cafe-detail__map">
+        <ClientOnly>
+          <CafePinMap
+            :lat="cafe.lat"
+            :lng="cafe.lng"
+            :name="cafe.name"
+            :address="cafe.address"
+            :maps-href="mapsHref"
+          />
+          <template #fallback>
+            <div class="cafe-detail__map-slot" aria-hidden="true" />
+          </template>
+        </ClientOnly>
+      </div>
+
       <p v-if="reportNotice" class="cafe-detail__prompt" role="status">{{ reportNotice }}</p>
       <section class="cafe-detail__reviews" aria-label="KapéBean reviews">
         <h3>Reviews by our KapéBeans</h3>
@@ -272,6 +287,7 @@
 
 <script lang="ts" setup>
 import { BadgeAlert, BadgeCheck, CircleHelp, Coffee, Heart, Leaf, MessageCircle, Navigation, Phone, Plug, Split, Star, Unplug, Users, Wallet, Wifi, WifiOff } from 'lucide-vue-next'
+import CafePinMap from '~/components/map/CafePinMap.client.vue'
 import type { Cafe } from '~/types/cafe'
 import { isKapedokoMark, KAPEDOKO_BEAN_PIN_SRC } from '~/utils/logo'
 import { googleMapsDirectionsUrl } from '~/utils/maps'
@@ -913,7 +929,8 @@ const selectPhoto = (index: number) => {
 .cafe-detail--page .cafe-detail__insight,
 .cafe-detail--page .cafe-detail__review-block,
 .cafe-detail--page .cafe-detail__reviews,
-.cafe-detail--page .cafe-detail__scroll > .cafe-detail__prompt {
+.cafe-detail--page .cafe-detail__scroll > .cafe-detail__prompt,
+.cafe-detail--page .cafe-detail__map {
   margin-right: 20px;
   margin-left: 20px;
 }
@@ -1016,6 +1033,19 @@ const selectPhoto = (index: number) => {
 
 .cafe-detail__review-block {
   margin-top: 22px;
+}
+
+.cafe-detail__map-slot {
+  height: 240px;
+  margin-top: 32px;
+  border: 1px solid color-mix(in srgb, var(--kd-ink) 34%, transparent);
+  border-radius: 16px;
+  background: #faf8f5;
+}
+
+.cafe-detail--page :deep(.cafe-pin-map__frame),
+.cafe-detail--page .cafe-detail__map-slot {
+  height: 260px;
 }
 
 .cafe-detail__leave {
