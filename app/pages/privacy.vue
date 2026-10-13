@@ -8,14 +8,14 @@
           </button>
           <div class="privacy__title">
             <h1>Privacy policy</h1>
-            <p class="privacy__date">2 October 2026</p>
+            <p class="privacy__date">13 October 2026</p>
           </div>
         </header>
 
         <p class="privacy__lead">
           This notice explains how KapéDoko handles personal information. It follows the
           Data Privacy Act of 2012 (Republic Act No. 10173) and its implementing rules, and it
-          describes this app as it works today, including the Marikina pilot.
+          describes this app as it works today across the Philippines.
         </p>
 
         <section aria-labelledby="privacy-controller">
@@ -133,8 +133,8 @@
             works if you decline.
           </p>
           <p>
-            We use PostHog, hosted in the European Union, to see how the app is used during the
-            Marikina pilot: whether cafés are easy to find, and whether people come back. Events
+            We use PostHog, hosted in the European Union, to see how the app is used nationwide:
+            whether cafés are easy to find, and whether people come back. Events
             can include app opens, the introduction, screens, filters, café cards and café pages,
             directions, calls, and photo taps, map opens, the location permission result, sign-in
             prompts, starting a review, and promotion views or taps. Details are categories and

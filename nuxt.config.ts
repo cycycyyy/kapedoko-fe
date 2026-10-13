@@ -9,10 +9,12 @@ export default defineNuxtConfig({
         { name: "theme-color", content: "#1F6F6B" },
       ],
       link: [
-        { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+        { rel: "icon", href: "/favicon.ico", sizes: "32x32", type: "image/x-icon" },
+        { rel: "icon", type: "image/svg+xml", href: "/favicon.svg", sizes: "any" },
         { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-32x32.png" },
         { rel: "icon", type: "image/png", sizes: "16x16", href: "/favicon-16x16.png" },
         { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+        { rel: "mask-icon", href: "/favicon.svg", color: "#1F6F6B" },
         { rel: "preconnect", href: "https://fonts.googleapis.com" },
         {
           rel: "preconnect",
@@ -72,6 +74,35 @@ export default defineNuxtConfig({
       callback: "/confirm",
       exclude: ["/**"],
       saveRedirectToCookie: false,
+    },
+  },
+  routeRules: {
+    "/favicon.ico": {
+      headers: {
+        "content-type": "image/x-icon",
+        "cache-control": "public, max-age=3600, stale-while-revalidate=86400",
+      },
+    },
+    "/favicon.svg": {
+      headers: {
+        "content-type": "image/svg+xml; charset=utf-8",
+        "cache-control": "public, max-age=3600, stale-while-revalidate=86400",
+      },
+    },
+    "/favicon-32x32.png": {
+      headers: {
+        "cache-control": "public, max-age=3600, stale-while-revalidate=86400",
+      },
+    },
+    "/favicon-16x16.png": {
+      headers: {
+        "cache-control": "public, max-age=3600, stale-while-revalidate=86400",
+      },
+    },
+    "/apple-touch-icon.png": {
+      headers: {
+        "cache-control": "public, max-age=3600, stale-while-revalidate=86400",
+      },
     },
   },
   runtimeConfig: {
