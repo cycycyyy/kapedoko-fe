@@ -2,6 +2,9 @@ import type { AdCampaignRow, AdminDashboardCounts, AdminUserRow, AdminUsersRespo
 import type { ContentReportRow, MarkerTier, ProfileRole, ShopClaimRow, ShopPlacementRow, ShopRow, ShopStatus, WeeklyHours } from '~/types/shop'
 import { authUserId } from '~/utils/auth'
 import { adminLogoPayload } from '~/utils/admin-logos'
+import { fetchAdminShopRows } from '~/utils/approved-shops'
+import { chunkImportDrafts, pendingImportDrafts } from '~/utils/cafe-csv-import'
+import { isValidWeeklyHours } from '~/utils/hours'
 import { effectiveMarkerTier } from '~/utils/marker-tier'
 import { parseProfileRole } from '~/utils/profile-role'
 import { edgeFunctionErrorMessage } from '~/utils/admin-users'
@@ -134,12 +137,7 @@ export function useAdminData() {
         status.value = 'forbidden'
         return
       }
-      const { data, error: shopsError } = await supabase
-        .from('shops')
-        .select('*')
-        .order('created_at', { ascending: false })
-      if (shopsError) throw shopsError
-      shops.value = (data ?? []) as ShopRow[]
+      shops.value = await fetchAdminShopRows(supabase)
       await Promise.all([loadPlacements(), loadReports(), loadAds(), loadClaims()])
       status.value = 'ready'
     } catch (err) {
@@ -354,18 +352,32 @@ export function useAdminData() {
     contact_number: string | null
   }[]) => {
     if (drafts.length === 0) throw new Error('Confirm at least one cafe before importing.')
-    const { data, error: rpcError } = await supabase.rpc('import_admin_shops', {
-      p_shops: drafts,
-    })
-    if (rpcError) {
-      const message = rpcError.message || 'Could not import these cafes.'
-      if (/schema cache|does not exist|import_admin_shops/i.test(message)) {
-        throw new Error('Apply db/20261008_admin_shop_csv_import.sql in the SQL editor, then try again.')
+    const queued = pendingImportDrafts(drafts, shops.value)
+    if (queued.length === 0) throw new Error('Those cafes are already listed.')
+
+    const created: ShopRow[] = []
+    try {
+      for (const chunk of chunkImportDrafts(queued)) {
+        const { data, error: rpcError } = await supabase.rpc('import_admin_shops', {
+          p_shops: chunk,
+        })
+        if (rpcError) {
+          const message = rpcError.message || 'Could not import these cafes.'
+          if (/schema cache|does not exist|import_admin_shops/i.test(message)) {
+            throw new Error('Apply db/20261008_admin_shop_csv_import.sql in the SQL editor, then try again.')
+          }
+          if (created.length > 0) {
+            throw new Error(`Imported ${created.length} cafes, then stopped. ${message}`)
+          }
+          throw new Error(message)
+        }
+        const batch = (Array.isArray(data) ? data : data ? [data] : []) as ShopRow[]
+        created.push(...batch)
       }
-      throw new Error(message)
+    } finally {
+      if (created.length > 0) shops.value = [...created, ...shops.value]
     }
-    const created = (Array.isArray(data) ? data : data ? [data] : []) as ShopRow[]
-    shops.value = [...created, ...shops.value]
+    if (created.length === 0) throw new Error('Could not import these cafes.')
     return created
   }
 
@@ -400,6 +412,99 @@ export function useAdminData() {
     if (rpcError || !data) throw new Error(rpcError?.message || 'Could not save this cafe.')
     const updated = (Array.isArray(data) ? data[0] : data) as ShopRow
     shops.value = shops.value.map((item) => (item.id === shopId ? updated : item))
+    return updated
+  }
+
+  const mergeUpdatedShops = (updated: ShopRow[]) => {
+    if (updated.length === 0) return
+    const byId = new Map(updated.map((row) => [row.id, row]))
+    shops.value = shops.value.map((item) => byId.get(item.id) ?? item)
+  }
+
+  const applyLogoWithShopWrite = async (shop: ShopRow, logoKey: string) => {
+    const hours = shop.hours
+    if (!hours || !isValidWeeklyHours(hours)) {
+      throw new Error('Open this cafe and set hours before changing the logo.')
+    }
+    return await updateShop(shop.id, {
+      name: shop.name,
+      address: shop.address,
+      latitude: shop.latitude,
+      longitude: shop.longitude,
+      hours,
+      contact_number: shop.contact_number,
+      logoFile: null,
+      logoObjectKey: logoKey,
+    })
+  }
+
+  const updateShopLogos = async (
+    targets: ShopRow[],
+    input: { logoFile: File | null; logoObjectKey: string | null },
+    onProgress?: (done: number, total: number) => void,
+  ) => {
+    const queue = [...new Map(targets.map((shop) => [shop.id, shop])).values()]
+    if (queue.length === 0) {
+      error.value = 'Tick at least one cafe.'
+      throw new Error(error.value)
+    }
+    savingId.value = queue.length === 1 ? queue[0].id : 'logos'
+    error.value = ''
+    try {
+      let logoKey = adminLogoPayload(input).logoObjectKey
+      if (input.logoFile) logoKey = await uploadAdminAsset(input.logoFile, 'shop-logo')
+      if (!logoKey) {
+        throw new Error('Choose a logo to stamp.')
+      }
+
+      const { data, error: rpcError } = await supabase.rpc('apply_admin_shop_logos', {
+        p_shop_ids: queue.map((shop) => shop.id),
+        p_logo_object_key: logoKey,
+      })
+      const rows = (Array.isArray(data) ? data : data ? [data] : []) as ShopRow[]
+      if (!rpcError && rows.length > 0) {
+        mergeUpdatedShops(rows)
+        onProgress?.(rows.length, queue.length)
+        return rows
+      }
+      const missingFn = rpcError && /schema cache|does not exist|apply_admin_shop_logos/i.test(rpcError.message)
+      if (rpcError && !missingFn) {
+        throw new Error(rpcError.message)
+      }
+
+      const done: ShopRow[] = []
+      const failed: string[] = []
+      const chunkSize = 4
+      for (let i = 0; i < queue.length; i += chunkSize) {
+        const chunk = queue.slice(i, i + chunkSize)
+        const results = await Promise.allSettled(
+          chunk.map((shop) => applyLogoWithShopWrite(shop, logoKey)),
+        )
+        results.forEach((result, index) => {
+          if (result.status === 'fulfilled') done.push(result.value)
+          else failed.push(chunk[index]?.name || 'a cafe')
+        })
+        onProgress?.(done.length + failed.length, queue.length)
+      }
+      mergeUpdatedShops(done)
+      if (failed.length > 0) {
+        const names = failed.slice(0, 3).join(', ')
+        throw new Error(`Stamped ${done.length} of ${queue.length}. Could not update ${names}${failed.length > 3 ? '…' : ''}.`)
+      }
+      return done
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Could not stamp this logo.'
+      throw err
+    } finally {
+      savingId.value = null
+    }
+  }
+
+  const updateShopLogo = async (
+    shop: ShopRow,
+    input: { logoFile: File | null; logoObjectKey: string | null },
+  ) => {
+    const [updated] = await updateShopLogos([shop], input)
     return updated
   }
 
@@ -523,6 +628,8 @@ export function useAdminData() {
     createShop,
     importShops,
     updateShop,
+    updateShopLogo,
+    updateShopLogos,
     resolveReport,
     saveAd,
     cancelAd,

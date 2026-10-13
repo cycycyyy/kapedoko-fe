@@ -49,6 +49,7 @@ export interface CrateTally {
 }
 
 const REQUIRED_HEADERS = ['name', 'address', 'latitude', 'longitude', 'hours_json'] as const
+export const IMPORT_ADMIN_SHOPS_MAX = 200
 
 export function parseCsvRecords(raw: string): string[][] {
   const text = raw.replace(/^\uFEFF/, '')
@@ -294,6 +295,36 @@ export function keptImportDrafts(tickets: CrateTicket[]): CatalogImportDraft[] {
       contact_number: ticket.contact_number,
     }]
   })
+}
+
+export function chunkImportDrafts<T>(
+  drafts: T[],
+  size = IMPORT_ADMIN_SHOPS_MAX,
+): T[][] {
+  if (size < 1) throw new Error('Chunk size must be at least 1.')
+  const chunks: T[][] = []
+  for (let index = 0; index < drafts.length; index += size) {
+    chunks.push(drafts.slice(index, index + size))
+  }
+  return chunks
+}
+
+export function pendingImportDrafts(
+  drafts: CatalogImportDraft[],
+  existing: ExistingCatalogShop[],
+): CatalogImportDraft[] {
+  const seen: ExistingCatalogShop[] = [...existing]
+  const pending: CatalogImportDraft[] = []
+  for (const draft of drafts) {
+    if (findNearbyCatalogMatch(draft, seen)) continue
+    pending.push(draft)
+    seen.push({
+      name: draft.name,
+      latitude: draft.latitude,
+      longitude: draft.longitude,
+    })
+  }
+  return pending
 }
 
 export function crateReasonCopy(ticket: CrateTicket): string {

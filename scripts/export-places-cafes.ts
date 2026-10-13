@@ -5,8 +5,15 @@
  *
  *   bun run export:places
  *   bun run export:places -- --city=marikina
+ *   bun run export:places -- --city=marikina --depth=10 --force
+ *   bun run export:places -- --city=taft-avenue
+ *   bun run export:places -- --city=pampanga
+ *   bun run export:places -- --city=bulacan
+ *   bun run export:places -- --city=nueva-ecija
+ *   bun run export:places -- --city=quezon-city
  *   bun run export:places -- --cities=metro-manila,cebu-city,davao-city
  *   bun run export:places -- --from=.cache/places-import/marikina-raw.json
+ *   bun run export:places -- --city=davao-city --from=.cache/places-import/davao-city-deep-raw.json --out=.cache/places-import/davao-city-deep.csv
  *
  * Uses .cache/places-import/google-maps-scraper, or Docker if the binary is missing.
  * Caches scraper JSON under .cache/places-import/.

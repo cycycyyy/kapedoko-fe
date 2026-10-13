@@ -68,7 +68,7 @@
                 Try again
               </button>
             </p>
-            <p v-else-if="visibleCafes.length === 0" class="search-empty">
+            <p v-else-if="pagedCafes.length === 0 && !hasMoreCafes" class="search-empty">
               <Coffee :size="18" :stroke-width="2.25" aria-hidden="true" />
               <span>{{ emptyCopy }}</span>
             </p>
@@ -82,7 +82,13 @@
                 surface="search"
                 @select="openCafe"
               />
-              <p v-if="hasMoreCafes" ref="moreCafes" class="search-more">Scroll for more</p>
+              <p v-if="moreError" class="search-more">
+                <span>{{ moreError }}</span>
+                <button type="button" @click="retryMore">Try again</button>
+              </p>
+              <p v-else-if="hasMoreCafes" ref="moreCafes" class="search-more">
+                {{ loadingMore ? 'Loading more shops…' : 'Scroll for more' }}
+              </p>
             </template>
           </section>
         </Transition>
@@ -96,7 +102,7 @@ import { onIonViewWillEnter } from '@ionic/vue'
 import { BatteryCharging, ChevronLeft, CircleAlert, Coffee, Flame, Hourglass, Navigation, Plug, RefreshCw, Search, Wifi, Zap } from 'lucide-vue-next'
 import CafeCard from '~/components/cafe/CafeCard.vue'
 import type { Cafe } from '~/types/cafe'
-import { CAFE_FILTERS, filterCafes, type CafeFilterIcon, type CafeFilterId } from '~/utils/cafe-filters'
+import { CAFE_FILTERS, type CafeFilterIcon, type CafeFilterId } from '~/utils/cafe-filters'
 import { amenityFilterHint } from '~/utils/amenity-status'
 import {
   ANALYTICS_EVENTS,
@@ -109,8 +115,8 @@ import { distanceMeters, formatDistance } from '~/utils/geo'
 
 useAppTabBar('hide')
 
-const { cafes, status, error, refresh } = useApprovedShops()
 const { status: locationStatus, location, usingFallback, requestLocation } = useDeviceLocation()
+const { radiusMeters } = useNearbyRadius()
 const { track } = useAnalytics()
 
 const filterIcons: Record<CafeFilterIcon, typeof Navigation> = {
@@ -163,10 +169,6 @@ const syncFromRoute = () => {
 syncFromRoute()
 
 watch(() => route.fullPath, syncFromRoute)
-onIonViewWillEnter(() => {
-  syncFromRoute()
-  void refresh()
-})
 onMounted(syncFromRoute)
 
 const listKey = computed(() => `${submittedQuery.value.trim().toLowerCase()}|${activeFilter.value}`)
@@ -177,17 +179,36 @@ const origin = computed(() => (
     : null
 ))
 
-const visibleCafes = computed(() => filterCafes(cafes.value, {
-  query: submittedQuery.value,
-  filter: activeFilter.value,
-  origin: origin.value,
-}))
+const locationReady = computed(() => (
+  locationStatus.value === 'granted'
+  || locationStatus.value === 'denied'
+  || locationStatus.value === 'unavailable'
+))
 
 const {
-  slice: pagedCafes,
+  cafes: pagedCafes,
+  total: cafeTotal,
+  status,
+  error,
   hasMore: hasMoreCafes,
+  loadingMore,
+  moreError,
   sentinel: moreCafes,
-} = useInfiniteWindow(visibleCafes, listKey)
+  refresh,
+  retryMore,
+} = useCafeFeed({
+  filter: activeFilter,
+  query: submittedQuery,
+  origin,
+  radiusMeters,
+  nearby: computed(() => false),
+  locationReady,
+})
+
+onIonViewWillEnter(() => {
+  syncFromRoute()
+  if (status.value === 'error') void refresh()
+})
 
 const distanceLabel = (cafe: Cafe) => {
   if (!origin.value) return undefined
@@ -199,21 +220,24 @@ const openCafe = async (id: string) => {
   await navigateTo(`/app/cafes/${id}`)
 }
 
+const trackPending = ref<CafeFilterId | null>(null)
+
 const setFilter = (id: CafeFilterId) => {
   if (id === activeFilter.value) return
   activeFilter.value = id
-  if (status.value !== 'ready') return
-  const results = filterCafes(cafes.value, {
-    query: submittedQuery.value,
-    filter: id,
-    origin: origin.value,
-  })
+  trackPending.value = id
+}
+
+watch(status, (value) => {
+  const id = trackPending.value
+  if (value !== 'ready' || !id) return
+  trackPending.value = null
   track(ANALYTICS_EVENTS.FILTER_APPLIED, {
     filter_name: id,
-    result_count: results.length,
-    confidence_bucket: modalConfidenceBucket(results.map((cafe) => confidenceBucketFromCafe(cafe))),
+    result_count: cafeTotal.value ?? pagedCafes.value.length,
+    confidence_bucket: modalConfidenceBucket(pagedCafes.value.map((cafe) => confidenceBucketFromCafe(cafe))),
   })
-}
+})
 
 watch(
   [submittedQuery, status],
@@ -222,10 +246,11 @@ watch(
     if (!next || loadStatus !== 'ready') return
     if (previous && previous[0] === queryText && previous[1] === loadStatus) return
     const classified = classifySearchQuery(next)
+    const count = cafeTotal.value ?? pagedCafes.value.length
     track(ANALYTICS_EVENTS.SEARCH_PERFORMED, {
       query_type: classified.query_type,
-      result_count: visibleCafes.value.length,
-      zero_results: visibleCafes.value.length === 0,
+      result_count: count,
+      zero_results: count === 0,
       ...(classified.area_name ? { area_name: classified.area_name } : {}),
     })
   },
@@ -233,9 +258,15 @@ watch(
 )
 
 const resultAnnouncement = computed(() => {
-  const count = visibleCafes.value.length
-  if (count === 0) return 'No coffee shops match that search.'
-  return count === 1 ? '1 coffee shop found.' : `${count} coffee shops found.`
+  const shown = pagedCafes.value.length
+  const count = cafeTotal.value
+  if (shown === 0 && !hasMoreCafes.value) return 'No coffee shops match that search.'
+  if (count != null && shown >= count) {
+    return count === 1 ? '1 coffee shop found.' : `${count} coffee shops found.`
+  }
+  if (count != null) return `Showing ${shown} of ${count} coffee shops.`
+  if (hasMoreCafes.value) return `Showing ${shown} coffee shops. Scroll for more.`
+  return shown === 1 ? '1 coffee shop found.' : `${shown} coffee shops found.`
 })
 
 const emptyCopy = computed(() => {
@@ -243,7 +274,8 @@ const emptyCopy = computed(() => {
   if (hasQuery) {
     return 'No coffee shops match that search. Try another name or clear a filter.'
   }
-  return cafes.value.length === 0
+  const known = cafeTotal.value ?? pagedCafes.value.length
+  return known === 0
     ? 'No coffee shops yet.'
     : 'No coffee shops match that filter. Try another filter.'
 })
@@ -520,6 +552,17 @@ onMounted(() => {
   font-size: 0.8rem;
   font-weight: 700;
   text-align: center;
+}
+
+.search-more button {
+  margin-left: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--kd-primary);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .search-chrome__back:active {

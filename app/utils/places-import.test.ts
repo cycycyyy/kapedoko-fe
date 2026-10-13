@@ -5,7 +5,12 @@ import {
   DAVAO_CITY,
   MARIKINA_CITY,
   METRO_MANILA_CITY,
+  BULACAN_CITY,
+  NUEVA_ECIJA_CITY,
+  PAMPANGA_CITY,
   PLACES_CITIES,
+  QUEZON_CITY,
+  TAFT_AVENUE_CITY,
   collectPlacesRows,
   escapeCsvField,
   mapsScraperEntryToPlace,
@@ -142,6 +147,148 @@ describe('Places catalog normalize', () => {
       location: { latitude: 14.610, longitude: 121.1029 },
     }), MARIKINA_CITY)
     expect(result.keep).toBe(true)
+  })
+
+  test('keeps Taft Avenue corridor pins and drops shops outside it', () => {
+    expect(Object.keys(PLACES_CITIES)).toContain('taft-avenue')
+    expect(shouldKeepPlace(cafe({
+      id: 'places/ChIJdlsu1',
+      formattedAddress: '2401 Taft Ave, Malate, Manila, Philippines',
+      addressComponents: [
+        { longText: 'Taft Avenue', types: ['route'] },
+        { longText: 'Malate', types: ['sublocality'] },
+        { longText: 'Manila', types: ['locality'] },
+      ],
+      location: { latitude: 14.5644, longitude: 120.9934 },
+    }), TAFT_AVENUE_CITY)).toBeNull()
+    expect(shouldKeepPlace(cafe({
+      id: 'places/ChIJbgc1',
+      formattedAddress: '26th Street, BGC, Taguig, Metro Manila, Philippines',
+      addressComponents: [{ longText: 'Taguig', types: ['locality'] }],
+      location: { latitude: 14.5507, longitude: 121.0498 },
+    }), TAFT_AVENUE_CITY)).toBe('outside_region')
+  })
+
+  test('keeps Bulacan pins and drops shops outside the province', () => {
+    expect(Object.keys(PLACES_CITIES)).toContain('bulacan')
+    expect(shouldKeepPlace(cafe({
+      id: 'places/ChIJmalolos1',
+      formattedAddress: 'Paseo del Congreso, Malolos, Bulacan, Philippines',
+      addressComponents: [
+        { longText: 'Malolos', types: ['locality'] },
+        { longText: 'Bulacan', types: ['administrative_area_level_2'] },
+      ],
+      location: { latitude: 14.844, longitude: 120.811 },
+    }), BULACAN_CITY)).toBeNull()
+    expect(shouldKeepPlace(cafe({
+      id: 'places/ChIJsjdm1',
+      formattedAddress: 'Quirino Highway, San Jose del Monte, Bulacan, Philippines',
+      addressComponents: [
+        { longText: 'San Jose del Monte', types: ['locality'] },
+        { longText: 'Bulacan', types: ['administrative_area_level_2'] },
+      ],
+      location: { latitude: 14.814, longitude: 121.045 },
+    }), BULACAN_CITY)).toBeNull()
+    expect(shouldKeepPlace(cafe({
+      id: 'places/ChIJbgc3',
+      formattedAddress: '26th Street, BGC, Taguig, Metro Manila, Philippines',
+      addressComponents: [{ longText: 'Taguig', types: ['locality'] }],
+      location: { latitude: 14.5507, longitude: 121.0498 },
+    }), BULACAN_CITY)).toBe('outside_region')
+  })
+
+  test('keeps Pampanga pins and drops shops outside the province', () => {
+    expect(Object.keys(PLACES_CITIES)).toContain('pampanga')
+    expect(shouldKeepPlace(cafe({
+      id: 'places/ChIJangeles1',
+      formattedAddress: 'Marquee Mall, Angeles City, Pampanga, Philippines',
+      addressComponents: [
+        { longText: 'Angeles', types: ['locality'] },
+        { longText: 'Pampanga', types: ['administrative_area_level_2'] },
+      ],
+      location: { latitude: 15.145, longitude: 120.588 },
+    }), PAMPANGA_CITY)).toBeNull()
+    expect(shouldKeepPlace(cafe({
+      id: 'places/ChIJsanfernando1',
+      formattedAddress: 'SM City Pampanga, San Fernando, Pampanga, Philippines',
+      addressComponents: [
+        { longText: 'San Fernando', types: ['locality'] },
+        { longText: 'Pampanga', types: ['administrative_area_level_2'] },
+      ],
+      location: { latitude: 15.029, longitude: 120.690 },
+    }), PAMPANGA_CITY)).toBeNull()
+    expect(shouldKeepPlace(cafe({
+      id: 'places/ChIJbgc2',
+      formattedAddress: '26th Street, BGC, Taguig, Metro Manila, Philippines',
+      addressComponents: [{ longText: 'Taguig', types: ['locality'] }],
+      location: { latitude: 14.5507, longitude: 121.0498 },
+    }), PAMPANGA_CITY)).toBe('outside_region')
+  })
+
+  test('keeps Nueva Ecija pins and drops shops outside the province', () => {
+    expect(Object.keys(PLACES_CITIES)).toContain('nueva-ecija')
+    expect(shouldKeepPlace(cafe({
+      id: 'places/ChIJcabanatuan1',
+      formattedAddress: 'Maharlika Highway, Cabanatuan, Nueva Ecija, Philippines',
+      addressComponents: [
+        { longText: 'Cabanatuan', types: ['locality'] },
+        { longText: 'Nueva Ecija', types: ['administrative_area_level_2'] },
+      ],
+      location: { latitude: 15.486, longitude: 120.967 },
+    }), NUEVA_ECIJA_CITY)).toBeNull()
+    expect(shouldKeepPlace(cafe({
+      id: 'places/ChIJbgc4',
+      formattedAddress: '26th Street, BGC, Taguig, Metro Manila, Philippines',
+      addressComponents: [{ longText: 'Taguig', types: ['locality'] }],
+      location: { latitude: 14.5507, longitude: 121.0498 },
+    }), NUEVA_ECIJA_CITY)).toBe('outside_region')
+  })
+
+  test('keeps Quezon City pins and drops BGC and Marikina shops', () => {
+    expect(Object.keys(PLACES_CITIES)).toContain('quezon-city')
+    expect(PLACES_CITIES['quezon-city']).toBe(QUEZON_CITY)
+    expect(shouldKeepPlace(cafe({
+      id: 'places/ChIJcubao1',
+      formattedAddress: 'Araneta City, Cubao, Quezon City, Metro Manila, Philippines',
+      addressComponents: [
+        { longText: 'Cubao', types: ['sublocality'] },
+        { longText: 'Quezon City', types: ['locality'] },
+      ],
+      location: { latitude: 14.619, longitude: 121.053 },
+    }), QUEZON_CITY)).toBeNull()
+    expect(shouldKeepPlace(cafe({
+      id: 'places/ChIJdiliman1',
+      formattedAddress: 'UP Diliman, Diliman, Quezon City, Metro Manila, Philippines',
+      addressComponents: [
+        { longText: 'Diliman', types: ['sublocality'] },
+        { longText: 'Quezon City', types: ['locality'] },
+      ],
+      location: { latitude: 14.654, longitude: 121.065 },
+    }), QUEZON_CITY)).toBeNull()
+    expect(shouldKeepPlace(cafe({
+      id: 'places/ChIJbgc-qc',
+      formattedAddress: '26th Street, BGC, Taguig, Metro Manila, Philippines',
+      addressComponents: [{ longText: 'Taguig', types: ['locality'] }],
+      location: { latitude: 14.5507, longitude: 121.0498 },
+    }), QUEZON_CITY)).toBe('outside_region')
+    expect(shouldKeepPlace(cafe({
+      id: 'places/ChIJmarikina-qc',
+      formattedAddress: 'Shoe Ave, San Roque, Marikina, Metro Manila, Philippines',
+      addressComponents: [{ longText: 'Marikina', types: ['locality'] }],
+      location: { latitude: 14.6507, longitude: 121.128 },
+    }), QUEZON_CITY)).toBe('outside_region')
+    expect(shouldKeepPlace(cafe({
+      id: 'places/ChIJmarikina-overlap',
+      formattedAddress: 'Marikina-Infanta Hwy, Marikina, Metro Manila, Philippines',
+      addressComponents: [{ longText: 'Marikina', types: ['locality'] }],
+      location: { latitude: 14.6507, longitude: 121.1029 },
+    }), QUEZON_CITY)).toBe('outside_region')
+    expect(shouldKeepPlace(cafe({
+      id: 'places/ChIJantipolo-qc',
+      formattedAddress: 'Marikina-Infanta Hwy, Barangay Mayamot, Antipolo, Philippines',
+      addressComponents: [{ longText: 'Antipolo', types: ['locality'] }],
+      location: { latitude: 14.6228, longitude: 121.1099 },
+    }), QUEZON_CITY)).toBe('outside_region')
   })
 
   test('keeps Metro Manila, Cebu City, and Davao City pins in their polygons', () => {
