@@ -2,11 +2,11 @@
   <IonPage>
     <AdminShell
       title="Add cafe"
-      lede="Published immediately. Basic name, address, hours, and pin checks still apply."
+      lede="Saved unpublished. Publish it from the cafe page when the listing is ready."
       :status="'ready'"
     >
       <p v-if="formError" class="admin-error" role="alert">{{ formError }}</p>
-      <AdminCafeForm :saving="saving" submit-label="Publish cafe" @save="onSave" />
+      <AdminCafeForm :saving="saving" submit-label="Save cafe" @save="onSave" />
     </AdminShell>
   </IonPage>
 </template>
@@ -30,7 +30,7 @@ const onSave = async (payload: Parameters<typeof admin.createShop>[0]) => {
     const created = await admin.createShop(payload)
     await navigateTo(`/admin/cafes/${created.id}`)
   } catch (err) {
-    formError.value = err instanceof Error ? err.message : 'Could not publish this cafe.'
+    formError.value = err instanceof Error ? err.message : 'Could not save this cafe.'
   } finally {
     saving.value = false
   }

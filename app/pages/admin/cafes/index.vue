@@ -87,6 +87,16 @@
                     >
                       {{ savingId === shop.id ? 'Unpublishing…' : 'Unpublish' }}
                     </button>
+                    <button
+                      v-else-if="shop.status === 'hidden'"
+                      type="button"
+                      class="cafe-edit"
+                      :disabled="savingId === shop.id"
+                      :aria-label="`Publish ${shop.name}`"
+                      @click="publish(shop)"
+                    >
+                      {{ savingId === shop.id ? 'Publishing…' : 'Publish' }}
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -117,6 +127,16 @@
                 @click="unpublish(shop)"
               >
                 {{ savingId === shop.id ? 'Unpublishing…' : 'Unpublish' }}
+              </button>
+              <button
+                v-else-if="shop.status === 'hidden'"
+                type="button"
+                class="cafe-edit"
+                :disabled="savingId === shop.id"
+                :aria-label="`Publish ${shop.name}`"
+                @click="publish(shop)"
+              >
+                {{ savingId === shop.id ? 'Publishing…' : 'Publish' }}
               </button>
             </div>
           </article>
@@ -172,6 +192,7 @@ import AdminShell from '~/components/admin/AdminShell.vue'
 import type { ShopRow, ShopStatus } from '~/types/shop'
 import { formatAdminDate } from '~/utils/admin-nav'
 import { ledgerPageCount, ledgerPageRange, ledgerPageSlice, ledgerPageTokens } from '~/utils/admin-ledger'
+import { shopStatusWord } from '~/utils/admin-shop'
 
 definePageMeta({
   middleware: ['auth', 'admin'],
@@ -181,19 +202,20 @@ const admin = useAdminData()
 const route = useRoute()
 const { shops, counts, status, error, savingId, load, moderate } = admin
 const query = ref('')
-const statusFilter = ref<'all' | ShopStatus>(Number(route.query.imported) > 0 ? 'pending' : 'all')
+const statusFilter = ref<'all' | ShopStatus>(Number(route.query.imported) > 0 ? 'hidden' : 'all')
 const importedCopy = computed(() => {
   const count = Number(route.query.imported)
   if (!Number.isFinite(count) || count < 1) return ''
   return count === 1
-    ? '1 cafe landed on the pending rail. Publish when the address looks right.'
-    : `${count} cafes landed on the pending rail. Publish when the addresses look right.`
+    ? '1 cafe landed unpublished. Publish when the address looks right.'
+    : `${count} cafes landed unpublished. Publish when the addresses look right.`
 })
 const page = ref(1)
 const ledgerEl = ref<HTMLElement | null>(null)
 const filters = [
   { id: 'all' as const, label: 'All', tone: '' },
   { id: 'approved' as const, label: 'Approved', tone: 'approved' },
+  { id: 'hidden' as const, label: 'Hidden', tone: 'hidden' },
   { id: 'pending' as const, label: 'Pending', tone: 'pending' },
   { id: 'rejected' as const, label: 'Rejected', tone: 'rejected' },
 ]
@@ -202,6 +224,7 @@ const pending = computed(() => shops.value.filter((shop) => shop.status === 'pen
 const tally = computed(() => ({
   all: shops.value.length,
   approved: shops.value.filter((shop) => shop.status === 'approved').length,
+  hidden: shops.value.filter((shop) => shop.status === 'hidden').length,
   pending: pending.value.length,
   rejected: shops.value.filter((shop) => shop.status === 'rejected').length,
 }))
@@ -250,16 +273,21 @@ const goToPage = (next: number) => {
   })
 }
 
-const statusWord = (value: ShopStatus) => {
-  if (value === 'approved') return 'Approved'
-  if (value === 'pending') return 'Pending'
-  return 'Rejected'
-}
+const statusWord = shopStatusWord
 
 const unpublish = async (shop: ShopRow) => {
-  if (!window.confirm(`Unpublish ${shop.name}? It leaves Home and Map until it is approved again.`)) return
+  if (!window.confirm(`Unpublish ${shop.name}? It leaves Home and Map until you publish it again.`)) return
   try {
-    await moderate(shop, 'pending')
+    await moderate(shop, 'hidden')
+  } catch {
+    /* shown in the admin shell */
+  }
+}
+
+const publish = async (shop: ShopRow) => {
+  if (!window.confirm(`Publish ${shop.name}? It goes live on Home and Map.`)) return
+  try {
+    await moderate(shop, 'approved')
   } catch {
     /* shown in the admin shell */
   }
@@ -319,6 +347,10 @@ onMounted(() => {
 
 .cafe-pip--pending {
   background: var(--kd-accent);
+}
+
+.cafe-pip--hidden {
+  background: color-mix(in srgb, var(--kd-ink) 45%, #faf8f5);
 }
 
 .cafe-pip--rejected {
@@ -381,6 +413,15 @@ onMounted(() => {
 
 .cafe-stamp--pending .cafe-stamp__mark {
   background: var(--kd-accent);
+}
+
+.cafe-stamp--hidden {
+  background: color-mix(in srgb, var(--kd-ink) 10%, #faf8f5);
+  color: color-mix(in srgb, var(--kd-ink) 78%, #faf8f5);
+}
+
+.cafe-stamp--hidden .cafe-stamp__mark {
+  background: color-mix(in srgb, var(--kd-ink) 45%, #faf8f5);
 }
 
 .cafe-stamp--rejected {

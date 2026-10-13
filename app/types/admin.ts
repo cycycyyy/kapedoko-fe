@@ -21,6 +21,7 @@ export interface AdminDashboardCounts {
   pending: number
   approved: number
   rejected: number
+  hidden: number
   pendingClaims: number
   openReports: number
   activePlacements: number

@@ -57,6 +57,7 @@ export function useAdminData() {
       pending: shops.value.filter((shop) => shop.status === 'pending').length,
       approved: shops.value.filter((shop) => shop.status === 'approved').length,
       rejected: shops.value.filter((shop) => shop.status === 'rejected').length,
+      hidden: shops.value.filter((shop) => shop.status === 'hidden').length,
       pendingClaims: claims.value.filter((claim) => claim.status === 'pending').length,
       openReports: reports.value.filter((report) => report.status === 'open').length,
       activePlacements: placements.value.filter((row) => new Date(row.starts_at).getTime() <= now && new Date(row.ends_at).getTime() > now).length,
@@ -171,7 +172,7 @@ export function useAdminData() {
 
   const applyShopStatus = async (
     shop: ShopRow,
-    next: Extract<ShopStatus, 'approved' | 'rejected' | 'pending'>,
+    next: ShopStatus,
     rejectionReason = '',
   ) => {
     const { data, error: rpcError } = await supabase.rpc('moderate_admin_shop', {
@@ -183,13 +184,22 @@ export function useAdminData() {
     let updated = rpcRow as ShopRow | null
     if (rpcError || !updated) {
       const reviewerId = await requireAdminUserId()
+      const now = new Date().toISOString()
       const { data: row, error: updateError } = await supabase
         .from('shops')
         .update({
           status: next,
           rejection_reason: next === 'rejected' ? rejectionReason.trim() || 'Does not meet listing standards' : null,
-          reviewed_by: reviewerId,
-          reviewed_at: new Date().toISOString(),
+          reviewed_by: next === 'approved' || next === 'rejected'
+            ? reviewerId
+            : next === 'hidden'
+              ? shop.reviewed_by
+              : null,
+          reviewed_at: next === 'approved' || next === 'rejected'
+            ? now
+            : next === 'hidden'
+              ? shop.reviewed_at
+              : null,
         })
         .eq('id', shop.id)
         .select()
@@ -204,7 +214,7 @@ export function useAdminData() {
 
   const applyModerationSideEffects = (
     shopId: string,
-    next: Extract<ShopStatus, 'approved' | 'rejected' | 'pending'>,
+    next: ShopStatus,
   ) => {
     if (next === 'approved') return
     const now = new Date().toISOString()
@@ -220,7 +230,7 @@ export function useAdminData() {
 
   const moderate = async (
     shop: ShopRow,
-    next: Extract<ShopStatus, 'approved' | 'rejected' | 'pending'>,
+    next: ShopStatus,
     rejectionReason = '',
   ) => {
     savingId.value = shop.id

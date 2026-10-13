@@ -15,7 +15,9 @@ describe('cafe request queue', () => {
   test('names statuses and empty slices', () => {
     expect(requestStatusWord('pending')).toBe('Pending')
     expect(requestStatusWord('approved')).toBe('Approved')
+    expect(requestStatusWord('hidden')).toBe('Hidden')
     expect(requestsQueueEmptyCopy('pending')).toMatch(/stamp/)
+    expect(requestsQueueEmptyCopy('hidden')).toMatch(/unpublished/)
   })
 
   test('requires a rejection note under 280 characters', () => {
