@@ -187,6 +187,7 @@
 </template>
 
 <script lang="ts" setup>
+import { onIonViewWillEnter } from '@ionic/vue'
 import AdminPendingRail from '~/components/admin/AdminPendingRail.vue'
 import AdminShell from '~/components/admin/AdminShell.vue'
 import type { ShopRow, ShopStatus } from '~/types/shop'
@@ -295,6 +296,10 @@ const publish = async (shop: ShopRow) => {
 
 onMounted(() => {
   void load()
+})
+
+onIonViewWillEnter(() => {
+  if (status.value === 'ready') void load({ silent: true })
 })
 </script>
 

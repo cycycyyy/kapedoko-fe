@@ -1,5 +1,5 @@
 import type { AdCampaignRow, AdminDashboardCounts, AdminUserRow, AdminUsersResponse } from '~/types/admin'
-import type { ContentReportRow, MarkerTier, ProfileRole, ShopClaimRow, ShopPlacementRow, ShopRow, ShopStatus, WeeklyHours } from '~/types/shop'
+import type { ContentReportRow, MarkerTier, ProfileRole, ProfileRow, ShopClaimRow, ShopPlacementRow, ShopRow, ShopStatus, WeeklyHours } from '~/types/shop'
 import { authUserId } from '~/utils/auth'
 import { adminLogoPayload } from '~/utils/admin-logos'
 import { effectiveMarkerTier } from '~/utils/marker-tier'
@@ -7,18 +7,38 @@ import { parseProfileRole } from '~/utils/profile-role'
 import { edgeFunctionErrorMessage } from '~/utils/admin-users'
 import { withReportedReviewText, type ReportedReviewSource } from '~/utils/moderation'
 
+type AdminDatabase = {
+  public: {
+    Tables: Record<string, {
+      Row: ShopRow & ProfileRow & ContentReportRow & ShopPlacementRow & ShopClaimRow & AdCampaignRow
+      Insert: Record<string, unknown>
+      Update: Record<string, unknown>
+      Relationships: []
+    }>
+    Views: Record<string, {
+      Row: Record<string, unknown>
+      Relationships: []
+    }>
+    Functions: Record<string, {
+      Args: Record<string, unknown>
+      Returns: unknown
+    }>
+    Enums: Record<string, never>
+    CompositeTypes: Record<string, never>
+  }
+}
+
 export async function requireAdminUserId(): Promise<string> {
-  const supabase = useSupabaseClient()
+  const supabase = useSupabaseClient<AdminDatabase>()
   const user = useSupabaseUser()
-  const session = useSupabaseSession()
   const { data } = await supabase.auth.getSession()
-  const userId = data.session?.user?.id ?? session.value?.user?.id ?? authUserId(user.value)
+  const userId = data.session?.user?.id ?? authUserId(user.value)
   if (!userId) throw new Error('Sign in as an admin.')
   return userId
 }
 
 export async function uploadAdminAsset(file: File, purpose: 'shop-logo' | 'ad-banner'): Promise<string> {
-  const supabase = useSupabaseClient()
+  const supabase = useSupabaseClient<AdminDatabase>()
   const form = new FormData()
   form.append('file', file)
   form.append('purpose', purpose)
@@ -31,15 +51,26 @@ export async function uploadAdminAsset(file: File, purpose: 'shop-logo' | 'ad-ba
 }
 
 export function useAdminData() {
-  const supabase = useSupabaseClient()
-  const shops = ref<ShopRow[]>([])
-  const placements = ref<ShopPlacementRow[]>([])
-  const reports = ref<ContentReportRow[]>([])
-  const ads = ref<AdCampaignRow[]>([])
-  const claims = ref<ShopClaimRow[]>([])
-  const status = ref<'idle' | 'loading' | 'ready' | 'forbidden' | 'error'>('idle')
+  const supabase = useSupabaseClient<AdminDatabase>()
+  const shops = useState<ShopRow[]>('kd-admin-shops', () => [])
+  const placements = useState<ShopPlacementRow[]>('kd-admin-placements', () => [])
+  const reports = useState<ContentReportRow[]>('kd-admin-reports', () => [])
+  const ads = useState<AdCampaignRow[]>('kd-admin-ads', () => [])
+  const claims = useState<ShopClaimRow[]>('kd-admin-claims', () => [])
+  const status = useState<'idle' | 'loading' | 'ready' | 'forbidden' | 'error'>('kd-admin-status', () => 'idle')
+  const loadSeq = useState('kd-admin-load-seq', () => 0)
   const error = ref('')
-  const savingId = ref<string | null>(null)
+  const savingId = useState<string | null>('kd-admin-saving-id', () => null)
+
+  const putShop = (row: ShopRow, at: 'start' | 'inline' = 'inline') => {
+    loadSeq.value += 1
+    const exists = shops.value.some((item) => item.id === row.id)
+    if (!exists) {
+      shops.value = at === 'start' ? [row, ...shops.value] : [...shops.value, row]
+      return
+    }
+    shops.value = shops.value.map((item) => (item.id === row.id ? row : item))
+  }
 
   const placementsByShop = computed(() => {
     const grouped = new Map<string, ShopPlacementRow[]>()
@@ -121,9 +152,25 @@ export function useAdminData() {
     claims.value = (data ?? []) as ShopClaimRow[]
   }
 
-  const load = async () => {
-    status.value = 'loading'
-    error.value = ''
+  const loadShops = async (seq: number) => {
+    const { data, error: shopsError } = await supabase
+      .from('shops')
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (shopsError) throw shopsError
+    if (seq !== loadSeq.value) return false
+    shops.value = (data ?? []) as ShopRow[]
+    return true
+  }
+
+  const load = async (opts?: { silent?: boolean }) => {
+    const seq = loadSeq.value + 1
+    loadSeq.value = seq
+    const keep = Boolean(opts?.silent) && status.value === 'ready'
+    if (!keep) {
+      status.value = 'loading'
+      error.value = ''
+    }
     try {
       const userId = await requireAdminUserId()
       const { data: profile, error: profileError } = await supabase
@@ -132,38 +179,32 @@ export function useAdminData() {
         .eq('id', userId)
         .maybeSingle()
       if (profileError || profile?.role !== 'admin') {
+        if (seq !== loadSeq.value) return
         status.value = 'forbidden'
         return
       }
-      const { data, error: shopsError } = await supabase
-        .from('shops')
-        .select('*')
-        .order('created_at', { ascending: false })
-      if (shopsError) throw shopsError
-      shops.value = (data ?? []) as ShopRow[]
-      await Promise.all([loadPlacements(), loadReports(), loadAds(), loadClaims()])
+      const applied = await loadShops(seq)
+      if (!applied) return
+      if (!keep) await Promise.all([loadPlacements(), loadReports(), loadAds(), loadClaims()])
+      if (seq !== loadSeq.value) return
       status.value = 'ready'
     } catch (err) {
+      if (seq !== loadSeq.value) return
+      if (keep) return
       status.value = 'error'
       error.value = err instanceof Error ? err.message : 'Could not load the admin portal.'
     }
   }
 
   const fetchShop = async (shopId: string): Promise<ShopRow | null> => {
-    const fromList = shops.value.find((row) => row.id === shopId)
-    if (fromList) return fromList
     const { data, error: shopError } = await supabase
       .from('shops')
       .select('*')
       .eq('id', shopId)
       .maybeSingle()
     if (shopError) throw shopError
-    const row = (data ?? null) as ShopRow | null
-    if (row) {
-      shops.value = shops.value.some((item) => item.id === row.id)
-        ? shops.value.map((item) => (item.id === row.id ? row : item))
-        : [row, ...shops.value]
-    }
+    const row = (data ?? shops.value.find((item) => item.id === shopId) ?? null) as ShopRow | null
+    if (row) putShop(row, 'start')
     return row
   }
 
@@ -237,7 +278,7 @@ export function useAdminData() {
     error.value = ''
     try {
       const updated = await applyShopStatus(shop, next, rejectionReason)
-      shops.value = shops.value.map((item) => (item.id === shop.id ? updated : item))
+      putShop(updated)
       applyModerationSideEffects(shop.id, next)
       return updated
     } catch (err) {
@@ -273,6 +314,7 @@ export function useAdminData() {
         onProgress?.(done.length + failed.length, queue.length)
       }
       const byId = new Map(done.map((row) => [row.id, row]))
+      loadSeq.value += 1
       shops.value = shops.value.map((item) => byId.get(item.id) ?? item)
       for (const row of done) applyModerationSideEffects(row.id, next)
       if (failed.length > 0) {
@@ -351,7 +393,7 @@ export function useAdminData() {
     })
     if (rpcError || !data) throw new Error(rpcError?.message || 'Could not create this cafe.')
     const created = (Array.isArray(data) ? data[0] : data) as ShopRow
-    shops.value = [created, ...shops.value]
+    putShop(created, 'start')
     return created
   }
 
@@ -375,7 +417,9 @@ export function useAdminData() {
       throw new Error(message)
     }
     const created = (Array.isArray(data) ? data : data ? [data] : []) as ShopRow[]
-    shops.value = [...created, ...shops.value]
+    loadSeq.value += 1
+    const createdIds = new Set(created.map((row) => row.id))
+    shops.value = [...created, ...shops.value.filter((item) => !createdIds.has(item.id))]
     return created
   }
 
@@ -409,7 +453,7 @@ export function useAdminData() {
     })
     if (rpcError || !data) throw new Error(rpcError?.message || 'Could not save this cafe.')
     const updated = (Array.isArray(data) ? data[0] : data) as ShopRow
-    shops.value = shops.value.map((item) => (item.id === shopId ? updated : item))
+    putShop(updated)
     return updated
   }
 
@@ -541,7 +585,7 @@ export function useAdminData() {
 }
 
 export function useAdminUsers() {
-  const supabase = useSupabaseClient()
+  const supabase = useSupabaseClient<AdminDatabase>()
   const users = ref<AdminUserRow[]>([])
   const total = ref(0)
   const status = ref<'idle' | 'loading' | 'ready' | 'error'>('idle')
