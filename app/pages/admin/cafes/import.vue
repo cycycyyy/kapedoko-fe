@@ -201,9 +201,9 @@ const dockCopy = computed(() => {
   if (tally.value.undecided > 0) return 'Stamp every cafe before the crate can land.'
   if (tally.value.keep === 0) return 'Keep at least one cafe to import.'
   if (tally.value.keep > IMPORT_ADMIN_SHOPS_MAX) {
-    return `These land as pending, ${IMPORT_ADMIN_SHOPS_MAX} at a time. Publish them from the cafe rail when you are ready.`
+    return `These land unpublished, ${IMPORT_ADMIN_SHOPS_MAX} at a time. Publish them from the cafe list when you are ready.`
   }
-  return 'These land as pending. Publish them from the cafe rail when you are ready.'
+  return 'These land unpublished. Publish them from the cafe list when you are ready.'
 })
 
 const followRemaining = () => {

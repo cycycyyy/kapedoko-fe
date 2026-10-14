@@ -1,4 +1,4 @@
-export type ShopStatus = 'pending' | 'approved' | 'rejected'
+export type ShopStatus = 'pending' | 'approved' | 'rejected' | 'hidden'
 
 export type MarkerTier = 'standard' | 'partner' | 'promoted'
 

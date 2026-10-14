@@ -393,6 +393,7 @@ const signedIn = computed(() => Boolean(user.value))
 const statusCopy = (shop: Pick<ShopRow, 'status' | 'rejection_reason'>) => {
   if (shop.status === 'approved') return 'On the map'
   if (shop.status === 'rejected') return shop.rejection_reason ? `Not listed. ${shop.rejection_reason}` : 'Not listed'
+  if (shop.status === 'hidden') return 'Unpublished. It stays off Home and Map until an admin publishes it.'
   return 'Pending review. It stays off Home and Map until an admin approves it.'
 }
 
