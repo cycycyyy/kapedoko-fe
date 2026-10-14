@@ -6,12 +6,14 @@ export const REQUEST_REJECTION_MAX = 280
 export function requestStatusWord(status: ShopStatus): string {
   if (status === 'approved') return 'Approved'
   if (status === 'pending') return 'Pending'
+  if (status === 'hidden') return 'Hidden'
   return 'Rejected'
 }
 
 export function requestsQueueEmptyCopy(filter: ShopStatus): string {
-  if (filter === 'pending') return 'Nothing waiting. New submissions and CSV imports land here to stamp.'
+  if (filter === 'pending') return 'Nothing waiting. New submissions and OSM imports land here to stamp.'
   if (filter === 'approved') return 'No approved cafes in this slice.'
+  if (filter === 'hidden') return 'No unpublished cafes.'
   return 'No rejected cafes.'
 }
 
