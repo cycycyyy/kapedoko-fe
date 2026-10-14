@@ -136,7 +136,7 @@
                 Try again
               </button>
             </p>
-            <p v-else-if="visibleCafes.length === 0" class="home-empty">
+            <p v-else-if="pagedCafes.length === 0 && !hasMoreCafes" class="home-empty">
               <Coffee :size="18" :stroke-width="2.25" aria-hidden="true" />
               <span>{{ emptyCopy }}</span>
             </p>
@@ -150,7 +150,13 @@
               surface="home"
               @select="openCafe"
             />
-            <p v-if="hasMoreCafes" ref="moreCafes" class="home-more">Scroll for more</p>
+            <p v-if="moreError" class="home-more">
+              <span>{{ moreError }}</span>
+              <button type="button" @click="retryMore">Try again</button>
+            </p>
+            <p v-else-if="hasMoreCafes" ref="moreCafes" class="home-more">
+              {{ loadingMore ? 'Loading more shops…' : 'Scroll for more' }}
+            </p>
             <button
               v-if="status === 'ready'"
               type="button"
@@ -190,7 +196,9 @@ import {
   rememberDetailSource,
 } from '~/utils/analytics'
 import { watchImpression } from '~/utils/analytics-impression'
-import { CAFE_FILTERS, filterCafes, type CafeFilterIcon, type CafeFilterId } from '~/utils/cafe-filters'
+import { CAFE_FILTERS, type CafeFilterIcon, type CafeFilterId } from '~/utils/cafe-filters'
+import { feedCountLabel } from '~/utils/cafe-feed'
+import { fetchPlacementCafes } from '~/utils/approved-shops'
 import { amenityFilterHint } from '~/utils/amenity-status'
 import { distanceMeters, formatDistance } from '~/utils/geo'
 
@@ -208,13 +216,14 @@ const filterIcons: Record<CafeFilterIcon, typeof Navigation> = {
 
 const filters = CAFE_FILTERS
 
-const { cafes: liveCafes, status, error, refresh } = useApprovedShops()
 const { ads: liveAds } = useActiveAds()
 const { status: locationStatus, location, usingFallback, requestLocation } = useDeviceLocation()
 const { radiusKm: nearbyRadiusKm, radiusMeters, hydrate: hydrateNearbyRadius } = useNearbyRadius()
 const { user, loadProfile } = useAuth()
 const { track, once, consent } = useAnalytics()
-const cafes = computed(() => liveCafes.value)
+const supabase = useSupabaseClient()
+const runtimeConfig = useRuntimeConfig()
+const placementList = ref<Cafe[]>([])
 
 const NEARBY_EMPTY: Record<Exclude<CafeFilterId, 'near'>, string> = {
   popular: 'popular shops',
@@ -234,8 +243,8 @@ const greeting = ref('Good morning')
 const firstName = ref('')
 
 const placementCafes = computed(() => {
-  const promoted = cafes.value.filter((cafe) => cafe.markerTier === 'promoted')
-  const partners = cafes.value.filter((cafe) => cafe.markerTier === 'partner')
+  const promoted = placementList.value.filter((cafe) => cafe.markerTier === 'promoted')
+  const partners = placementList.value.filter((cafe) => cafe.markerTier === 'partner')
   return [...promoted, ...partners]
 })
 
@@ -293,6 +302,32 @@ const origin = computed(() => (
     : null
 ))
 
+const locationReady = computed(() => (
+  locationStatus.value === 'granted'
+  || locationStatus.value === 'denied'
+  || locationStatus.value === 'unavailable'
+))
+
+const {
+  cafes: pagedCafes,
+  total: cafeTotal,
+  status,
+  error,
+  hasMore: hasMoreCafes,
+  loadingMore,
+  moreError,
+  sentinel: moreCafes,
+  refresh,
+  retryMore,
+} = useCafeFeed({
+  filter: activeFilter,
+  query: submittedQuery,
+  origin,
+  radiusMeters,
+  nearby: computed(() => nearbyUnderFilter.value && activeFilter.value !== 'near'),
+  locationReady,
+})
+
 const activeFilterMeta = computed(() => filters.find((filter) => filter.id === activeFilter.value) ?? filters[0]!)
 const amenityHint = computed(() => amenityFilterHint(activeFilter.value))
 const showNearbyTicket = computed(() => status.value === 'ready' && activeFilter.value !== 'near')
@@ -321,26 +356,16 @@ const locationNote = computed(() => {
 })
 
 const listKey = computed(() => (
-  `${activeFilter.value}|${submittedQuery.value}|${status.value}|${nearbyRadiusKm.value}|${origin.value ? 'geo' : 'nogeo'}|${nearbyOn.value ? 'nearby' : 'all'}`
+  `${activeFilter.value}|${submittedQuery.value}|${nearbyRadiusKm.value}|${origin.value ? 'geo' : 'nogeo'}|${nearbyOn.value ? 'nearby' : 'all'}`
 ))
 
-const cafeQuery = (filter: CafeFilterId) => ({
-  query: submittedQuery.value,
-  filter,
-  origin: origin.value,
-  radiusMeters: radiusMeters.value,
-  nearby: nearbyUnderFilter.value && filter !== 'near',
-})
-
-const visibleCafes = computed(() => filterCafes(cafes.value, cafeQuery(activeFilter.value)))
-
-const shopCountLabel = computed(() => {
-  const count = visibleCafes.value.length
-  return `${count} ${count === 1 ? 'shop' : 'shops'}`
-})
+const shopCountLabel = computed(() => (
+  feedCountLabel(pagedCafes.value.length, cafeTotal.value, hasMoreCafes.value)
+))
 
 const emptyCopy = computed(() => {
-  if (cafes.value.length === 0) return 'No coffee shops yet.'
+  const known = cafeTotal.value ?? pagedCafes.value.length
+  if (known === 0 && activeFilter.value === 'near' && !origin.value) return 'No coffee shops yet.'
   if (nearbyOn.value && origin.value && activeFilter.value !== 'near') {
     const noun = NEARBY_EMPTY[activeFilter.value]
     return `No ${noun} within ${nearbyRadiusKm.value} km.`
@@ -350,12 +375,6 @@ const emptyCopy = computed(() => {
   }
   return 'No coffee shops match that filter.'
 })
-
-const {
-  slice: pagedCafes,
-  hasMore: hasMoreCafes,
-  sentinel: moreCafes,
-} = useInfiniteWindow(visibleCafes, listKey)
 
 const distanceLabel = (cafe: Cafe) => {
   if (!origin.value) return undefined
@@ -369,26 +388,34 @@ const submitSearch = async () => {
   await navigateTo(path)
 }
 
-const trackFilter = (id: CafeFilterId, results: Cafe[]) => {
+const trackPending = ref<CafeFilterId | null>(null)
+
+const trackFilter = (id: CafeFilterId) => {
   track(ANALYTICS_EVENTS.FILTER_APPLIED, {
     filter_name: id,
-    result_count: results.length,
-    confidence_bucket: modalConfidenceBucket(results.map((cafe) => confidenceBucketFromCafe(cafe))),
+    result_count: cafeTotal.value ?? pagedCafes.value.length,
+    confidence_bucket: modalConfidenceBucket(pagedCafes.value.map((cafe) => confidenceBucketFromCafe(cafe))),
   })
 }
+
+watch(status, (value) => {
+  const id = trackPending.value
+  if (value !== 'ready' || !id) return
+  trackPending.value = null
+  trackFilter(id)
+})
 
 const setFilter = (id: CafeFilterId) => {
   if (id === activeFilter.value) return
   activeFilter.value = id
-  if (status.value !== 'ready') return
-  trackFilter(id, filterCafes(cafes.value, cafeQuery(id)))
+  trackPending.value = id
 }
 
 const toggleNearby = async () => {
   if (!showNearbyTicket.value || nearbyBusy.value) return
   if (nearbyUnderFilter.value) {
     nearbyUnderFilter.value = false
-    trackFilter(activeFilter.value, filterCafes(cafes.value, cafeQuery(activeFilter.value)))
+    trackPending.value = activeFilter.value
     return
   }
   if (!origin.value) {
@@ -401,7 +428,7 @@ const toggleNearby = async () => {
   }
   if (!origin.value) return
   nearbyUnderFilter.value = true
-  trackFilter(activeFilter.value, filterCafes(cafes.value, cafeQuery(activeFilter.value)))
+  trackPending.value = activeFilter.value
 }
 
 const openCafe = async (id: string) => {
@@ -477,7 +504,7 @@ const addCafe = async () => {
 
 onIonViewWillEnter(() => {
   hydrateNearbyRadius()
-  void refresh()
+  if (status.value === 'error') void refresh()
 })
 
 onMounted(() => {
@@ -487,6 +514,14 @@ onMounted(() => {
   greeting.value = greetingForHour(new Date().getHours())
   firstName.value = firstNameFrom(user.value?.user_metadata?.display_name)
   void requestLocation()
+  const publicBase = String(runtimeConfig.public.r2PublicBaseUrl || '')
+  void fetchPlacementCafes(supabase, publicBase)
+    .then((cafes) => {
+      placementList.value = cafes
+    })
+    .catch(() => {
+      placementList.value = []
+    })
   void (async () => {
     if (!user.value) return
     try {
@@ -1000,6 +1035,17 @@ onMounted(() => {
   font-size: 0.8rem;
   font-weight: 700;
   text-align: center;
+}
+
+.home-more button {
+  margin-left: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--kd-primary);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .sr-only {

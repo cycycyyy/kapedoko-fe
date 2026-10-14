@@ -65,6 +65,8 @@ export interface PlacesCityConfig {
   grid: { lats: number[]; lngs: number[] }
   coverageCityId?: keyof typeof CATALOG_IMPORT_CITIES
   localityNames?: string[]
+  /** Drop these city names even when the pin sits inside `bounds`, unless locality is `name`. */
+  excludeLocalityNames?: string[]
 }
 
 export function placesGridQueries(
@@ -224,31 +226,438 @@ export type PlacesNormalizeResult =
   | { keep: true; row: PlacesCsvRow }
   | { keep: false; reason: PlacesSkipReason }
 
+/** Province of Bulacan, from Obando/SJDM north through Malolos, Baliwag, and San Miguel. */
+export const BULACAN_BOUNDS: GeoBounds = {
+  south: 14.700,
+  north: 15.270,
+  west: 120.680,
+  east: 121.200,
+}
+
+export const BULACAN_CITY: PlacesCityConfig = {
+  id: 'bulacan',
+  name: 'Bulacan',
+  bounds: BULACAN_BOUNDS,
+  center: { lat: 14.844, lng: 120.811 },
+  nearbyRadiusMeters: 40_000,
+  localityNames: [
+    'Bulacan',
+    'Malolos',
+    'Meycauayan',
+    'Marilao',
+    'Bocaue',
+    'Baliwag',
+    'Baliuag',
+    'Pulilan',
+    'Plaridel',
+    'Guiguinto',
+    'Santa Maria',
+    'San Jose del Monte',
+    'Norzagaray',
+    'Angat',
+    'Calumpit',
+    'Hagonoy',
+    'Obando',
+  ],
+  textQueries: [
+    ...buildPlacesTextQueries({
+      areas: [
+        'Malolos Bulacan',
+        'San Jose del Monte Bulacan',
+        'Meycauayan Bulacan',
+        'Marilao Bulacan',
+        'Bocaue Bulacan',
+        'Baliwag Bulacan',
+        'Baliuag Bulacan',
+        'Santa Maria Bulacan',
+        'Pulilan Bulacan',
+        'Plaridel Bulacan',
+        'Guiguinto Bulacan',
+        'Calumpit Bulacan',
+        'Hagonoy Bulacan',
+        'Norzagaray Bulacan',
+        'Angat Bulacan',
+        'Obando Bulacan',
+        'San Rafael Bulacan',
+        'San Ildefonso Bulacan',
+        'San Miguel Bulacan',
+        'Pandi Bulacan',
+        'SM City Marilao',
+        'SM City Baliwag',
+        'SM City Malolos',
+        'SM City San Jose Del Monte',
+        'Robinsons Malolos',
+      ],
+      brands: ['Starbucks', 'ZUS Coffee', 'Coffee Bean'],
+      bounds: BULACAN_BOUNDS,
+      grid: { rows: 4, cols: 3 },
+    }),
+    'cafes in Malolos Bulacan',
+    'cafes in San Jose del Monte Bulacan',
+    'cafes in Meycauayan Bulacan',
+    'cafes in Baliwag Bulacan',
+    'cafes in Marilao Bulacan',
+  ],
+  grid: {
+    lats: [14.771, 14.914, 15.056, 15.199],
+    lngs: [120.767, 120.940, 121.113],
+  },
+}
+
+/** Province of Pampanga, including Angeles City and Clark. */
+export const PAMPANGA_BOUNDS: GeoBounds = {
+  south: 14.880,
+  north: 15.320,
+  west: 120.420,
+  east: 120.950,
+}
+
+export const PAMPANGA_CITY: PlacesCityConfig = {
+  id: 'pampanga',
+  name: 'Pampanga',
+  bounds: PAMPANGA_BOUNDS,
+  center: { lat: 15.07, lng: 120.67 },
+  nearbyRadiusMeters: 40_000,
+  localityNames: [
+    'Pampanga',
+    'Angeles',
+    'Clark',
+    'Mabalacat',
+    'Magalang',
+    'Guagua',
+    'Lubao',
+    'Porac',
+    'Floridablanca',
+    'Apalit',
+    'Arayat',
+    'Candaba',
+    'Bacolor',
+    'Balibago',
+  ],
+  textQueries: [
+    ...buildPlacesTextQueries({
+      areas: [
+        'Angeles City, Philippines',
+        'Clark Freeport Pampanga',
+        'San Fernando Pampanga',
+        'Mabalacat Pampanga',
+        'Magalang Pampanga',
+        'Mexico Pampanga',
+        'Guagua Pampanga',
+        'Lubao Pampanga',
+        'Porac Pampanga',
+        'Floridablanca Pampanga',
+        'Apalit Pampanga',
+        'Arayat Pampanga',
+        'Bacolor Pampanga',
+        'Balibago Angeles',
+        'Marquee Mall Angeles',
+        'SM City Pampanga',
+        'Fields Avenue Angeles',
+        'Dau Mabalacat',
+        'Friendship Highway Angeles',
+        'Santo Tomas Pampanga',
+      ],
+      brands: ['Starbucks', 'ZUS Coffee', 'Coffee Bean'],
+      bounds: PAMPANGA_BOUNDS,
+      grid: { rows: 4, cols: 3 },
+    }),
+    'cafes in Angeles City Pampanga',
+    'cafes in San Fernando Pampanga',
+    'cafes in Clark Pampanga',
+    'cafes in Mabalacat Pampanga',
+  ],
+  grid: {
+    lats: [14.940, 15.050, 15.150, 15.250],
+    lngs: [120.520, 120.670, 120.820],
+  },
+}
+
+/** Province of Nueva Ecija, from Gapan north through Cabanatuan to Carranglan. */
+export const NUEVA_ECIJA_BOUNDS: GeoBounds = {
+  south: 15.150,
+  north: 16.120,
+  west: 120.520,
+  east: 121.350,
+}
+
+export const NUEVA_ECIJA_CITY: PlacesCityConfig = {
+  id: 'nueva-ecija',
+  name: 'Nueva Ecija',
+  bounds: NUEVA_ECIJA_BOUNDS,
+  center: { lat: 15.49, lng: 120.97 },
+  nearbyRadiusMeters: 50_000,
+  localityNames: [
+    'Nueva Ecija',
+    'Cabanatuan',
+    'Gapan',
+    'Muñoz',
+    'Munoz',
+    'Palayan',
+    'San Jose City',
+    'Talavera',
+    'Guimba',
+    'Aliaga',
+    'Jaen',
+    'Cabiao',
+    'Bongabon',
+  ],
+  textQueries: [
+    ...buildPlacesTextQueries({
+      areas: [
+        'Cabanatuan Nueva Ecija',
+        'Talavera Nueva Ecija',
+        'Gapan Nueva Ecija',
+        'Science City of Muñoz',
+        'Muñoz Nueva Ecija',
+        'San Jose City Nueva Ecija',
+        'Palayan Nueva Ecija',
+        'Guimba Nueva Ecija',
+        'Aliaga Nueva Ecija',
+        'Jaen Nueva Ecija',
+        'Santa Rosa Nueva Ecija',
+        'San Leonardo Nueva Ecija',
+        'Cabiao Nueva Ecija',
+        'San Isidro Nueva Ecija',
+        'Zaragoza Nueva Ecija',
+        'Bongabon Nueva Ecija',
+        'General Tinio Nueva Ecija',
+        'Peñaranda Nueva Ecija',
+        'Santo Domingo Nueva Ecija',
+        'Cuyapo Nueva Ecija',
+        'Carranglan Nueva Ecija',
+        'SM City Cabanatuan',
+        'NE Pacific Mall Cabanatuan',
+        'Maharlika Highway Cabanatuan',
+      ],
+      brands: ['Starbucks', 'ZUS Coffee', 'Coffee Bean'],
+      bounds: NUEVA_ECIJA_BOUNDS,
+      grid: { rows: 4, cols: 3 },
+    }),
+    'cafes in Cabanatuan',
+    'cafes in Talavera',
+    'cafes in Gapan Nueva Ecija',
+    'cafes in San Jose City Nueva Ecija',
+    'cafes in Muñoz Nueva Ecija',
+    'cafes in Palayan',
+    'cafes in Guimba',
+  ],
+  grid: {
+    lats: [15.271, 15.514, 15.756, 15.999],
+    lngs: [120.658, 120.935, 121.212],
+  },
+}
+
+/** Corridor around Taft Avenue from UN Avenue / PGH down through Malate, Pasay, and Baclaran. */
+export const TAFT_AVENUE_BOUNDS: GeoBounds = {
+  south: 14.525,
+  north: 14.592,
+  west: 120.978,
+  east: 121.010,
+}
+
+export const TAFT_AVENUE_CITY: PlacesCityConfig = {
+  id: 'taft-avenue',
+  name: 'Taft Avenue',
+  bounds: TAFT_AVENUE_BOUNDS,
+  center: { lat: 14.5585, lng: 120.994 },
+  nearbyRadiusMeters: 4000,
+  localityNames: [
+    'Taft',
+    'Malate',
+    'Ermita',
+    'Baclaran',
+    'Vito Cruz',
+  ],
+  textQueries: [
+    ...buildPlacesTextQueries({
+      areas: [
+        'Taft Avenue Manila',
+        'Taft Avenue Pasay',
+        'Malate Manila',
+        'Ermita Manila',
+        'Vito Cruz Manila',
+        'Pedro Gil Manila',
+        'UN Avenue Manila',
+        'Padre Faura Manila',
+        'Harrison Manila',
+        'Baclaran Pasay',
+        'Paco Manila',
+        'Singalong Manila',
+        'Adriatico Malate',
+        'DLSU Manila',
+      ],
+      brands: ['Starbucks', 'ZUS Coffee', 'Coffee Bean'],
+      bounds: TAFT_AVENUE_BOUNDS,
+      grid: { rows: 4, cols: 2 },
+    }),
+    'cafes in Taft Avenue Manila',
+    'cafes in Malate Manila',
+    'cafes in Ermita Manila',
+    'cafes in Pasay Taft',
+  ],
+  grid: {
+    lats: [14.533, 14.548, 14.563, 14.578],
+    lngs: [120.986, 121.000],
+  },
+}
+
+export const MARIKINA_BOUNDS: GeoBounds = {
+  south: 14.615,
+  north: 14.685,
+  west: 121.075,
+  east: 121.130,
+}
+
 export const MARIKINA_CITY: PlacesCityConfig = {
   id: 'marikina',
   name: 'Marikina',
-  bounds: {
-    south: 14.615,
-    north: 14.685,
-    west: 121.075,
-    east: 121.130,
-  },
+  bounds: MARIKINA_BOUNDS,
   center: { lat: 14.6507, lng: 121.1029 },
   nearbyRadiusMeters: 8000,
+  localityNames: ['Marikina'],
   textQueries: [
-    'coffee shops in Marikina, Philippines',
+    ...buildPlacesTextQueries({
+      areas: [
+        'Marikina, Philippines',
+        'Marikina Heights',
+        'Concepcion Uno Marikina',
+        'Concepcion Dos Marikina',
+        'Parang Marikina',
+        'Nangka Marikina',
+        'San Roque Marikina',
+        'Calumpang Marikina',
+        'Malanday Marikina',
+        'Tumana Marikina',
+        'Fortune Marikina',
+        'Barangka Marikina',
+        'Tanong Marikina',
+        'Santo Nino Marikina',
+        'Santa Elena Marikina',
+        'Industrial Valley Marikina',
+        'Riverbanks Marikina',
+        'Shoe Avenue Marikina',
+        'Gil Fernando Avenue Marikina',
+        'Sumulong Highway Marikina',
+        'SM City Marikina',
+        'SSS Village Marikina',
+        'J.P. Rizal Marikina',
+        'Dragon Street Marikina',
+      ],
+      brands: ['Starbucks', 'ZUS Coffee', 'Coffee Bean', "Bo's Coffee", 'Pickup Coffee'],
+      bounds: MARIKINA_BOUNDS,
+      grid: { rows: 4, cols: 3 },
+    }),
     'cafes in Marikina, Philippines',
-    'coffee shops in Marikina Heights',
-    'coffee shops in Concepcion Marikina',
-    'coffee shops in Parang Marikina',
-    'coffee shops in Nangka Marikina',
-    'coffee shops in San Roque Marikina',
-    'Starbucks Marikina',
-    'ZUS Coffee Marikina',
+    'cafes in Marikina Heights',
+    'cafes in Concepcion Marikina',
+    'cafes in Parang Marikina',
+    'cafes in Nangka Marikina',
+    'cafes in San Roque Marikina',
+    'cafes in Calumpang Marikina',
+    'cafes in Tumana Marikina',
+    'specialty coffee Marikina',
+    'coffee roastery Marikina',
   ],
   grid: {
     lats: [14.625, 14.645, 14.665, 14.680],
     lngs: [121.085, 121.105, 121.125],
+  },
+}
+
+/** Quezon City proper, from New Manila / Cubao north through Fairview and Novaliches. */
+export const QUEZON_CITY_BOUNDS: GeoBounds = {
+  south: 14.610,
+  north: 14.775,
+  west: 121.000,
+  east: 121.125,
+}
+
+export const QUEZON_CITY: PlacesCityConfig = {
+  id: 'quezon-city',
+  name: 'Quezon City',
+  bounds: QUEZON_CITY_BOUNDS,
+  center: { lat: 14.676, lng: 121.044 },
+  nearbyRadiusMeters: 12_000,
+  localityNames: [
+    'Quezon City',
+    'Cubao',
+    'Diliman',
+    'Katipunan',
+    'Maginhawa',
+    'Fairview',
+    'Novaliches',
+    'Commonwealth',
+    'Eastwood',
+    'Kamuning',
+    'Timog',
+    'Tomas Morato',
+    'Batasan',
+    'Libis',
+  ],
+  excludeLocalityNames: [
+    'Manila',
+    'San Juan',
+    'Marikina',
+    'Caloocan',
+    'Pasig',
+    'Taguig',
+    'Mandaluyong',
+    'Valenzuela',
+    'Antipolo',
+  ],
+  textQueries: [
+    ...buildPlacesTextQueries({
+      areas: [
+        'Quezon City, Philippines',
+        'Cubao Quezon City',
+        'Diliman Quezon City',
+        'Katipunan Quezon City',
+        'Tomas Morato Quezon City',
+        'Timog Quezon City',
+        'Maginhawa Quezon City',
+        "Teacher's Village Quezon City",
+        'Fairview Quezon City',
+        'Novaliches Quezon City',
+        'Commonwealth Quezon City',
+        'Batasan Quezon City',
+        'Eastwood Quezon City',
+        'Libis Quezon City',
+        'Project 4 Quezon City',
+        'Project 6 Quezon City',
+        'Project 7 Quezon City',
+        'Project 8 Quezon City',
+        'Quezon Avenue Quezon City',
+        'SM North EDSA Quezon City',
+        'Trinoma Quezon City',
+        'UP Diliman',
+        'Quezon City Circle',
+        'Banawe Quezon City',
+        'Roosevelt Quezon City',
+        'Muñoz Quezon City',
+        'Kamuning Quezon City',
+        'New Manila Quezon City',
+        'Scout Area Quezon City',
+        'Don Antonio Quezon City',
+        'Holy Spirit Quezon City',
+        'Pasong Tamo Quezon City',
+        'Tandang Sora Quezon City',
+        'Mindanao Avenue Quezon City',
+        'North EDSA Quezon City',
+      ],
+      brands: ['Starbucks', 'ZUS Coffee', 'Coffee Bean'],
+      bounds: QUEZON_CITY_BOUNDS,
+      grid: { rows: 4, cols: 4 },
+    }),
+    'cafes in Cubao',
+    'cafes in Maginhawa',
+    'cafes in Katipunan',
+    'cafes in Fairview',
+    'cafes in Tomas Morato',
+  ],
+  grid: {
+    lats: [14.631, 14.672, 14.713, 14.754],
+    lngs: [121.016, 121.047, 121.078, 121.109],
   },
 }
 
@@ -357,30 +766,109 @@ export const DAVAO_CITY: PlacesCityConfig = {
   nearbyRadiusMeters: 12_000,
   coverageCityId: 'davao-city',
   localityNames: ['Davao City'],
-  textQueries: buildPlacesTextQueries({
-    areas: [
-      'Davao City, Philippines',
-      'Bajada Davao',
-      'Matina Davao',
-      'Lanang Davao',
-      'Ecoland Davao',
-      'Buhangin Davao',
-      'JP Laurel Davao',
-      'SM Lanang',
-      'Abreeza Davao',
-      'Toril Davao',
-      'Calinan Davao',
-      'Obrero Davao',
-    ],
-    brands: ['Starbucks', 'ZUS Coffee'],
-    bounds: coverageBounds(DAVAO_CITY_REGIONS),
-    grid: { rows: 3, cols: 2 },
-  }),
+  excludeLocalityNames: [
+    'Tagum',
+    'Panabo',
+    'Digos',
+    'Samal',
+    'Island Garden City of Samal',
+  ],
+  textQueries: [
+    ...buildPlacesTextQueries({
+      areas: [
+        'Davao City, Philippines',
+        'Bajada Davao',
+        'Matina Davao',
+        'Lanang Davao',
+        'Ecoland Davao',
+        'Buhangin Davao',
+        'JP Laurel Davao',
+        'SM Lanang',
+        'Abreeza Davao',
+        'Toril Davao',
+        'Calinan Davao',
+        'Obrero Davao',
+        'Poblacion Davao',
+        'Agdao Davao',
+        'Bunawan Davao',
+        'Paquibato Davao',
+        'Baguio District Davao',
+        'Marilog Davao',
+        'Tugbok Davao',
+        'Talomo Davao',
+        'Matina Aplaya Davao',
+        'Matina Crossing Davao',
+        'Matina Pangi Davao',
+        'Bangkal Davao',
+        'Ma-a Davao',
+        'Catalunan Grande Davao',
+        'Catalunan Pequeño Davao',
+        'Mintal Davao',
+        'Ulas Davao',
+        'Sasa Davao',
+        'Panacan Davao',
+        'Tibungco Davao',
+        'Cabantian Davao',
+        'Indangan Davao',
+        'Mandug Davao',
+        'Magtuod Davao',
+        'Riverside Davao',
+        'Juna Subdivision Davao',
+        'Quimpo Blvd Davao',
+        'C.P. Garcia Davao',
+        'F. Torres Davao',
+        'Roxas Ave Davao',
+        'San Pedro St Davao',
+        'Bolton Davao',
+        'Bankerohan Davao',
+        'Gaisano Mall Davao',
+        'Victoria Plaza Davao',
+        'NCCC Mall Davao',
+        'SM City Davao Ecoland',
+        'Azuela Cove Davao',
+        'Damosa Davao',
+        'Maa Highway Davao',
+        'Buhangin Road Davao',
+        'Diversion Road Davao',
+        'Davao Airport Sasa',
+        'SM Lanang Premier',
+        'Abreeza Mall Davao',
+      ],
+      brands: [
+        'Starbucks',
+        'ZUS Coffee',
+        'Coffee Bean',
+        "Bo's Coffee",
+        'Tim Hortons',
+        'Pickup Coffee',
+        'Tomoro',
+      ],
+      bounds: coverageBounds(DAVAO_CITY_REGIONS),
+      grid: { rows: 5, cols: 3 },
+    }),
+    'cafes in Poblacion Davao',
+    'cafes in Matina Davao',
+    'cafes in Buhangin Davao',
+    'cafes in Lanang Davao',
+    'cafes in Ecoland Davao',
+    'cafes in Toril Davao',
+    'cafes in Calinan Davao',
+    'cafes in Talomo Davao',
+    'cafes in Agdao Davao',
+    'cafes in Sasa Davao',
+    'specialty coffee Davao',
+    'coffee roastery Davao',
+  ],
   grid: { lats: [], lngs: [] },
 }
 
 export const PLACES_CITIES: Record<string, PlacesCityConfig> = {
   marikina: MARIKINA_CITY,
+  'taft-avenue': TAFT_AVENUE_CITY,
+  bulacan: BULACAN_CITY,
+  pampanga: PAMPANGA_CITY,
+  'nueva-ecija': NUEVA_ECIJA_CITY,
+  'quezon-city': QUEZON_CITY,
   'metro-manila': METRO_MANILA_CITY,
   'cebu-city': CEBU_CITY,
   'davao-city': DAVAO_CITY,
@@ -455,20 +943,52 @@ export function isCityLocality(
   })
 }
 
+function normalizeLocalityToken(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/metro manila/g, ' ')
+    .replace(/\./g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function tokenMatchesCityName(token: string, name: string): boolean {
+  const normalized = normalizeLocalityToken(token)
+  const city = name.toLowerCase()
+  return normalized === city || normalized === `${city} city` || normalized === `city of ${city}`
+}
+
+export function placeMentionsLocality(place: PlacesPlace, names: string[]): boolean {
+  if (names.length === 0) return false
+  const tokens = [placesLocality(place)]
+  const formatted = (place.formattedAddress || '').replace(/metro manila/ig, ' ')
+  for (const part of formatted.split(',')) tokens.push(part.trim())
+  return names.some((name) => tokens.some((token) => token && tokenMatchesCityName(token, name)))
+}
+
+function placeInCityBox(place: PlacesPlace, city: PlacesCityConfig): boolean {
+  const point = placesPoint(place)
+  if (!point) return false
+  if (city.coverageCityId) {
+    const regions = CATALOG_IMPORT_CITIES[city.coverageCityId]
+    return Boolean(regions?.length && isInCoverage(point, regions))
+  }
+  return isInBounds(point, city.bounds)
+}
+
 export function shouldKeepPlace(place: PlacesPlace, city: PlacesCityConfig): PlacesSkipReason | null {
   if (!place.id?.trim()) return 'missing_place_id'
   if ((place.businessStatus || '').toUpperCase() === 'CLOSED_PERMANENTLY') {
     return 'closed_permanently'
   }
-  const point = placesPoint(place)
-  if (point) {
-    if (city.coverageCityId) {
-      const regions = CATALOG_IMPORT_CITIES[city.coverageCityId]
-      if (regions?.length && isInCoverage(point, regions)) return null
-    } else if (isInBounds(point, city.bounds)) {
-      return null
+  const inBox = placeInCityBox(place, city)
+  if (city.excludeLocalityNames?.length) {
+    const namedCity = isCityLocality(place, { localityNames: [city.name] })
+    if (placeMentionsLocality(place, city.excludeLocalityNames) && !(inBox && namedCity)) {
+      return 'outside_region'
     }
   }
+  if (inBox) return null
   if (isCityLocality(place, city)) return null
   return 'outside_region'
 }

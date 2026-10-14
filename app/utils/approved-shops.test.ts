@@ -4,7 +4,9 @@ import type { ShopAmenityResolutionRow } from './amenity-status'
 import type { ShopPaymentRow } from './cafe-payment'
 import {
   chunkIds,
+  fetchAdminShopRows,
   fetchAmenityRowsForShopIds,
+  fetchApprovedCafePage,
   fetchApprovedCafes,
   fetchPages,
   groupAmenityRows,
@@ -33,6 +35,25 @@ describe('approved shop catalog fetch', () => {
     })
     expect(starts).toEqual([0, POSTGREST_PAGE_SIZE])
     expect(rows).toHaveLength(POSTGREST_PAGE_SIZE + 1)
+  })
+
+  test('loads every admin shop past the PostgREST 1000-row cap', async () => {
+    const shops = Array.from({ length: 1498 }, (_, index) => shopRow(index + 1))
+    const starts: number[] = []
+    const rows = await fetchAdminShopRows({
+      from() {
+        return {
+          select() { return this },
+          order() { return this },
+          range(from: number, to: number) {
+            starts.push(from)
+            return Promise.resolve({ data: shops.slice(from, to + 1), error: null })
+          },
+        }
+      },
+    })
+    expect(starts).toEqual([0, POSTGREST_PAGE_SIZE])
+    expect(rows).toHaveLength(1498)
   })
 
   test('groups amenity rows onto the cafe they belong to', () => {
@@ -127,6 +148,32 @@ describe('approved shop catalog fetch', () => {
       availability: 'unknown',
       confidence: 'unknown',
     })
+  })
+
+  test('a feed page loads sidecars for that page only', async () => {
+    const shops = Array.from({ length: 30 }, (_, index) => shopRow(index))
+    const rpcChunks: number[] = []
+    const first = await fetchApprovedCafePage(mockCatalog(shops, { rpcChunks }), '', { limit: 12 })
+    expect(first.cafes).toHaveLength(12)
+    expect(first.cafes[0]?.name).toBe('Cafe 000')
+    expect(first.hasMore).toBe(true)
+    expect(rpcChunks).toEqual([12])
+
+    const secondChunks: number[] = []
+    const second = await fetchApprovedCafePage(mockCatalog(shops, { rpcChunks: secondChunks }), '', {
+      offset: 12,
+      limit: 12,
+    })
+    expect(second.cafes[0]?.name).toBe('Cafe 012')
+    expect(second.hasMore).toBe(true)
+    expect(secondChunks).toEqual([12])
+
+    const last = await fetchApprovedCafePage(mockCatalog(shops, { rpcChunks: [] }), '', {
+      offset: 24,
+      limit: 12,
+    })
+    expect(last.cafes).toHaveLength(6)
+    expect(last.hasMore).toBe(false)
   })
 
   test('home catalog attaches markings on the first fetch', async () => {

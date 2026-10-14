@@ -17,6 +17,15 @@ import {
   withCafeReviews,
 } from './shop-mapper'
 import { paymentFromRow, type CafePayment, type ShopPaymentRow } from './cafe-payment'
+import {
+  amenityFilterSpec,
+  amenityRowMatchesFilter,
+  CAFE_FEED_PAGE_SIZE,
+  isPopularReviewStats,
+  POPULAR_RECOMMEND_PCT,
+  POPULAR_REVIEW_MIN,
+} from './cafe-feed'
+import type { CafeFilterId } from './cafe-filters'
 
 export const APPROVED_SHOP_COLUMNS =
   'id,name,description,address,latitude,longitude,categories,hours,cover_photo_url,logo_object_key,contact_number,status,submitted_by,reviewed_by,reviewed_at,rejection_reason,created_at,updated_at'
@@ -326,6 +335,17 @@ function approvedShopQuery(
   return request.order('name')
 }
 
+export async function fetchAdminShopRows(supabase: ShopClient): Promise<ShopRow[]> {
+  return await fetchPages<ShopRow>((from, to) =>
+    supabase
+      .from('shops')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
+      .range(from, to),
+  )
+}
+
 export async function fetchApprovedShopRows(
   supabase: ShopClient,
   options: {
@@ -367,6 +387,152 @@ export async function fetchApprovedCafes(
   if (!approved.length) return []
   const sidecars = await loadCafeSidecars(supabase, approved.map((shop) => shop.id))
   return cafesFromApprovedShops(approved, publicBase, sidecars)
+}
+
+export interface ShopPoint {
+  id: string
+  name: string
+  lat: number
+  lng: number
+}
+
+/** One screen of approved shops. Does not walk the rest of the catalog. */
+export async function fetchApprovedCafePage(
+  supabase: ShopClient,
+  publicBase: string,
+  options: {
+    offset?: number
+    limit?: number
+    bounds?: GeoBounds
+    query?: string
+  } = {},
+): Promise<{ cafes: Cafe[]; hasMore: boolean }> {
+  const limit = Math.max(1, options.limit ?? CAFE_FEED_PAGE_SIZE)
+  const offset = Math.max(0, options.offset ?? 0)
+  const { data, error } = await approvedShopQuery(supabase, {
+    bounds: options.bounds,
+    query: options.query,
+  })
+    .order('id')
+    .range(offset, offset + limit - 1)
+
+  if (error) throw error
+  const rows = (data ?? []) as ShopRow[]
+  const shops = rows.filter((shop) => shop.status === 'approved')
+  if (!shops.length) return { cafes: [], hasMore: false }
+  const sidecars = await loadCafeSidecars(supabase, shops.map((shop) => shop.id))
+  return {
+    cafes: cafesFromApprovedShops(shops, publicBase, sidecars),
+    hasMore: rows.length === limit,
+  }
+}
+
+/** Id and position only, inside a map box. Callers rank these before loading cards. */
+export async function fetchApprovedShopPoints(
+  supabase: ShopClient,
+  bounds: GeoBounds,
+): Promise<ShopPoint[]> {
+  const rows = await fetchPages<{
+    id: string
+    name: string
+    latitude: number | string
+    longitude: number | string
+  }>((from, to) =>
+    supabase
+      .from('shops')
+      .select('id,name,latitude,longitude')
+      .eq('status', 'approved')
+      .gte('latitude', bounds.south)
+      .lte('latitude', bounds.north)
+      .gte('longitude', bounds.west)
+      .lte('longitude', bounds.east)
+      .order('id')
+      .range(from, to),
+  )
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    lat: Number(row.latitude),
+    lng: Number(row.longitude),
+  }))
+}
+
+export async function countApprovedShops(
+  supabase: ShopClient,
+  options: { query?: string } = {},
+): Promise<number> {
+  let request = supabase
+    .from('shops')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'approved')
+
+  const term = options.query ? sanitizeSearch(options.query) : ''
+  if (term) request = request.or(`name.ilike.%${term}%,address.ilike.%${term}%`)
+
+  const { count, error } = await request
+  if (error) throw error
+  return count ?? 0
+}
+
+export async function fetchFilterShopIds(
+  supabase: ShopClient,
+  filter: CafeFilterId,
+): Promise<string[]> {
+  if (filter === 'popular') {
+    const rows = await fetchPages<Pick<ShopReviewStatsRow, 'shop_id' | 'total_reviews' | 'recommend_pct'>>((from, to) =>
+      supabase
+        .from('shop_review_stats')
+        .select('shop_id,total_reviews,recommend_pct')
+        .gte('total_reviews', POPULAR_REVIEW_MIN)
+        .gte('recommend_pct', POPULAR_RECOMMEND_PCT)
+        .order('recommend_pct', { ascending: false })
+        .order('shop_id')
+        .range(from, to),
+    )
+    return [...new Set(rows.filter((row) => isPopularReviewStats(row)).map((row) => row.shop_id))]
+  }
+
+  const spec = amenityFilterSpec(filter)
+  if (!spec) return []
+
+  const rows = await fetchPages<ShopAmenityResolutionRow>((from, to) => {
+    let request = supabase
+      .from('shop_amenity_resolutions_public')
+      .select(AMENITY_RESOLUTION_COLUMNS)
+      .eq('amenity_key', spec.key)
+      .eq('availability', 'available')
+      .in('confidence', ['team_verified', 'community_confirmed'])
+      .order('shop_id')
+      .range(from, to)
+    if (spec.wifiSpeed) request = request.eq('wifi_speed', spec.wifiSpeed)
+    if (spec.outletReliability) request = request.eq('outlet_reliability', spec.outletReliability)
+    return request
+  })
+
+  return [...new Set(
+    rows
+      .filter((row) => amenityRowMatchesFilter(row, filter))
+      .map((row) => row.shop_id),
+  )]
+}
+
+export async function fetchPlacementCafes(
+  supabase: ShopClient,
+  publicBase: string,
+): Promise<Cafe[]> {
+  const { data, error } = await supabase
+    .from('shop_marker_tiers')
+    .select('shop_id,marker_tier')
+    .in('marker_tier', ['promoted', 'partner'])
+
+  if (error) throw error
+  const ids = [...new Set(
+    ((data ?? []) as { shop_id?: string }[])
+      .map((row) => row.shop_id)
+      .filter((id): id is string => Boolean(id)),
+  )]
+  if (!ids.length) return []
+  return fetchApprovedCafesByIds(supabase, publicBase, ids)
 }
 
 export async function fetchApprovedCafesByIds(
