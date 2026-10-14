@@ -1,4 +1,11 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+const isStaging = (process.env.ENVIRONMENT || "staging") === "staging"
+
+function env(name: string) {
+  const key = isStaging ? `STAGING_${name}` : name
+  return process.env[key] || ""
+}
+
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: false },
@@ -51,8 +58,8 @@ export default defineNuxtConfig({
     componentDir: "./app/components/ui",
   },
   supabase: {
-    url: process.env.NUXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL,
-    key: process.env.NUXT_PUBLIC_SUPABASE_KEY || process.env.SUPABASE_KEY,
+    url: env("SUPABASE_URL"),
+    key: env("SUPABASE_KEY"),
     redirect: false,
     useSsrCookies: process.env.NUXT_PUBLIC_AUTH_STORAGE !== "local",
     cookieOptions: {
@@ -106,7 +113,10 @@ export default defineNuxtConfig({
     },
   },
   runtimeConfig: {
+    postgresUrl: env("POSTGRES_URL"),
+    posthogPersonalApiKey: env("POSTHOG_PERSONAL_API_KEY"),
     public: {
+      environment: isStaging ? "staging" : "production",
       mapTiles: {
         url:
           process.env.NUXT_PUBLIC_MAP_TILE_URL ||
@@ -115,10 +125,10 @@ export default defineNuxtConfig({
           process.env.NUXT_PUBLIC_MAP_ATTRIBUTION ||
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       },
-      r2PublicBaseUrl: process.env.NUXT_PUBLIC_R2_PUBLIC_BASE_URL || "",
+      r2PublicBaseUrl: env("NUXT_PUBLIC_R2_PUBLIC_BASE_URL"),
       analytics: {
-        enabled: process.env.NUXT_PUBLIC_ANALYTICS_ENABLED === "true",
-        key: process.env.NUXT_PUBLIC_POSTHOG_KEY || "",
+        enabled: env("NUXT_PUBLIC_ANALYTICS_ENABLED") === "true",
+        key: env("NUXT_PUBLIC_POSTHOG_KEY"),
         host: process.env.NUXT_PUBLIC_POSTHOG_HOST || "https://eu.i.posthog.com",
         appVersion: process.env.NUXT_PUBLIC_APP_VERSION || "1.0.0",
       },
