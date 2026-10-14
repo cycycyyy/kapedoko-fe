@@ -2,7 +2,14 @@ import { addressError, cafeNameError } from './identity'
 import { isValidWeeklyHours } from './hours'
 import { isValidPhone } from './phone'
 import { logoFileError } from './logo'
-import type { WeeklyHours } from '../types/shop'
+import type { ShopStatus, WeeklyHours } from '../types/shop'
+
+export function shopStatusWord(status: ShopStatus): string {
+  if (status === 'approved') return 'Approved'
+  if (status === 'pending') return 'Pending'
+  if (status === 'hidden') return 'Hidden'
+  return 'Rejected'
+}
 
 export interface AdminCafeInput {
   name: string

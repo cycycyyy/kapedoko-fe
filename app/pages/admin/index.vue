@@ -88,7 +88,7 @@ definePageMeta({
   middleware: ['auth', 'admin'],
 })
 
-const actionLabels = new Set(['Pending', 'Claims', 'Reports'])
+const actionLabels = new Set(['Pending', 'Hidden', 'Claims', 'Reports'])
 
 const admin = useAdminData()
 const usersAdmin = useAdminUsers()
@@ -105,6 +105,7 @@ const userTotal = computed(() => usersAdmin.total.value)
 const cards = computed(() => {
   const rows = [
     { label: 'Pending', value: counts.value.pending },
+    { label: 'Hidden', value: counts.value.hidden },
     { label: 'Claims', value: counts.value.pendingClaims },
     { label: 'Approved', value: counts.value.approved },
     { label: 'Rejected', value: counts.value.rejected },
@@ -166,6 +167,11 @@ onMounted(async () => {
 
 .desk-tallies__item:nth-last-child(-n + 2) {
   border-bottom: 0;
+}
+
+.desk-tallies__item:nth-child(odd):last-child {
+  grid-column: 1 / -1;
+  border-right: 0;
 }
 
 .desk-tallies__num {

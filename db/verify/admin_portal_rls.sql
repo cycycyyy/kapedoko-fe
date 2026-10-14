@@ -33,7 +33,7 @@
 -- select * from public.active_ad_campaigns;
 -- Expected: only enabled, in-window, non-cancelled rows.
 
--- Admin can create an approved cafe outside coverage via RPC.
+-- Admin can create a hidden cafe outside coverage via RPC.
 -- select public.create_admin_shop(
 --   'Admin Cafe',
 --   '1 Example Street Cebu',
@@ -41,7 +41,11 @@
 --   123.8854,
 --   '{"mon":{"kind":"all_day"},"tue":{"kind":"all_day"},"wed":{"kind":"all_day"},"thu":{"kind":"all_day"},"fri":{"kind":"all_day"},"sat":{"kind":"all_day"},"sun":{"kind":"all_day"}}'::jsonb
 -- );
+-- Expected: status = hidden.
+-- select public.moderate_admin_shop('<shop-id>', 'approved');
 -- Expected: status = approved.
+-- select public.moderate_admin_shop('<shop-id>', 'hidden');
+-- Expected: status = hidden.
 
 -- Direct approved → rejected is still illegal.
 -- update public.shops set status = 'rejected' where status = 'approved' limit 1;

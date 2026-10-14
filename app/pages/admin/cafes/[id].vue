@@ -3,7 +3,7 @@
     <AdminShell
       layout="cafe"
       :title="shop?.name || 'Edit cafe'"
-      lede="Changes go live for approved cafes. Unpublish to take a listing off Home and Map."
+      lede="Changes go live for approved cafes. Hidden cafes stay off Home and Map until you publish them."
       :status="pageStatus"
       :error="pageError"
     >
@@ -19,6 +19,15 @@
           @click="unpublish"
         >
           Unpublish
+        </button>
+        <button
+          v-else-if="shop.status === 'hidden'"
+          type="button"
+          class="admin-btn"
+          :disabled="saving"
+          @click="publish"
+        >
+          Publish
         </button>
       </template>
       <div v-if="shop" class="cafe-editor">
@@ -46,7 +55,8 @@
 import { useIonRouter } from '@ionic/vue'
 import AdminCafeForm from '~/components/admin/AdminCafeForm.vue'
 import AdminShell from '~/components/admin/AdminShell.vue'
-import type { ShopRow, ShopStatus } from '~/types/shop'
+import type { ShopRow } from '~/types/shop'
+import { shopStatusWord } from '~/utils/admin-shop'
 import { shopIdFromRoute } from '~/utils/approved-shops'
 
 definePageMeta({
@@ -81,11 +91,7 @@ const pageStatus = computed(() => {
   return 'ready'
 })
 
-const statusWord = (value: ShopStatus) => {
-  if (value === 'approved') return 'Approved'
-  if (value === 'pending') return 'Pending'
-  return 'Rejected'
-}
+const statusWord = shopStatusWord
 
 const pageError = computed(() => {
   if (shop.value) return error.value
@@ -131,9 +137,19 @@ const onSave = async (payload: Parameters<typeof updateShop>[1]) => {
 
 const unpublish = async () => {
   if (!shop.value) return
-  if (!window.confirm(`Unpublish ${shop.value.name}?`)) return
+  if (!window.confirm(`Unpublish ${shop.value.name}? It leaves Home and Map until you publish it again.`)) return
   try {
-    shop.value = await moderate(shop.value, 'pending')
+    shop.value = await moderate(shop.value, 'hidden')
+  } catch {
+    /* shown in the admin shell */
+  }
+}
+
+const publish = async () => {
+  if (!shop.value) return
+  if (!window.confirm(`Publish ${shop.value.name}? It goes live on Home and Map.`)) return
+  try {
+    shop.value = await moderate(shop.value, 'approved')
   } catch {
     /* shown in the admin shell */
   }
@@ -226,6 +242,16 @@ watch(
 }
 
 .editor-status--pending .editor-status__word {
+  color: var(--kd-ink);
+}
+
+.editor-status--hidden {
+  border-color: color-mix(in srgb, var(--kd-ink) 28%, #faf8f5);
+  background: color-mix(in srgb, var(--kd-ink) 8%, #faf8f5);
+  color: color-mix(in srgb, var(--kd-ink) 78%, #faf8f5);
+}
+
+.editor-status--hidden .editor-status__word {
   color: var(--kd-ink);
 }
 

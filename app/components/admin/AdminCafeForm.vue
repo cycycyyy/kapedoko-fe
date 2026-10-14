@@ -2,6 +2,7 @@
   <form class="admin-form" @submit.prevent="onSubmit">
     <div class="admin-panel">
       <CafeIdentityStep
+        :key="`identity-${resetStamp}`"
         :name="draft.name"
         :logo-file="draft.logoFile"
         :logo-object-key="draft.logoObjectKey"
@@ -17,6 +18,7 @@
         @update:logoObjectKey="onLogoObjectKey"
       />
       <CafeDetailsStep
+        :key="`details-${resetStamp}`"
         :phone="draft.phone"
         :same-every-day="draft.sameEveryDay"
         :all-day="draft.allDay"
@@ -36,6 +38,7 @@
     <div class="admin-panel admin-map">
       <ClientOnly>
         <CafeLocationPicker
+          :key="`map-${resetStamp}`"
           unrestricted
           :lat="draft.lat"
           :lng="draft.lng"
@@ -112,14 +115,43 @@ const hoursFromShop = (hours: WeeklyHours | null | undefined): {
   }
 }
 
+const emptyIssues = () => ({
+  name: null as string | null,
+  logo: null as string | null,
+  address: null as string | null,
+  pin: null as string | null,
+  phone: null as string | null,
+  hours: null as string | null,
+  form: null as string | null,
+})
+
+const emptyDraft = () => {
+  const hours = hoursFromShop(null)
+  return {
+    name: '',
+    logoFile: null as File | null,
+    logoObjectKey: null as string | null,
+    lat: null as number | null,
+    lng: null as number | null,
+    address: '',
+    phone: '',
+    sameEveryDay: hours.sameEveryDay,
+    allDay: hours.allDay,
+    openTime: hours.openTime,
+    closeTime: hours.closeTime,
+    weekly: hours.weekly,
+  }
+}
+
 const admin = useAdminData()
 const config = useRuntimeConfig()
 const publicBase = String(config.public.r2PublicBaseUrl || '')
+const resetStamp = ref(0)
 
 const initial = hoursFromShop(props.shop?.hours)
 const draft = reactive({
+  ...emptyDraft(),
   name: props.shop?.name ?? '',
-  logoFile: null as File | null,
   logoObjectKey: (props.shop?.logo_object_key ?? null) as string | null,
   lat: props.shop?.latitude ?? null as number | null,
   lng: props.shop?.longitude ?? null as number | null,
@@ -132,15 +164,15 @@ const draft = reactive({
   weekly: initial.weekly,
 })
 
-const issues = reactive({
-  name: null as string | null,
-  logo: null as string | null,
-  address: null as string | null,
-  pin: null as string | null,
-  phone: null as string | null,
-  hours: null as string | null,
-  form: null as string | null,
-})
+const issues = reactive(emptyIssues())
+
+const reset = () => {
+  Object.assign(draft, emptyDraft())
+  Object.assign(issues, emptyIssues())
+  resetStamp.value += 1
+}
+
+defineExpose({ reset })
 
 const logoSources = computed(() => cafeLogoSources(admin.shops.value, publicBase, {
   excludeShopId: props.shop?.id,

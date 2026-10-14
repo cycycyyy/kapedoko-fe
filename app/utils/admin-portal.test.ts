@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { adminCafeErrors, adminCafeHasErrors, isValidLatitude, isValidLongitude } from './admin-shop'
+import { adminCafeErrors, adminCafeHasErrors, isValidLatitude, isValidLongitude, shopStatusWord } from './admin-shop'
 import { bannerAspectError, bannerFileError, campaignWindowError, featuredAdCopy, isAdCampaignActive, sortActiveAds } from './admin-ads'
 import { edgeFunctionErrorMessage, roleChangeError, suspendError } from './admin-users'
 import { placementKindFromTier, placementLifecycle, placementWindowError } from './admin-placements'
@@ -33,6 +33,13 @@ describe('admin cafe validation', () => {
     expect(adminCafeHasErrors(input)).toBe(false)
     expect(isValidLatitude(16.4023)).toBe(true)
     expect(isValidLongitude(123.8854)).toBe(true)
+  })
+
+  test('names listing statuses including hidden', () => {
+    expect(shopStatusWord('approved')).toBe('Approved')
+    expect(shopStatusWord('pending')).toBe('Pending')
+    expect(shopStatusWord('hidden')).toBe('Hidden')
+    expect(shopStatusWord('rejected')).toBe('Rejected')
   })
 
   test('rejects missing pin and short names without requiring Metro Manila', () => {
